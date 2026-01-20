@@ -3,10 +3,15 @@ Interactive interface for PDF Merger.
 Prompts the user for all required parameters.
 """
 
+import logging
 import sys
 from pathlib import Path
 
 from pdf_merger import process_file, validate_file, validate_folder
+from pdf_merger.logger import setup_logger
+
+# Initialize logger for interactive mode
+setup_logger("pdf_merger", level=logging.INFO)
 
 
 def get_user_input(prompt: str, default: str = None) -> str:
@@ -68,6 +73,8 @@ def main():
             output_folder.mkdir(parents=True, exist_ok=True)
             break
         except Exception as e:
+            logger = logging.getLogger("pdf_merger")
+            logger.error(f"Error creating output folder: {e}")
             print(f"Error creating output folder: {e}")
             print("Please try again.\n")
     
@@ -93,6 +100,8 @@ def main():
         print("=" * 60)
         
     except Exception as e:
+        logger = logging.getLogger("pdf_merger")
+        logger.error(f"Error processing file: {e}")
         print(f"Error processing file: {e}")
         sys.exit(1)
 

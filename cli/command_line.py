@@ -3,10 +3,15 @@ Command-line interface for PDF Merger.
 """
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
 from pdf_merger import process_file, validate_paths
+from pdf_merger.logger import setup_logger
+
+# Initialize logger for CLI
+setup_logger("pdf_merger", level=logging.INFO)
 
 
 def main():
@@ -38,7 +43,7 @@ def main():
     output_folder = Path(args.output)
     
     # Validate paths
-    is_valid, error_msg = validate_paths(file_path, source_folder, output_folder)
+    is_valid, _ = validate_paths(file_path, source_folder, output_folder)
     if not is_valid:
         sys.exit(1)
     

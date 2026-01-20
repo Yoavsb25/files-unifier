@@ -16,6 +16,10 @@ except ImportError:
         print("Error: pypdf or PyPDF2 library is required. Install with: pip install pypdf")
         sys.exit(1)
 
+from .logger import get_logger
+
+logger = get_logger("pdf_operations")
+
 
 def find_pdf_file(folder: Path, filename: str) -> Optional[Path]:
     """
@@ -63,7 +67,7 @@ def merge_pdfs(pdf_paths: List[Path], output_path: Path) -> bool:
         True if successful, False otherwise
     """
     if not pdf_paths:
-        print(f"Warning: No PDF files to merge for {output_path.name}")
+        logger.warning(f"No PDF files to merge for {output_path.name}")
         return False
     
     try:
@@ -76,7 +80,7 @@ def merge_pdfs(pdf_paths: List[Path], output_path: Path) -> bool:
                 for page in reader.pages:
                     writer.add_page(page)
             except Exception as e:
-                print(f"Error reading PDF {pdf_path.name}: {e}")
+                logger.error(f"Error reading PDF {pdf_path.name}: {e}")
                 return False
         
         # Write the merged PDF
@@ -85,5 +89,5 @@ def merge_pdfs(pdf_paths: List[Path], output_path: Path) -> bool:
         
         return True
     except Exception as e:
-        print(f"Error merging PDFs to {output_path.name}: {e}")
+        logger.error(f"Error merging PDFs to {output_path.name}: {e}")
         return False

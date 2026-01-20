@@ -10,6 +10,10 @@ from typing import List
 from .pdf_operations import find_pdf_file, merge_pdfs
 from .data_parser import parse_serial_numbers
 from .file_reader import read_data_file
+from .logger import get_logger
+from .exceptions import PDFMergerError, InvalidFileFormatError
+
+logger = get_logger("processor")
 
 
 @dataclass
@@ -43,26 +47,24 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
     filenames = parse_serial_numbers(serial_numbers_str)
     
     if not filenames:
-        print(f"Row {row_index + 1}: No filenames found, skipping...")
+        logger.warning(f"Row {row_index + 1}: No filenames found, skipping...")
         return False
     
-    print(f"Row {row_index + 1}: Processing filenames: {', '.join(filenames)}")
+    logger.info(f"Row {row_index + 1}: Processing filenames: {', '.join(filenames)}")
     
     # Find PDF files for each filename
     pdf_paths = []
-    missing_files = []
     
     for filename in filenames:
         pdf_path = find_pdf_file(source_folder, filename)
         if pdf_path:
             pdf_paths.append(pdf_path)
-            print(f"  Found: {pdf_path.name}")
+            logger.info(f"  Found: {pdf_path.name}")
         else:
-            missing_files.append(filename)
-            print(f"  Warning: PDF file not found for filename '{filename}'")
+            logger.warning(f"  PDF file not found for filename '{filename}'")
     
     if not pdf_paths:
-        print(f"Row {row_index + 1}: No PDF files found for any filenames, skipping...")
+        logger.warning(f"Row {row_index + 1}: No PDF files found for any filenames, skipping...")
         return False
     
     # Create output filename
@@ -70,13 +72,13 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
     output_path = output_folder / output_filename
     
     # Merge PDFs
-    print(f"  Merging {len(pdf_paths)} PDF(s) into {output_filename}...")
+    logger.info(f"  Merging {len(pdf_paths)} PDF(s) into {output_filename}...")
     success = merge_pdfs(pdf_paths, output_path)
     
     if success:
-        print(f"  ✓ Successfully created {output_filename}")
+        logger.info(f"  ✓ Successfully created {output_filename}")
     else:
-        print(f"  ✗ Failed to create {output_filename}")
+        logger.error(f"  ✗ Failed to create {output_filename}")
     
     return success
 
@@ -117,8 +119,15 @@ def process_file(file_path: Path, source_folder: Path, output_folder: Path,
             successful_merges=success_count,
             failed_rows=failed_rows
         )
+    except PDFMergerError as e:
+        logger.error(f"PDF Merger error: {e}")
+        return ProcessingResult(
+            total_rows=total_rows,
+            successful_merges=success_count,
+            failed_rows=failed_rows
+        )
     except Exception as e:
-        print(f"Error processing file: {e}")
+        logger.error(f"Unexpected error processing file: {e}")
         return ProcessingResult(
             total_rows=total_rows,
             successful_merges=success_count,

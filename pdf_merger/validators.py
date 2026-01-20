@@ -5,7 +5,11 @@ Handles validation of files, folders, and paths.
 
 from pathlib import Path
 from typing import Tuple
-from .file_reader import get_file_columns, detect_file_type
+from .file_reader import get_file_columns
+from .logger import get_logger
+from .exceptions import MissingColumnError, FileNotFoundError, ValidationError
+
+logger = get_logger("validators")
 
 
 def validate_folder(folder_path: Path, folder_type: str = "Folder") -> bool:
@@ -20,11 +24,11 @@ def validate_folder(folder_path: Path, folder_type: str = "Folder") -> bool:
         True if valid, False otherwise
     """
     if not folder_path.exists():
-        print(f"Error: {folder_type} folder not found: {folder_path}")
+        logger.error(f"{folder_type} folder not found: {folder_path}")
         return False
     
     if not folder_path.is_dir():
-        print(f"Error: {folder_path} is not a directory")
+        logger.error(f"{folder_path} is not a directory")
         return False
     
     return True
@@ -42,18 +46,20 @@ def validate_file(file_path: Path, required_column: str = 'serial_numbers') -> b
         True if valid, False otherwise
     """
     if not file_path.exists():
-        print(f"Error: File not found: {file_path}")
+        logger.error(f"File not found: {file_path}")
         return False
     
     try:
         columns = get_file_columns(file_path)
         
         if required_column not in columns:
-            print(f"Error: '{required_column}' column not found in file.")
-            print(f"Available columns: {', '.join(columns)}")
+            logger.error(f"'{required_column}' column not found in file.")
+            logger.error(f"Available columns: {', '.join(columns)}")
+            # Note: We could raise MissingColumnError here, but keeping boolean
+            # return for backward compatibility with interactive mode
             return False
     except Exception as e:
-        print(f"Error reading file: {e}")
+        logger.error(f"Error reading file: {e}")
         return False
     
     return True
@@ -83,7 +89,7 @@ def validate_paths(file_path: Path, source_folder: Path, output_folder: Path,
     # But check if parent exists if output_folder is not root
     if output_folder.parent != output_folder:
         if not output_folder.parent.exists():
-            print(f"Error: Parent directory of output folder does not exist: {output_folder.parent}")
+            logger.error(f"Parent directory of output folder does not exist: {output_folder.parent}")
             return False, "Output folder parent validation failed"
     
     return True, ""
