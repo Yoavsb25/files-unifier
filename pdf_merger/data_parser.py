@@ -4,6 +4,7 @@ Handles parsing serial numbers and filenames from strings.
 """
 
 from typing import List
+from .enums import SERIAL_NUMBER_SEPARATOR
 
 
 def parse_serial_numbers(serial_numbers_str: str) -> List[str]:
@@ -19,7 +20,6 @@ def parse_serial_numbers(serial_numbers_str: str) -> List[str]:
     if not serial_numbers_str or not serial_numbers_str.strip():
         return []
     
-    # Split by comma and strip whitespace from each filename
-    filenames = [s.strip() for s in serial_numbers_str.split(',')]
-    # Filter out empty strings
+    filenames = [s.strip() for s in serial_numbers_str.split(SERIAL_NUMBER_SEPARATOR)]
+
     return [s for s in filenames if s]

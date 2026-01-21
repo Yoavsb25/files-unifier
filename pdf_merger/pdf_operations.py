@@ -17,6 +17,7 @@ except ImportError:
         sys.exit(1)
 
 from .logger import get_logger
+from .enums import PDF_FILE_EXTENSION
 
 logger = get_logger("pdf_operations")
 
@@ -33,20 +34,20 @@ def find_pdf_file(folder: Path, filename: str) -> Optional[Path]:
         Path to the PDF file if found, None otherwise
     """
     # If filename already has .pdf extension, try that first
-    if filename.lower().endswith('.pdf'):
+    filename_lower = filename.lower()
+    if filename_lower.endswith(PDF_FILE_EXTENSION):
         pdf_path = folder / filename
         if pdf_path.exists():
             return pdf_path
     
     # Try with .pdf extension appended
-    pdf_path = folder / f"{filename}.pdf"
+    pdf_path = folder / f"{filename_lower}{PDF_FILE_EXTENSION}"
     if pdf_path.exists():
         return pdf_path
     
     # Try case-insensitive search (exact filename match)
-    filename_lower = filename.lower()
-    for pdf_file in folder.glob("*.pdf"):
-        if pdf_file.name.lower() == filename_lower or pdf_file.name.lower() == f"{filename_lower}.pdf":
+    for pdf_file in folder.glob(f"*{PDF_FILE_EXTENSION}"):
+        if pdf_file.name.lower() == filename_lower or pdf_file.name.lower() == f"{filename_lower}{PDF_FILE_EXTENSION}":
             return pdf_file
         # Also try matching just the stem (filename without extension)
         if pdf_file.stem.lower() == filename_lower:
