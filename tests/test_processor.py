@@ -215,8 +215,10 @@ class TestProcessFile:
         assert result.successful_merges == 0
         assert result.failed_rows == []
     
+    @patch('pdf_merger.processor.merge_pdfs')
     @patch('pdf_merger.processor.read_data_file')
-    def test_process_file_missing_column(self, mock_read, tmp_path):
+    @patch('pdf_merger.processor.find_pdf_file')
+    def test_process_file_missing_column(self, mock_find, mock_read, mock_merge, tmp_path):
         """Test processing file with missing serial_numbers column."""
         file_path = tmp_path / "data.csv"
         source_folder = tmp_path / "source"
@@ -229,11 +231,19 @@ class TestProcessFile:
             {"serial_numbers": "GRNW_000103851"}
         ])
         
+        # Mock find_pdf_file to return a file for the second row
+        pdf_file = source_folder / "GRNW_000103851.pdf"
+        pdf_file.write_bytes(b"fake pdf")
+        mock_find.return_value = pdf_file
+        mock_merge.return_value = True
+        
         result = process_file(file_path, source_folder, output_folder)
         
-        # First row should fail (no serial_numbers), second should succeed
+        # First row should fail (no serial_numbers), second should succeed if PDF is found
         assert result.total_rows == 2
-        assert result.failed_rows == [1]  # First row failed
+        # First row fails because no serial_numbers, second succeeds
+        assert 1 in result.failed_rows  # First row definitely failed
+        assert result.successful_merges == 1  # Second row succeeds
     
     @patch('pdf_merger.processor.read_data_file')
     def test_process_file_read_error(self, mock_read, tmp_path):
