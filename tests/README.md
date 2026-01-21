@@ -251,10 +251,13 @@ These tests are designed to run in CI/CD pipelines. The test suite:
 
 ### Tests fail with import errors
 
-Make sure you've installed all dependencies:
+The PDF library import is now lazy (only imports when needed), so you can run most tests without installing pypdf. However, for full functionality, install all dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
+
+If you see `SystemExit: 1` errors, it means the old version of the code is being used. The module now uses lazy imports, so this shouldn't happen.
 
 ### Tests fail with "ModuleNotFoundError"
 

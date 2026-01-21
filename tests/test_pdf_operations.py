@@ -91,9 +91,8 @@ class TestFindPdfFile:
 class TestMergePdfs:
     """Test cases for merge_pdfs function."""
     
-    @patch('pdf_merger.pdf_operations.PdfWriter')
-    @patch('pdf_merger.pdf_operations.PdfReader')
-    def test_merge_pdfs_success(self, mock_pdf_reader, mock_pdf_writer, tmp_path):
+    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    def test_merge_pdfs_success(self, mock_get_libraries, tmp_path):
         """Test successful PDF merging."""
         output_path = tmp_path / "merged.pdf"
         pdf_paths = [
@@ -106,87 +105,99 @@ class TestMergePdfs:
             pdf_path.write_bytes(b"fake pdf content")
         
         # Setup mocks
+        mock_writer_class = MagicMock()
+        mock_reader_class = MagicMock()
         mock_writer_instance = MagicMock()
-        mock_pdf_writer.return_value = mock_writer_instance
+        mock_writer_class.return_value = mock_writer_instance
         
-        mock_reader_instance = MagicMock()
+        mock_reader_instance1 = MagicMock()
+        mock_reader_instance2 = MagicMock()
         mock_page1 = MagicMock()
         mock_page2 = MagicMock()
-        mock_reader_instance.pages = [mock_page1, mock_page2]
-        mock_pdf_reader.return_value = mock_reader_instance
+        mock_reader_instance1.pages = [mock_page1, mock_page2]
+        mock_reader_instance2.pages = [mock_page1, mock_page2]
+        mock_reader_class.side_effect = [mock_reader_instance1, mock_reader_instance2]
+        
+        mock_get_libraries.return_value = (mock_writer_class, mock_reader_class)
         
         result = merge_pdfs(pdf_paths, output_path)
         
         assert result is True
-        assert mock_pdf_writer.called
-        assert mock_pdf_reader.call_count == 2
+        assert mock_writer_class.called
+        assert mock_reader_class.call_count == 2
         assert mock_writer_instance.add_page.call_count == 4  # 2 pages per PDF
         assert mock_writer_instance.write.called
     
-    @patch('pdf_merger.pdf_operations.PdfWriter')
-    @patch('pdf_merger.pdf_operations.PdfReader')
-    def test_merge_pdfs_empty_list(self, mock_pdf_reader, mock_pdf_writer, tmp_path):
+    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    def test_merge_pdfs_empty_list(self, mock_get_libraries, tmp_path):
         """Test merging with empty PDF list."""
         output_path = tmp_path / "merged.pdf"
         
         result = merge_pdfs([], output_path)
         
         assert result is False
-        mock_pdf_writer.assert_not_called()
-        mock_pdf_reader.assert_not_called()
+        mock_get_libraries.assert_not_called()
     
-    @patch('pdf_merger.pdf_operations.PdfWriter')
-    @patch('pdf_merger.pdf_operations.PdfReader')
-    def test_merge_pdfs_read_error(self, mock_pdf_reader, mock_pdf_writer, tmp_path):
+    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    def test_merge_pdfs_read_error(self, mock_get_libraries, tmp_path):
         """Test merging when PDF reading fails."""
         output_path = tmp_path / "merged.pdf"
         pdf_paths = [tmp_path / "file1.pdf"]
         pdf_paths[0].write_bytes(b"fake pdf content")
         
+        mock_writer_class = MagicMock()
+        mock_reader_class = MagicMock()
         mock_writer_instance = MagicMock()
-        mock_pdf_writer.return_value = mock_writer_instance
+        mock_writer_class.return_value = mock_writer_instance
         
-        mock_pdf_reader.side_effect = Exception("Read error")
+        mock_reader_class.side_effect = Exception("Read error")
+        mock_get_libraries.return_value = (mock_writer_class, mock_reader_class)
         
         result = merge_pdfs(pdf_paths, output_path)
         
         assert result is False
     
-    @patch('pdf_merger.pdf_operations.PdfWriter')
-    @patch('pdf_merger.pdf_operations.PdfReader')
-    def test_merge_pdfs_write_error(self, mock_pdf_reader, mock_pdf_writer, tmp_path):
+    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    def test_merge_pdfs_write_error(self, mock_get_libraries, tmp_path):
         """Test merging when PDF writing fails."""
         output_path = tmp_path / "merged.pdf"
         pdf_paths = [tmp_path / "file1.pdf"]
         pdf_paths[0].write_bytes(b"fake pdf content")
         
+        mock_writer_class = MagicMock()
+        mock_reader_class = MagicMock()
         mock_writer_instance = MagicMock()
-        mock_pdf_writer.return_value = mock_writer_instance
+        mock_writer_class.return_value = mock_writer_instance
         mock_writer_instance.write.side_effect = Exception("Write error")
         
         mock_reader_instance = MagicMock()
         mock_reader_instance.pages = [MagicMock()]
-        mock_pdf_reader.return_value = mock_reader_instance
+        mock_reader_class.return_value = mock_reader_instance
+        
+        mock_get_libraries.return_value = (mock_writer_class, mock_reader_class)
         
         result = merge_pdfs(pdf_paths, output_path)
         
         assert result is False
     
-    @patch('pdf_merger.pdf_operations.PdfWriter')
-    @patch('pdf_merger.pdf_operations.PdfReader')
-    def test_merge_pdfs_single_pdf(self, mock_pdf_reader, mock_pdf_writer, tmp_path):
+    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    def test_merge_pdfs_single_pdf(self, mock_get_libraries, tmp_path):
         """Test merging a single PDF."""
         output_path = tmp_path / "merged.pdf"
         pdf_paths = [tmp_path / "file1.pdf"]
         pdf_paths[0].write_bytes(b"fake pdf content")
         
+        mock_writer_class = MagicMock()
+        mock_reader_class = MagicMock()
         mock_writer_instance = MagicMock()
-        mock_pdf_writer.return_value = mock_writer_instance
+        mock_writer_class.return_value = mock_writer_instance
         
         mock_reader_instance = MagicMock()
         mock_page = MagicMock()
         mock_reader_instance.pages = [mock_page]
-        mock_pdf_reader.return_value = mock_reader_instance
+        mock_reader_class.return_value = mock_reader_instance
+        
+        mock_get_libraries.return_value = (mock_writer_class, mock_reader_class)
         
         result = merge_pdfs(pdf_paths, output_path)
         

@@ -7,19 +7,39 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-try:
-    from pypdf import PdfWriter, PdfReader
-except ImportError:
-    try:
-        from PyPDF2 import PdfWriter, PdfReader
-    except ImportError:
-        print("Error: pypdf or PyPDF2 library is required. Install with: pip install pypdf")
-        sys.exit(1)
-
 from .logger import get_logger
 from .enums import PDF_FILE_EXTENSION
 
 logger = get_logger("pdf_operations")
+
+# Lazy import of PDF libraries - only import when merge_pdfs is called
+_PdfWriter = None
+_PdfReader = None
+
+
+def _get_pdf_libraries():
+    """
+    Lazy import of PDF libraries.
+    Raises ImportError if neither pypdf nor PyPDF2 is available.
+    """
+    global _PdfWriter, _PdfReader
+    
+    if _PdfWriter is None or _PdfReader is None:
+        try:
+            from pypdf import PdfWriter, PdfReader
+            _PdfWriter = PdfWriter
+            _PdfReader = PdfReader
+        except ImportError:
+            try:
+                from PyPDF2 import PdfWriter, PdfReader
+                _PdfWriter = PdfWriter
+                _PdfReader = PdfReader
+            except ImportError:
+                raise ImportError(
+                    "pypdf or PyPDF2 library is required. Install with: pip install pypdf"
+                )
+    
+    return _PdfWriter, _PdfReader
 
 
 def find_pdf_file(folder: Path, filename: str) -> Optional[Path]:
@@ -66,12 +86,16 @@ def merge_pdfs(pdf_paths: List[Path], output_path: Path) -> bool:
         
     Returns:
         True if successful, False otherwise
+        
+    Raises:
+        ImportError: If pypdf or PyPDF2 is not installed
     """
     if not pdf_paths:
         logger.warning(f"No PDF files to merge for {output_path.name}")
         return False
     
     try:
+        PdfWriter, PdfReader = _get_pdf_libraries()
         writer = PdfWriter()
         
         for pdf_path in pdf_paths:
@@ -89,6 +113,9 @@ def merge_pdfs(pdf_paths: List[Path], output_path: Path) -> bool:
             writer.write(output_file)
         
         return True
+    except ImportError as e:
+        logger.error(str(e))
+        return False
     except Exception as e:
         logger.error(f"Error merging PDFs to {output_path.name}: {e}")
         return False
