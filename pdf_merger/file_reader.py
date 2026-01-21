@@ -4,16 +4,18 @@ Handles reading CSV and Excel files with a unified interface.
 """
 
 import csv
+import pandas as pd
 from pathlib import Path
 from typing import Iterator, Dict, Any, List
-
 from .exceptions import InvalidFileFormatError, MissingColumnError
-
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
-
+from .enums import (
+    EXCEL_FILE_EXTENSIONS,
+    CSV_FILE_EXTENSIONS,
+    FILE_TYPE_EXCEL,
+    FILE_TYPE_CSV,
+    DEFAULT_CSV_DELIMITER,
+    CSV_SAMPLE_SIZE,
+)
 
 def detect_file_type(file_path: Path) -> str:
     """
@@ -25,9 +27,9 @@ def detect_file_type(file_path: Path) -> str:
     Returns:
         'excel' for .xlsx/.xls files, 'csv' for other files
     """
-    if file_path.suffix.lower() in ['.xlsx', '.xls']:
-        return 'excel'
-    return 'csv'
+    if file_path.suffix.lower() in EXCEL_FILE_EXTENSIONS:
+        return FILE_TYPE_EXCEL
+    return FILE_TYPE_CSV
 
 
 def _detect_csv_delimiter(file_path: Path) -> str:
@@ -45,17 +47,17 @@ def _detect_csv_delimiter(file_path: Path) -> str:
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as csvfile:
-            sample = csvfile.read(1024)
+            sample = csvfile.read(CSV_SAMPLE_SIZE)
             if not sample.strip():
                 # Default to comma if file is empty
-                return ','
+                return DEFAULT_CSV_DELIMITER
             csvfile.seek(0)
             sniffer = csv.Sniffer()
             delimiter = sniffer.sniff(sample).delimiter
             return delimiter
     except Exception as e:
         # Default to comma if detection fails
-        return ','
+        return DEFAULT_CSV_DELIMITER
 
 
 def read_csv(file_path: Path) -> Iterator[Dict[str, Any]]:
@@ -95,10 +97,7 @@ def read_excel(file_path: Path) -> Iterator[Dict[str, Any]]:
     Raises:
         ImportError: If pandas/openpyxl are not installed
         InvalidFileFormatError: If file cannot be read
-    """
-    if pd is None:
-        raise ImportError("pandas and openpyxl are required to read Excel files. Install with: pip install pandas openpyxl")
-    
+    """    
     try:
         df = pd.read_excel(file_path)
     except Exception as e:
@@ -133,7 +132,7 @@ def read_data_file(file_path: Path) -> Iterator[Dict[str, Any]]:
     """
     file_type = detect_file_type(file_path)
     
-    if file_type == 'excel':
+    if file_type == FILE_TYPE_EXCEL:
         yield from read_excel(file_path)
     else:
         yield from read_csv(file_path)
@@ -156,7 +155,7 @@ def get_file_columns(file_path: Path) -> List[str]:
     file_type = detect_file_type(file_path)
     
     try:
-        if file_type == 'excel':
+        if file_type == FILE_TYPE_EXCEL:
             if pd is None:
                 raise ImportError("pandas and openpyxl are required to read Excel files. Install with: pip install pandas openpyxl")
             df = pd.read_excel(file_path)

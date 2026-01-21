@@ -10,7 +10,7 @@ from .processor import process_file, ProcessingResult
 from .pdf_operations import find_pdf_file, merge_pdfs
 from .data_parser import parse_serial_numbers
 from .file_reader import read_data_file, get_file_columns
-from .validators import validate_file, validate_folder, validate_paths
+from .validators import validate_file, validate_folder, validate_paths, validate_serial_number
 from .exceptions import (
     PDFMergerError,
     FileNotFoundError,
@@ -37,6 +37,7 @@ __all__ = [
     'validate_file',
     'validate_folder',
     'validate_paths',
+    'validate_serial_number',
     # Exceptions
     'PDFMergerError',
     'FileNotFoundError',

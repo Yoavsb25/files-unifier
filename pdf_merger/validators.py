@@ -8,6 +8,7 @@ from typing import Tuple
 from .file_reader import get_file_columns
 from .logger import get_logger
 from .exceptions import MissingColumnError, FileNotFoundError, ValidationError
+from .enums import DEFAULT_REQUIRED_COLUMN, SERIAL_NUMBER_PREFIX, SERIAL_NUMBER_PREFIX_LOWER
 
 logger = get_logger("validators")
 
@@ -24,10 +25,11 @@ def validate_serial_number(serial_number: str) -> bool:
     if not serial_number or not serial_number.strip():
         return False
 
-    if not serial_number.startswith("GRNW_") or not serial_number.startswith("grnw_"):
+    if not serial_number.startswith(SERIAL_NUMBER_PREFIX) and not serial_number.startswith(SERIAL_NUMBER_PREFIX_LOWER):
         return False
         
     return True
+
 
 def validate_folder(folder_path: Path, folder_type: str = "Folder") -> bool:
     """
@@ -51,7 +53,7 @@ def validate_folder(folder_path: Path, folder_type: str = "Folder") -> bool:
     return True
 
 
-def validate_file(file_path: Path, required_column: str = 'serial_numbers') -> bool:
+def validate_file(file_path: Path, required_column: str = DEFAULT_REQUIRED_COLUMN) -> bool:
     """
     Validate that a data file exists and has the required column.
     
@@ -72,8 +74,6 @@ def validate_file(file_path: Path, required_column: str = 'serial_numbers') -> b
         if required_column not in columns:
             logger.error(f"'{required_column}' column not found in file.")
             logger.error(f"Available columns: {', '.join(columns)}")
-            # Note: We could raise MissingColumnError here, but keeping boolean
-            # return for backward compatibility with interactive mode
             return False
     except Exception as e:
         logger.error(f"Error reading file: {e}")
@@ -83,7 +83,7 @@ def validate_file(file_path: Path, required_column: str = 'serial_numbers') -> b
 
 
 def validate_paths(file_path: Path, source_folder: Path, output_folder: Path, 
-                   required_column: str = 'serial_numbers') -> Tuple[bool, str]:
+                   required_column: str = DEFAULT_REQUIRED_COLUMN) -> Tuple[bool, str]:
     """
     Validate all paths needed for processing.
     
@@ -102,8 +102,6 @@ def validate_paths(file_path: Path, source_folder: Path, output_folder: Path,
     if not validate_folder(source_folder, "Source"):
         return False, "Source folder validation failed"
     
-    # Output folder doesn't need to exist, we'll create it
-    # But check if parent exists if output_folder is not root
     if output_folder.parent != output_folder:
         if not output_folder.parent.exists():
             logger.error(f"Parent directory of output folder does not exist: {output_folder.parent}")
