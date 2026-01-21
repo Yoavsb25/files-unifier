@@ -7,9 +7,45 @@ This guide explains how to deploy the PDF Merger UI to GitHub Pages.
 - A GitHub repository
 - GitHub Pages enabled in your repository settings
 
-## Deployment Steps
+## Automatic Deployment (Recommended)
 
-### Option 1: Deploy from Root Directory (Recommended)
+The repository includes a GitHub Actions workflow that automatically deploys to GitHub Pages whenever you push to the `main` branch.
+
+### Setup Automatic Deployment
+
+1. **Enable GitHub Pages with GitHub Actions:**
+   - Go to your repository on GitHub
+   - Navigate to **Settings** → **Pages**
+   - Under **Source**, select **GitHub Actions**
+   - Click **Save**
+
+2. **Push to main branch:**
+   ```bash
+   git add .
+   git commit -m "Deploy UI to GitHub Pages"
+   git push origin main
+   ```
+
+3. **Monitor deployment:**
+   - Go to the **Actions** tab in your repository
+   - Watch the "Deploy to GitHub Pages" workflow run
+   - Once complete, your site will be live
+
+4. **Your site will be available at:**
+   ```
+   https://[username].github.io/[repository-name]/
+   ```
+
+The workflow automatically:
+- Triggers on every push to `main`
+- Deploys only the necessary UI files (`index.html`, `styles.css`, `app.js`, `.nojekyll`)
+- Can also be manually triggered from the Actions tab
+
+## Manual Deployment Steps
+
+If you prefer manual deployment or the workflow isn't working:
+
+### Option 1: Deploy from Root Directory
 
 1. **Ensure files are in the root directory:**
    - `index.html`
