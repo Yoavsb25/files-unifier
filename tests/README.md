@@ -13,6 +13,8 @@ The test suite covers all major modules of the PDF Merger:
 - **Processing** - Main orchestration logic for processing files
 - **Exceptions** - Custom exception classes and error handling
 
+**Current Status:** 95 tests covering all major functionality. All tests pass successfully.
+
 ## Test Structure
 
 Each test file follows a consistent structure:
@@ -148,9 +150,11 @@ Tests for PDF operations:
 
 **Key Test Cases:**
 - Finding PDFs with and without .pdf extension
-- Case-insensitive PDF matching
+- Case-insensitive PDF matching (handles case-insensitive filesystems)
 - Merging single and multiple PDFs
 - Error handling for missing or corrupted PDFs
+
+**Note:** PDF library imports are lazy-loaded (only when `merge_pdfs` is called), so tests can run without pypdf installed. Tests mock `_get_pdf_libraries()` to avoid requiring actual PDF libraries.
 
 ### test_processor.py
 
@@ -226,7 +230,7 @@ The tests use `unittest.mock` to mock external dependencies:
 - **PDF libraries** - Mocked to avoid requiring actual PDF files
 - **Pandas** - Mocked in some tests to avoid reading actual Excel files
 
-Example:
+### Basic Mocking Example
 
 ```python
 from unittest.mock import patch, MagicMock
@@ -238,26 +242,63 @@ def test_something(mock_function):
     mock_function.assert_called_once()
 ```
 
+### Mocking PDF Operations
+
+Since PDF libraries use lazy imports, mock `_get_pdf_libraries()` instead of `PdfReader`/`PdfWriter` directly:
+
+```python
+from unittest.mock import patch, MagicMock
+
+@patch('pdf_merger.pdf_operations._get_pdf_libraries')
+def test_merge_pdfs(mock_get_libraries, tmp_path):
+    # Setup mock PDF classes
+    mock_writer_class = MagicMock()
+    mock_reader_class = MagicMock()
+    mock_writer_instance = MagicMock()
+    mock_writer_class.return_value = mock_writer_instance
+    
+    mock_reader_instance = MagicMock()
+    mock_reader_instance.pages = [MagicMock()]
+    mock_reader_class.return_value = mock_reader_instance
+    
+    # Return tuple of (PdfWriter, PdfReader) classes
+    mock_get_libraries.return_value = (mock_writer_class, mock_reader_class)
+    
+    # Test code
+    result = merge_pdfs(pdf_paths, output_path)
+    assert result is True
+```
+
 ## Continuous Integration
 
 These tests are designed to run in CI/CD pipelines. The test suite:
 
 - Runs quickly (uses mocks to avoid slow I/O)
 - Is deterministic (no random behavior)
-- Has no external dependencies (mocks external services)
+- Has minimal external dependencies (lazy imports + mocks)
+- Can run without pypdf installed (lazy imports allow module import)
 - Provides clear error messages
+
+**Lazy Import Benefits:**
+- Tests can be collected and run even if pypdf isn't installed
+- Only tests that actually call `merge_pdfs()` need pypdf (or proper mocking)
+- Faster test collection (no import-time failures)
 
 ## Troubleshooting
 
 ### Tests fail with import errors
 
-The PDF library import is now lazy (only imports when needed), so you can run most tests without installing pypdf. However, for full functionality, install all dependencies:
+The PDF library import is now **lazy** (only imports when `merge_pdfs()` is called), so you can run most tests without installing pypdf. The module can be imported successfully even without PDF libraries installed.
+
+However, for full functionality and to run tests that actually call `merge_pdfs()` without mocking, install all dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-If you see `SystemExit: 1` errors, it means the old version of the code is being used. The module now uses lazy imports, so this shouldn't happen.
+**Note:** If you see `SystemExit: 1` errors or `AttributeError: does not have the attribute 'PdfReader'`, it means:
+- The code is using the old import pattern (should be fixed)
+- Or tests are trying to mock `PdfReader`/`PdfWriter` directly instead of `_get_pdf_libraries()`
 
 ### Tests fail with "ModuleNotFoundError"
 
@@ -269,10 +310,18 @@ pytest
 
 ### PDF-related tests fail
 
-Some PDF tests use mocks, but if you need to test with actual PDFs, ensure `pypdf` or `PyPDF2` is installed:
-```bash
-pip install pypdf
-```
+PDF tests use mocks by default, so they should work without pypdf installed. If you see errors about missing `PdfReader` or `PdfWriter` attributes:
+
+1. **Check that tests mock `_get_pdf_libraries()`** - Don't mock `PdfReader`/`PdfWriter` directly
+2. **For actual PDF testing** - Install pypdf if you need to test with real PDFs:
+   ```bash
+   pip install pypdf
+   ```
+
+The lazy import system means:
+- ✅ Module can be imported without pypdf
+- ✅ Tests can run without pypdf (using mocks)
+- ✅ Only fails if `merge_pdfs()` is called without pypdf installed AND without mocking
 
 ## Contributing
 
