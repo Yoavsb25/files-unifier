@@ -11,6 +11,23 @@ from .exceptions import MissingColumnError, FileNotFoundError, ValidationError
 
 logger = get_logger("validators")
 
+def validate_serial_number(serial_number: str) -> bool:
+    """
+    Validate the structure of a serial number.
+    
+    Args:
+        serial_number: a single string of a serial number (e.g. "GRNW_000103851")
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    if not serial_number or not serial_number.strip():
+        return False
+
+    if not serial_number.startswith("GRNW_") or not serial_number.startswith("grnw_"):
+        return False
+        
+    return True
 
 def validate_folder(folder_path: Path, folder_type: str = "Folder") -> bool:
     """
