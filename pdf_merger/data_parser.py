@@ -7,12 +7,12 @@ from typing import List
 from .enums import SERIAL_NUMBER_SEPARATOR
 
 
-def parse_serial_numbers(serial_numbers_str: str) -> List[str]:
+def split_serial_numbers(serial_numbers_str: str) -> List[str]:
     """
-    Parse comma-separated filenames (serial numbers) from a string.
+    Split filenames (serial numbers) from a string into a list of strings according to a known separator.
     
     Args:
-        serial_numbers_str: String containing comma-separated filenames
+        serial_numbers_str: String containing serial numbers separated by a known separator
         
     Returns:
         List of filenames (stripped of whitespace)

@@ -223,9 +223,9 @@ Test individual functions and classes in isolation.
 
 **Example:**
 ```python
-def test_parse_serial_numbers_single():
+def test_split_serial_numbers_single():
     """Test parsing a single serial number."""
-    result = parse_serial_numbers("GRNW_12345")
+    result = split_serial_numbers("GRNW_12345")
     assert result == ["GRNW_12345"]
 ```
 
@@ -349,7 +349,7 @@ Use clear, descriptive names that explain what is being tested:
 
 ```python
 # Good
-def test_parse_serial_numbers_with_whitespace():
+def test_split_serial_numbers_with_whitespace():
     """Test parsing serial numbers with whitespace."""
     pass
 
@@ -406,15 +406,15 @@ Always test:
 - Error conditions
 
 ```python
-def test_parse_serial_numbers_empty_string():
+def test_split_serial_numbers_empty_string():
     """Test parsing empty string."""
-    result = parse_serial_numbers("")
+    result = split_serial_numbers("")
     assert result == []
 
-def test_parse_serial_numbers_none():
+def test_split_serial_numbers_none():
     """Test parsing None value."""
     with pytest.raises(ValueError):
-        parse_serial_numbers(None)
+        split_serial_numbers(None)
 ```
 
 #### 5. Mock External Dependencies

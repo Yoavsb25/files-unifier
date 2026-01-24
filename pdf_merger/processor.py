@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List
 
 from .pdf_operations import find_pdf_file, merge_pdfs
-from .data_parser import parse_serial_numbers
+from .data_parser import split_serial_numbers
 from .file_reader import read_data_file
 from .logger import get_logger
 from .exceptions import PDFMergerError, InvalidFileFormatError
@@ -46,7 +46,7 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
         True if successful, False otherwise
     """
     # Parse filenames from serial_numbers column
-    filenames = parse_serial_numbers(serial_numbers_str)
+    filenames = split_serial_numbers(serial_numbers_str)
     
     if not filenames:
         logger.warning(f"Row {row_index + 1}: No filenames found, skipping...")

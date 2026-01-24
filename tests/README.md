@@ -97,7 +97,7 @@ The HTML report will be generated in `htmlcov/index.html`. Open it in a browser 
 
 ### test_data_parser.py
 
-Tests for the `parse_serial_numbers` function:
+Tests for the `split_serial_numbers` function:
 - Parsing single and multiple serial numbers
 - Handling whitespace
 - Empty strings and None inputs
@@ -205,7 +205,7 @@ When adding new functionality, follow these guidelines:
 
 3. **Use descriptive test names** that explain what is being tested:
    - `test_<function>_<scenario>` format
-   - Example: `test_parse_serial_numbers_with_whitespace`
+   - Example: `test_split_serial_numbers_with_whitespace`
 
 4. **Use fixtures** for common setup:
    - `tmp_path` - For temporary files and directories
