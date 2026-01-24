@@ -9,11 +9,12 @@ The test suite covers all major modules of the PDF Merger:
 - **Data Parsing** - Parsing serial numbers from strings
 - **Validation** - Validating files, folders, paths, and serial numbers
 - **File Reading** - Reading CSV and Excel files with various delimiters
-- **PDF Operations** - Finding and merging PDF files
+- **PDF Operations** - Finding and merging PDF files (including Excel files)
+- **Excel Conversion** - Converting Excel files to PDF format
 - **Processing** - Main orchestration logic for processing files
 - **Exceptions** - Custom exception classes and error handling
 
-**Current Status:** 95 tests covering all major functionality. All tests pass successfully.
+**Current Status:** Comprehensive test coverage including Excel file support. All tests pass successfully.
 
 ## Test Structure
 
@@ -25,7 +26,8 @@ tests/
 ├── test_data_parser.py      # Tests for data parsing functionality
 ├── test_validators.py       # Tests for validation functions
 ├── test_file_reader.py      # Tests for CSV/Excel file reading
-├── test_pdf_operations.py   # Tests for PDF finding and merging
+├── test_pdf_operations.py   # Tests for PDF/Excel finding and merging
+├── test_excel_converter.py  # Tests for Excel to PDF conversion
 ├── test_processor.py        # Tests for main processing logic
 └── test_exceptions.py       # Tests for custom exceptions
 ```
@@ -43,6 +45,8 @@ pip install -r requirements.txt
 This will install:
 - `pytest>=7.0.0` - The testing framework
 - `pytest-cov>=4.0.0` - Coverage reporting plugin
+- `openpyxl>=3.0.0` - Excel file reading (for Excel conversion tests)
+- `reportlab>=3.6.0` - PDF generation (for Excel conversion tests)
 - All other project dependencies
 
 ### Basic Usage
@@ -145,27 +149,51 @@ Tests for file reading operations:
 ### test_pdf_operations.py
 
 Tests for PDF operations:
-- `find_pdf_file` - Finding PDF files in a folder
+- `find_pdf_file` - Finding PDF files in a folder (backward compatibility)
+- `find_source_file` - Finding PDF and Excel files in a folder
 - `merge_pdfs` - Merging multiple PDFs into one
 
 **Key Test Cases:**
 - Finding PDFs with and without .pdf extension
-- Case-insensitive PDF matching (handles case-insensitive filesystems)
+- Finding Excel files (.xlsx, .xls)
+- Case-insensitive file matching (handles case-insensitive filesystems)
 - Merging single and multiple PDFs
 - Error handling for missing or corrupted PDFs
+- Suppressing noisy PDF read warnings
 
 **Note:** PDF library imports are lazy-loaded (only when `merge_pdfs` is called), so tests can run without pypdf installed. Tests mock `_get_pdf_libraries()` to avoid requiring actual PDF libraries.
+
+### test_excel_converter.py
+
+Tests for Excel to PDF conversion:
+- `convert_excel_to_pdf` - Converting Excel files to PDF format
+- `_safe_str` - Safely converting values to strings
+
+**Key Test Cases:**
+- Converting .xlsx files to PDF
+- Converting .xls files to PDF (note: openpyxl only supports .xlsx)
+- Handling missing Excel files
+- Handling invalid file types
+- Error handling for import errors (openpyxl, reportlab)
+- Error handling for conversion failures
+- Handling empty Excel files
+
+**Note:** Excel conversion uses openpyxl (for reading) and reportlab (for PDF generation). Tests mock these libraries to avoid requiring actual Excel files.
 
 ### test_processor.py
 
 Tests for main processing logic:
 - `ProcessingResult` - Result dataclass
-- `process_row` - Processing a single row
+- `process_row` - Processing a single row (PDF and Excel files)
 - `process_file` - Processing an entire file
 
 **Key Test Cases:**
-- Successful row processing
-- Handling missing PDFs
+- Successful row processing with PDF files
+- Successful row processing with Excel files
+- Mixed processing (PDF + Excel in same row)
+- Handling missing files
+- Excel to PDF conversion during processing
+- Temporary file cleanup after merging
 - Processing files with multiple rows
 - Error handling and failure tracking
 - Custom column names
@@ -240,6 +268,30 @@ def test_something(mock_function):
     mock_function.return_value = expected_value
     # Test code
     mock_function.assert_called_once()
+```
+
+### Mocking Excel Conversion
+
+Excel conversion uses openpyxl and reportlab. Mock these libraries in tests:
+
+```python
+from unittest.mock import patch, MagicMock
+
+@patch('pdf_merger.excel_converter.openpyxl.load_workbook')
+@patch('pdf_merger.excel_converter.SimpleDocTemplate')
+def test_convert_excel(mock_doc_template, mock_load_workbook, tmp_path):
+    # Setup mocks
+    mock_wb = MagicMock()
+    mock_sheet = MagicMock()
+    mock_sheet.max_column = 2
+    mock_sheet.max_row = 2
+    mock_sheet.iter_rows.return_value = [[MagicMock(value="A1")]]
+    mock_wb.active = mock_sheet
+    mock_load_workbook.return_value = mock_wb
+    
+    # Test code
+    result = convert_excel_to_pdf(excel_file, output_pdf)
+    assert result is True
 ```
 
 ### Mocking PDF Operations
