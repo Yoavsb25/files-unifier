@@ -28,7 +28,7 @@ def validate_serial_number(serial_number: str) -> bool:
     if not serial_number or not serial_number.strip():
         return False
 
-    if not serial_number.startswith(SERIAL_NUMBER_PREFIX, SERIAL_NUMBER_PREFIX_LOWER):
+    if not serial_number.startswith(SERIAL_NUMBER_PREFIX) and not serial_number.startswith(SERIAL_NUMBER_PREFIX_LOWER):
         return False
 
     suffix = serial_number.split('_', 1)[-1]

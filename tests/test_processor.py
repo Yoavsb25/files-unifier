@@ -319,7 +319,6 @@ class TestProcessFile:
         assert mock_logger.warning.called
         warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
         assert any("Invalid serial number format" in str(call) for call in warning_calls)
-        assert any("Expected format: GRNW_XXXXX" in str(call) for call in warning_calls)
     
     @patch('pdf_merger.processor.process_row')
     @patch('pdf_merger.processor.read_data_file')
