@@ -8,7 +8,11 @@ from pathlib import Path
 from typing import List
 
 from .pdf_operations import find_pdf_file, merge_pdfs
-from .data_parser import split_serial_numbers
+from .data_parser import (
+    split_serial_numbers,
+    deduplicate_serial_numbers,
+    normalize_serial_number
+)
 from .file_reader import read_data_file
 from .logger import get_logger
 from .exceptions import PDFMergerError, InvalidFileFormatError
@@ -45,29 +49,38 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
     Returns:
         True if successful, False otherwise
     """
-    filenames = split_serial_numbers(serial_numbers_str)
-    
-    if not filenames:
-        logger.warning(f"Row {row_index + 1}: No filenames found, skipping...")
+    all_serial_numbers = split_serial_numbers(serial_numbers_str)
+    if not all_serial_numbers:
+        logger.warning(f"Row {row_index + 1}: No serial numbers found, skipping...")
         return False
     
-    invalid_filenames = [invalid_filename for invalid_filename in filenames if not validate_serial_number(invalid_filename)]
-    if invalid_filenames:
-        logger.warning(f"Row {row_index + 1}: Invalid serial number format(s): {', '.join(invalid_filenames)}")
+    valid_serial_numbers = [serial_number]
+    for serial_number in all_serial_numbers:
+        if validate_serial_number(serial_number):
+            valid_serial_numbers.append(serial_number)
+            continue
+        logger.warning(f"Row {row_index + 1}: Invalid serial number format: {serial_number}")
+        
+    unique_serial_numbers = deduplicate_serial_numbers(valid_serial_numbers, preserve_order=True)
+    normalized_serial_numbers = [normalize_serial_number(s, to_uppercase=True) for s in unique_serial_numbers]
     
-    logger.info(f"Row {row_index + 1}: Processing filenames: {', '.join(filenames)}")
+    if not normalized_serial_numbers:
+        logger.warning(f"Row {row_index + 1}: No valid serial numbers after filtering, skipping...")
+        return False
+    
+    logger.info(f"Row {row_index + 1}: Processing serial numbers: {', '.join(normalized_serial_numbers)}")
     
     pdf_paths = []
-    for filename in filenames:
-        pdf_path = find_pdf_file(source_folder, filename)
+    for serial_number in normalized_serial_numbers:
+        pdf_path = find_pdf_file(source_folder, serial_number)
         if pdf_path:
             pdf_paths.append(pdf_path)
             logger.info(f"  Found: {pdf_path.name}")
         else:
-            logger.warning(f"  PDF file not found for filename '{filename}'")
+            logger.warning(f"  PDF file not found for serial number '{serial_number}'")
     
     if not pdf_paths:
-        logger.warning(f"Row {row_index + 1}: No PDF files found for any filenames, skipping...")
+        logger.warning(f"Row {row_index + 1}: No PDF files found for any serial numbers, skipping...")
         return False
     
     output_filename = OUTPUT_FILENAME_PATTERN.format(row_index + 1)
