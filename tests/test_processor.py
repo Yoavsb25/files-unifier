@@ -47,7 +47,7 @@ class TestProcessRow:
     
     @patch('pdf_merger.processor.merge_pdfs')
     @patch('pdf_merger.processor.find_pdf_file')
-    @patch('pdf_merger.processor.parse_serial_numbers')
+    @patch('pdf_merger.processor.split_serial_numbers')
     def test_process_row_success(self, mock_parse, mock_find, mock_merge, tmp_path):
         """Test successful processing of a row."""
         source_folder = tmp_path / "source"
@@ -72,7 +72,7 @@ class TestProcessRow:
         assert mock_find.call_count == 2
         mock_merge.assert_called_once()
     
-    @patch('pdf_merger.processor.parse_serial_numbers')
+    @patch('pdf_merger.processor.split_serial_numbers')
     def test_process_row_no_filenames(self, mock_parse, tmp_path):
         """Test processing row with no filenames."""
         source_folder = tmp_path / "source"
@@ -87,7 +87,7 @@ class TestProcessRow:
         assert result is False
     
     @patch('pdf_merger.processor.find_pdf_file')
-    @patch('pdf_merger.processor.parse_serial_numbers')
+    @patch('pdf_merger.processor.split_serial_numbers')
     def test_process_row_no_pdfs_found(self, mock_parse, mock_find, tmp_path):
         """Test processing row when no PDFs are found."""
         source_folder = tmp_path / "source"
@@ -104,7 +104,7 @@ class TestProcessRow:
     
     @patch('pdf_merger.processor.merge_pdfs')
     @patch('pdf_merger.processor.find_pdf_file')
-    @patch('pdf_merger.processor.parse_serial_numbers')
+    @patch('pdf_merger.processor.split_serial_numbers')
     def test_process_row_merge_fails(self, mock_parse, mock_find, mock_merge, tmp_path):
         """Test processing row when merge fails."""
         source_folder = tmp_path / "source"
@@ -124,7 +124,7 @@ class TestProcessRow:
     
     @patch('pdf_merger.processor.merge_pdfs')
     @patch('pdf_merger.processor.find_pdf_file')
-    @patch('pdf_merger.processor.parse_serial_numbers')
+    @patch('pdf_merger.processor.split_serial_numbers')
     def test_process_row_partial_pdfs_found(self, mock_parse, mock_find, mock_merge, tmp_path):
         """Test processing row when only some PDFs are found."""
         source_folder = tmp_path / "source"
@@ -288,7 +288,7 @@ class TestProcessFile:
     
     @patch('pdf_merger.processor.merge_pdfs')
     @patch('pdf_merger.processor.find_pdf_file')
-    @patch('pdf_merger.processor.parse_serial_numbers')
+    @patch('pdf_merger.processor.split_serial_numbers')
     @patch('pdf_merger.processor.validate_serial_number')
     @patch('pdf_merger.processor.logger')
     def test_process_row_invalid_serial_numbers(self, mock_logger, mock_validate, mock_parse, mock_find, mock_merge, tmp_path):
@@ -319,7 +319,6 @@ class TestProcessFile:
         assert mock_logger.warning.called
         warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
         assert any("Invalid serial number format" in str(call) for call in warning_calls)
-        assert any("Expected format: GRNW_XXXXX" in str(call) for call in warning_calls)
     
     @patch('pdf_merger.processor.process_row')
     @patch('pdf_merger.processor.read_data_file')
