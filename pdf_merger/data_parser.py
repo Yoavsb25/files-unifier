@@ -42,17 +42,12 @@ def normalize_serial_number(serial_number: str, to_uppercase: bool = True) -> st
     
     normalized = serial_number.strip()
     
-    # Only normalize the prefix, not the suffix
     if to_uppercase:
         if normalized.startswith(SERIAL_NUMBER_PREFIX_LOWER):
-            # Replace lowercase prefix with uppercase prefix, keep suffix as-is
             normalized = SERIAL_NUMBER_PREFIX + normalized[len(SERIAL_NUMBER_PREFIX_LOWER):]
-        # If it already starts with uppercase prefix, leave it as-is
     else:
         if normalized.startswith(SERIAL_NUMBER_PREFIX):
-            # Replace uppercase prefix with lowercase prefix, keep suffix as-is
             normalized = SERIAL_NUMBER_PREFIX_LOWER + normalized[len(SERIAL_NUMBER_PREFIX):]
-        # If it already starts with lowercase prefix, leave it as-is
     
     return normalized
 
