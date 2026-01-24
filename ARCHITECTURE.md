@@ -12,7 +12,7 @@
 
 ## Overview
 
-PDF Batch Merger is a desktop application built with Python that merges multiple PDF files based on instructions from CSV or Excel files. The application follows a modular architecture with clear separation of concerns between business logic, user interface, and data processing.
+PDF Batch Merger is a desktop application built with Python that merges multiple PDF and Excel files into PDF documents based on instructions from CSV or Excel files. The application follows a modular architecture with clear separation of concerns between business logic, user interface, and data processing.
 
 ### Key Features
 
@@ -21,7 +21,8 @@ PDF Batch Merger is a desktop application built with Python that merges multiple
 - **Modular Design**: Clean separation between core logic, UI, and utilities
 - **Comprehensive Testing**: Full test coverage with pytest
 - **Multiple Input Formats**: Supports CSV and Excel files
-- **Flexible PDF Matching**: Case-insensitive filename matching
+- **Mixed File Support**: Can merge PDF and Excel files together (Excel files are converted to PDF)
+- **Flexible File Matching**: Case-insensitive filename matching for PDF and Excel files
 
 ---
 
@@ -51,6 +52,7 @@ graph TB
         FileReader[File Reader<br/>CSV/Excel]
         DataParser[Data Parser<br/>Serial Numbers]
         PDFOps[PDF Operations<br/>Find & Merge]
+        ExcelConv[Excel Converter<br/>Excel to PDF]
     end
     
     subgraph "Infrastructure Layer"
@@ -67,7 +69,9 @@ graph TB
     Processor --> FileReader
     Processor --> DataParser
     Processor --> PDFOps
+    Processor --> ExcelConv
     Processor --> Logger
+    ExcelConv --> PDFOps
     Validator --> Exceptions
     FileReader --> Exceptions
     PDFOps --> Exceptions
@@ -102,10 +106,14 @@ sequenceDiagram
         Processor->>FileReader: read_data_file()
         FileReader-->>Processor: DataFrame
         loop For Each Row
-            Processor->>PDFOps: find_pdf_file()
-            PDFOps-->>Processor: PDF Paths
-            Processor->>PDFOps: merge_pdfs()
-            PDFOps-->>Processor: Merged PDF
+        Processor->>PDFOps: find_source_file()
+        PDFOps-->>Processor: File Paths (PDF/Excel)
+        alt Excel File Found
+            Processor->>ExcelConv: convert_excel_to_pdf()
+            ExcelConv-->>Processor: Temporary PDF
+        end
+        Processor->>PDFOps: merge_pdfs()
+        PDFOps-->>Processor: Merged PDF
         end
         Processor-->>Core: ProcessingResult
         Core-->>GUI: Result Summary
@@ -139,6 +147,7 @@ files_unifeder/
 │   ├── data_parser.py           # Serial number parsing
 │   ├── file_reader.py           # CSV/Excel file reading
 │   ├── pdf_operations.py        # PDF finding and merging
+│   ├── excel_converter.py       # Excel to PDF conversion
 │   │
 │   ├── ui/                      # User interface
 │   │   ├── app.py              # CustomTkinter GUI application
@@ -236,9 +245,18 @@ flowchart TD
 
 - **Responsibility**: PDF file operations
 - **Features**:
-  - `find_pdf_file()`: Case-insensitive PDF finding
+  - `find_source_file()`: Case-insensitive finding of PDF and Excel files
+  - `find_pdf_file()`: Case-insensitive PDF finding (backward compatibility)
   - `merge_pdfs()`: Merging multiple PDFs into one
   - Lazy loading of PDF libraries (pypdf)
+
+#### 7a. Excel Converter (`pdf_merger/excel_converter.py`)
+
+- **Responsibility**: Converting Excel files to PDF format
+- **Features**:
+  - `convert_excel_to_pdf()`: Converts .xlsx and .xls files to PDF
+  - Uses xlsx2pdf library for conversion
+  - Lazy loading of conversion library
 
 #### 8. UI Module (`pdf_merger/ui/app.py`)
 
@@ -292,11 +310,14 @@ flowchart TD
     ReadFile --> ParseRows[Parse Rows]
     ParseRows --> Loop{For Each Row}
     Loop --> ParseSerials[Parse Serial Numbers]
-    ParseSerials --> FindPDFs[Find PDF Files]
-    FindPDFs --> CheckFound{All PDFs Found?}
-    CheckFound -->|No| Warn[Log Warning<br/>Continue with Found]
+    ParseSerials --> FindFiles[Find Source Files<br/>PDF & Excel]
+    FindFiles --> ConvertExcel{Excel Files?}
+    ConvertExcel -->|Yes| Convert[Convert Excel to PDF]
+    ConvertExcel -->|No| CheckFound{Files Found?}
+    Convert --> CheckFound
+    CheckFound -->|No| Warn[Log Warning<br/>Skip Row]
     CheckFound -->|Yes| Merge[Merge PDFs]
-    Warn --> Merge
+    Warn --> NextRow
     Merge --> Save[Save Merged PDF]
     Save --> NextRow{More Rows?}
     NextRow -->|Yes| Loop
@@ -312,13 +333,14 @@ flowchart TD
 graph TB
     subgraph "Input"
         CSV[CSV/Excel File<br/>serial_numbers column]
-        PDFs[PDF Files Folder]
+        SourceFiles[Source Files Folder<br/>PDF & Excel]
     end
     
     subgraph "Processing"
         Read[File Reader<br/>Detect Type & Read]
         Parse[Data Parser<br/>Parse Serial Numbers]
-        Find[PDF Operations<br/>Find PDF Files]
+        Find[PDF Operations<br/>Find Source Files]
+        Convert[Excel Converter<br/>Convert Excel to PDF]
         Merge[PDF Operations<br/>Merge PDFs]
     end
     
@@ -330,7 +352,9 @@ graph TB
     CSV --> Read
     Read --> Parse
     Parse --> Find
-    PDFs --> Find
+    SourceFiles --> Find
+    Find --> Convert
+    Convert --> Merge
     Find --> Merge
     Merge --> Merged
     Merge --> Log
