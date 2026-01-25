@@ -157,6 +157,168 @@ class TestLicense:
         
         assert license.is_expired() is True
     
+    def test_license_is_expired_with_tolerance(self):
+        """Test checking expiration with clock skew tolerance."""
+        # Create a date that's yesterday (expired) but within tolerance window
+        # The tolerance is applied to the datetime, so if expiry is yesterday at 00:00,
+        # and we add 5 minutes tolerance, it expires at 00:05 yesterday
+        # Since we're checking now (which is > 00:05 yesterday), it should be expired
+        # But if expiry is today at 00:00 + 5 minutes = 00:05 today, and it's currently 00:03,
+        # it should NOT be expired
+        from datetime import timedelta
+        # Use today's date but test with a time that's just past midnight
+        # Actually, the implementation compares dates, so if expiry is today, it's not expired
+        # Let's test with yesterday's date - it should be expired even with tolerance
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=yesterday,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        # Yesterday's date should be expired even with tolerance
+        assert license.is_expired(clock_skew_tolerance_minutes=5) is True
+        
+        # Test with today's date - should not be expired with tolerance
+        today = datetime.now().strftime('%Y-%m-%d')
+        license_today = License(
+            company="Test",
+            expires=today,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        # Today's date with 5 minute tolerance should not be expired
+        # (tolerance adds 5 minutes to midnight, so it expires at 00:05 today)
+        assert license_today.is_expired(clock_skew_tolerance_minutes=5) is False
+    
+    def test_license_days_until_expiry_future(self):
+        """Test days_until_expiry with future date."""
+        future_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=future_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        days = license.days_until_expiry()
+        
+        assert days is not None
+        assert abs(days - 30) <= 1  # Allow 1 day difference for timing
+    
+    def test_license_days_until_expiry_past(self):
+        """Test days_until_expiry with past date."""
+        past_date = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=past_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        days = license.days_until_expiry()
+        
+        assert days is not None
+        assert days < 0
+    
+    def test_license_days_until_expiry_invalid(self):
+        """Test days_until_expiry with invalid date format."""
+        license = License(
+            company="Test",
+            expires="invalid-date",
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        days = license.days_until_expiry()
+        
+        assert days is None
+    
+    def test_license_get_expiry_warning_level_expired(self):
+        """Test get_expiry_warning_level for expired license."""
+        past_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=past_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        level = license.get_expiry_warning_level()
+        
+        assert level == 'expired'
+    
+    def test_license_get_expiry_warning_level_critical(self):
+        """Test get_expiry_warning_level for critical (7 days)."""
+        future_date = (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=future_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        level = license.get_expiry_warning_level()
+        
+        assert level == 'critical'
+    
+    def test_license_get_expiry_warning_level_warning(self):
+        """Test get_expiry_warning_level for warning (14 days)."""
+        future_date = (datetime.now() + timedelta(days=10)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=future_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        level = license.get_expiry_warning_level()
+        
+        assert level == 'warning'
+    
+    def test_license_get_expiry_warning_level_info(self):
+        """Test get_expiry_warning_level for info (30 days)."""
+        future_date = (datetime.now() + timedelta(days=20)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=future_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        level = license.get_expiry_warning_level()
+        
+        assert level == 'info'
+    
+    def test_license_get_expiry_warning_level_none(self):
+        """Test get_expiry_warning_level when no warning needed."""
+        future_date = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test",
+            expires=future_date,
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        level = license.get_expiry_warning_level()
+        
+        assert level is None
+    
+    def test_license_get_expiry_warning_level_invalid_date(self):
+        """Test get_expiry_warning_level with invalid date."""
+        license = License(
+            company="Test",
+            expires="invalid-date",
+            allowed_machines=1,
+            version="1.0.0"
+        )
+        
+        level = license.get_expiry_warning_level()
+        
+        assert level is None
+    
     def test_license_to_json_string(self):
         """Test converting license to JSON string."""
         license = License(
@@ -713,6 +875,142 @@ class TestLicenseManager:
             result = manager.get_license_info()
             
             assert result is None
+    
+    def test_get_expiry_warning_message_expired(self):
+        """Test getting expiry warning message for expired license."""
+        past_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test Company",
+            expires=past_date,
+            allowed_machines=5,
+            version="1.0.0"
+        )
+        
+        manager = LicenseManager()
+        manager._cached_license = license
+        
+        # Mock the methods
+        with patch.object(license, 'get_expiry_warning_level', return_value='expired'), \
+             patch.object(license, 'days_until_expiry', return_value=-1):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is not None
+            assert "expired" in message.lower()
+            assert past_date in message
+    
+    def test_get_expiry_warning_message_critical(self):
+        """Test getting expiry warning message for critical expiry (7 days)."""
+        future_date = (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test Company",
+            expires=future_date,
+            allowed_machines=5,
+            version="1.0.0"
+        )
+        
+        manager = LicenseManager()
+        manager._cached_license = license
+        
+        with patch.object(license, 'get_expiry_warning_level', return_value='critical'), \
+             patch.object(license, 'days_until_expiry', return_value=5):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is not None
+            assert "expires in 5 days" in message.lower()
+            assert future_date in message
+            assert "renew soon" in message.lower()
+    
+    def test_get_expiry_warning_message_warning(self):
+        """Test getting expiry warning message for warning level (14 days)."""
+        future_date = (datetime.now() + timedelta(days=10)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test Company",
+            expires=future_date,
+            allowed_machines=5,
+            version="1.0.0"
+        )
+        
+        manager = LicenseManager()
+        manager._cached_license = license
+        
+        with patch.object(license, 'get_expiry_warning_level', return_value='warning'), \
+             patch.object(license, 'days_until_expiry', return_value=10):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is not None
+            assert "expires in 10 days" in message.lower()
+            assert future_date in message
+            assert "consider renewing" in message.lower()
+    
+    def test_get_expiry_warning_message_info(self):
+        """Test getting expiry warning message for info level (30 days)."""
+        future_date = (datetime.now() + timedelta(days=20)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test Company",
+            expires=future_date,
+            allowed_machines=5,
+            version="1.0.0"
+        )
+        
+        manager = LicenseManager()
+        manager._cached_license = license
+        
+        with patch.object(license, 'get_expiry_warning_level', return_value='info'), \
+             patch.object(license, 'days_until_expiry', return_value=20):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is not None
+            assert "expires in 20 days" in message.lower()
+            assert future_date in message
+    
+    def test_get_expiry_warning_message_no_warning(self):
+        """Test getting expiry warning message when no warning needed."""
+        future_date = (datetime.now() + timedelta(days=60)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test Company",
+            expires=future_date,
+            allowed_machines=5,
+            version="1.0.0"
+        )
+        
+        manager = LicenseManager()
+        manager._cached_license = license
+        
+        with patch.object(license, 'get_expiry_warning_level', return_value=None):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is None
+    
+    def test_get_expiry_warning_message_no_license(self):
+        """Test getting expiry warning message when no license is loaded."""
+        manager = LicenseManager()
+        manager._cached_license = None
+        
+        with patch.object(manager, 'load_license', return_value=None):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is None
+    
+    def test_get_expiry_warning_message_loads_license(self):
+        """Test that get_expiry_warning_message loads license if not cached."""
+        future_date = (datetime.now() + timedelta(days=5)).strftime('%Y-%m-%d')
+        license = License(
+            company="Test Company",
+            expires=future_date,
+            allowed_machines=5,
+            version="1.0.0"
+        )
+        
+        manager = LicenseManager()
+        manager._cached_license = None
+        
+        with patch.object(manager, 'load_license', return_value=license), \
+             patch.object(license, 'get_expiry_warning_level', return_value='critical'), \
+             patch.object(license, 'days_until_expiry', return_value=5):
+            message = manager.get_expiry_warning_message()
+            
+            assert message is not None
+            assert "expires in 5 days" in message.lower()
     
     def test_get_license_info_no_license(self):
         """Test getting license info when license is None."""

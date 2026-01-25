@@ -55,8 +55,13 @@ class License:
             expiry_date = datetime.strptime(self.expires, '%Y-%m-%d').date()
             today = datetime.now().date()
             
-            # Add clock skew tolerance (treat as expired only if clearly past expiry)
+            # If expiry date is today or in the future, license is not expired
+            if expiry_date >= today:
+                return False
+            
+            # If expiry date is in the past, apply clock skew tolerance
             # This handles minor clock differences between systems
+            # Tolerance allows licenses to remain valid for a few minutes past midnight
             from datetime import timedelta
             tolerance = timedelta(minutes=clock_skew_tolerance_minutes)
             effective_expiry = datetime.combine(expiry_date, datetime.min.time()) + tolerance
