@@ -3,9 +3,10 @@ UI components for PDF Merger application.
 """
 
 import customtkinter as ctk
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 from .. import APP_VERSION, APP_NAME
+from .enums import StatusColor
 
 
 class LogHandler:
@@ -99,9 +100,15 @@ class LicenseFrame(ctk.CTkFrame):
         )
         self.license_label.pack(pady=10)
     
-    def update_status(self, text: str, color: str = "white"):
-        """Update license status display."""
-        self.license_label.configure(text=text, text_color=color)
+    def update_status(self, text: str, color: Union[str, StatusColor] = StatusColor.WHITE):
+        """Update license status display.
+        
+        Args:
+            text: Status text to display
+            color: Color string or StatusColor enum (defaults to white)
+        """
+        color_value = color.value if isinstance(color, StatusColor) else color
+        self.license_label.configure(text=text, text_color=color_value)
 
 
 class LogArea(ctk.CTkFrame):
@@ -159,6 +166,12 @@ class Footer(ctk.CTkFrame):
         )
         self.status_label.pack(side="right", padx=10, pady=5)
     
-    def update_status(self, text: str, color: str = "white"):
-        """Update status display."""
-        self.status_label.configure(text=text, text_color=color)
+    def update_status(self, text: str, color: Union[str, StatusColor] = StatusColor.WHITE):
+        """Update status display.
+        
+        Args:
+            text: Status text to display
+            color: Color string or StatusColor enum (defaults to white)
+        """
+        color_value = color.value if isinstance(color, StatusColor) else color
+        self.status_label.configure(text=text, text_color=color_value)

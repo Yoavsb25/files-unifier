@@ -2,14 +2,19 @@
 License-related UI logic.
 """
 
+from typing import Optional
+
 import customtkinter as ctk
 
 from ..licensing import LicenseManager, LicenseStatus
+from .enums import LicenseColor, WarningLevel
 
-GREEN_COLOR = "green"
-RED_COLOR = "red"
-ORANGE_COLOR = "orange"
-YELLOW_COLOR = "yellow"
+# Constants for backward compatibility and convenience
+GREEN_COLOR = LicenseColor.GREEN.value
+RED_COLOR = LicenseColor.RED.value
+ORANGE_COLOR = LicenseColor.ORANGE.value
+YELLOW_COLOR = LicenseColor.YELLOW.value
+
 VALID_LICENSE = "✓ License valid"
 EXPIRED_LICENSE = "⚠ License expired - Merge functionality disabled"
 LABEL_FONT = ctk.CTkFont(size=18, weight="bold")
@@ -18,44 +23,61 @@ def match_color_to_display_text(
     color: str,
     company_name: str,
     expires: str,
-    warning_msg: str,
-    error_msg: str
+    warning_msg: Optional[str] = None,
+    error_msg: Optional[str] = None
 ) -> str:
     """
-    Return the appropriate license display text based on the given color and context.
-
+    Generate license display text based on color and context.
+    
     Args:
-        color: Color representing license state (e.g., green, red).
-        company_name: The name of the licensed company.
-        expires: The license expiration date.
-        warning_msg: A warning message if applicable.
-        error_msg: An error message for failed license checks.
-
+        color: Color string (LicenseColor enum value or string)
+        company_name: Licensed company name
+        expires: License expiration date
+        warning_msg: Optional warning message (for YELLOW/RED warnings)
+        error_msg: Optional error message (for RED errors)
+    
     Returns:
-        A formatted string for UI display.
+        Formatted display text for the license status
     """
-    if color == GREEN_COLOR:
+    if color == GREEN_COLOR or color == LicenseColor.GREEN.value:
         return f"✓ Licensed to: {company_name} (Expires: {expires})"
-
-    elif color == ORANGE_COLOR:
+    
+    if color == ORANGE_COLOR or color == LicenseColor.ORANGE.value:
         return EXPIRED_LICENSE
-
-    elif color == YELLOW_COLOR:
-        return f"✓ Licensed to: {company_name} - {warning_msg}"
-
-    elif color == RED_COLOR:
-        return f"✓ Licensed to: {company_name} - {warning_msg}" if warning_msg else f"✗ {error_msg}"
+    
+    if color == YELLOW_COLOR or color == LicenseColor.YELLOW.value:
+        if warning_msg:
+            return f"✓ Licensed to: {company_name} - {warning_msg}"
+        return f"✓ Licensed to: {company_name} (Expires: {expires})"
+    
+    if color == RED_COLOR or color == LicenseColor.RED.value:
+        # RED can represent critical warnings OR errors
+        # Priority: warning_msg (critical warning) > error_msg (actual error)
+        if warning_msg:
+            return f"✓ Licensed to: {company_name} - {warning_msg}"
+        if error_msg:
+            return f"✗ {error_msg}"
+        return "Unknown license status"
+    
+    return "Unknown license status"
 
 def match_color_to_warning_level(warning_level: str) -> str:
     """
     Match color to warning level.
+    
+    Args:
+        warning_level: Warning level string ('critical', 'warning', 'info')
+    
+    Returns:
+        Color string value for the warning level
     """
-    dict_warning_level_to_color = {
-        'critical': RED_COLOR,
-        'warning': ORANGE_COLOR,
-        'info': YELLOW_COLOR
+    # Map warning level strings to colors
+    warning_to_color = {
+        WarningLevel.CRITICAL.value: LicenseColor.RED.value,
+        WarningLevel.WARNING.value: LicenseColor.ORANGE.value,
+        WarningLevel.INFO.value: LicenseColor.YELLOW.value,
     }
-    return dict_warning_level_to_color.get(warning_level, YELLOW_COLOR)
+    return warning_to_color.get(warning_level, LicenseColor.YELLOW.value)
 
 def update_license_display(license_manager: LicenseManager, license_label) -> bool:
     """

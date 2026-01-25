@@ -15,6 +15,7 @@ from ..config import load_config
 from .components import FileSelector, LicenseFrame, LogArea, Footer
 from .license_ui import update_license_display
 from .handlers import FileSelectionHandler, MergeHandler
+from .enums import StatusColor
 
 # Setup logging
 setup_logger("pdf_merger", level=20)
@@ -24,8 +25,7 @@ logger = get_logger("ui.app")
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
-# Import APP_NAME from package
-from .. import APP_NAME
+APP_NAME = "PDF Batch Merger"
 
 
 class PDFMergerApp(ctk.CTk):
@@ -240,7 +240,7 @@ class PDFMergerApp(ctk.CTk):
     def _show_error(self, message: str):
         """Show error message."""
         self._log(f"ERROR: {message}")
-        self.footer.update_status("Error", "red")
+        self.footer.update_status("Error", StatusColor.RED)
     
     def _run_merge(self):
         """Run the merge operation."""
@@ -261,7 +261,7 @@ class PDFMergerApp(ctk.CTk):
     def _on_merge_start(self):
         """Handle merge operation start."""
         self.run_button.configure(state="disabled", text="Processing...")
-        self.footer.update_status("Processing...", "blue")
+        self.footer.update_status("Processing...", StatusColor.BLUE)
         self.log_area.clear()
         self._log("=" * 60)
         self._log("Starting merge operation...")
@@ -283,11 +283,11 @@ class PDFMergerApp(ctk.CTk):
         self._log(summary)
         
         if result.successful_merges == result.total_rows:
-            self.footer.update_status("Success", "green")
+            self.footer.update_status("Success", StatusColor.GREEN)
         elif result.successful_merges > 0:
-            self.footer.update_status("Partial success", "orange")
+            self.footer.update_status("Partial success", StatusColor.ORANGE)
         else:
-            self.footer.update_status("Failed", "red")
+            self.footer.update_status("Failed", StatusColor.RED)
         
         self._update_ui_state()
     
@@ -302,7 +302,7 @@ class PDFMergerApp(ctk.CTk):
         self._log(f"ERROR: {error_message}")
         self._log("=" * 60)
         
-        self.footer.update_status("Error", "red")
+        self.footer.update_status("Error", StatusColor.RED)
         self._update_ui_state()
 
 
