@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..processor import process_file, process_job, ProcessingResult
-from ..models import MergeJob, MergeResult
+from ..models import MergeJob, MergeResult, Row
 from ..file_reader import read_data_file
 from ..enums import DEFAULT_SERIAL_NUMBERS_COLUMN
 from ..logger import get_logger
@@ -97,7 +97,6 @@ def run_merge_job(
     
     # Load rows from file
     try:
-        from ..models import Row
         for row_index, row_data in enumerate(read_data_file(input_file), start=0):
             row = Row.from_raw_data(row_index, row_data, required_column)
             job.add_row(row)

@@ -5,7 +5,6 @@ Handles finding and merging PDF files.
 
 import sys
 import os
-import warnings
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional

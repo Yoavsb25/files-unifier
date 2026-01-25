@@ -23,16 +23,10 @@ def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
         Formatted summary string
     """
     # Handle both legacy and new result types
-    if isinstance(result, MergeResult):
-        total_rows = result.total_rows
-        successful = result.successful_merges
-        failed = len(result.failed_rows)
-        skipped = len(result.skipped_rows)
-    else:
-        total_rows = result.total_rows
-        successful = result.successful_merges
-        failed = len(result.failed_rows)
-        skipped = 0
+    total_rows = result.total_rows
+    successful = result.successful_merges
+    failed = len(result.failed_rows)
+    skipped = len(result.skipped_rows) if isinstance(result, MergeResult) else 0
     
     lines = [
         "=" * 60,
@@ -46,12 +40,7 @@ def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
     if skipped > 0:
         lines.append(f"Skipped rows: {skipped}")
     
-    if isinstance(result, MergeResult) and result.failed_rows:
-        failed_str = ', '.join(map(str, result.failed_rows))
-        if len(failed_str) > 100:
-            failed_str = failed_str[:97] + "..."
-        lines.append(f"Failed row numbers: {failed_str}")
-    elif hasattr(result, 'failed_rows') and result.failed_rows:
+    if result.failed_rows:
         failed_str = ', '.join(map(str, result.failed_rows))
         if len(failed_str) > 100:
             failed_str = failed_str[:97] + "..."
@@ -73,31 +62,35 @@ def format_result_detailed(result: Union[ProcessingResult, MergeResult]) -> str:
         Formatted detailed report string
     """
     # Handle both legacy and new result types
+    total_rows = result.total_rows
+    successful = result.successful_merges
+    failed = len(result.failed_rows)
+    skipped = len(result.skipped_rows) if isinstance(result, MergeResult) else 0
+    success_rate = result.get_success_rate() if isinstance(result, MergeResult) else (
+        (successful / total_rows * 100) if total_rows > 0 else 0
+    )
+    
+    lines = [
+        "=" * 60,
+        "Detailed Processing Report",
+        "=" * 60,
+        "",
+        f"Total rows in input file: {total_rows}",
+        f"Successfully merged PDFs: {successful}",
+        f"Failed rows: {failed}",
+    ]
+    
+    if skipped > 0:
+        lines.append(f"Skipped rows: {skipped}")
+    lines.append("")
+    
+    if result.failed_rows:
+        lines.append("Failed Row Numbers:" if isinstance(result, MergeResult) else "Failed/Skipped Row Numbers:")
+        for row_num in result.failed_rows:
+            lines.append(f"  - Row {row_num}")
+        lines.append("")
+    
     if isinstance(result, MergeResult):
-        total_rows = result.total_rows
-        successful = result.successful_merges
-        failed = len(result.failed_rows)
-        skipped = len(result.skipped_rows)
-        success_rate = result.get_success_rate()
-        
-        lines = [
-            "=" * 60,
-            "Detailed Processing Report",
-            "=" * 60,
-            "",
-            f"Total rows in input file: {total_rows}",
-            f"Successfully merged PDFs: {successful}",
-            f"Failed rows: {failed}",
-            f"Skipped rows: {skipped}",
-            "",
-        ]
-        
-        if result.failed_rows:
-            lines.append("Failed Row Numbers:")
-            for row_num in result.failed_rows:
-                lines.append(f"  - Row {row_num}")
-            lines.append("")
-        
         if result.skipped_rows:
             lines.append("Skipped Row Numbers:")
             for row_num in result.skipped_rows:
@@ -122,29 +115,6 @@ def format_result_detailed(result: Union[ProcessingResult, MergeResult]) -> str:
         
         if result.total_processing_time:
             lines.append(f"Total processing time: {result.total_processing_time:.2f} seconds")
-            lines.append("")
-    else:
-        # Legacy ProcessingResult
-        total_rows = result.total_rows
-        successful = result.successful_merges
-        failed = len(result.failed_rows)
-        success_rate = (successful / total_rows * 100) if total_rows > 0 else 0
-        
-        lines = [
-            "=" * 60,
-            "Detailed Processing Report",
-            "=" * 60,
-            "",
-            f"Total rows in input file: {total_rows}",
-            f"Successfully merged PDFs: {successful}",
-            f"Failed or skipped rows: {failed}",
-            "",
-        ]
-        
-        if result.failed_rows:
-            lines.append("Failed/Skipped Row Numbers:")
-            for row_num in result.failed_rows:
-                lines.append(f"  - Row {row_num}")
             lines.append("")
     
     lines.append(f"Success rate: {success_rate:.1f}%")

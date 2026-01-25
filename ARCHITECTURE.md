@@ -241,10 +241,9 @@ flowchart TD
     Init --> CheckLicense[Check License Status]
     CheckLicense --> Valid{License Valid?}
     Valid -->|Yes| LaunchGUI[Launch GUI]
-    Valid -->|Expired| ShowWarning[Show Warning<br/>Launch GUI with Restrictions]
+    Valid -->|Expired| ShowError[Show Error<br/>Exit Application]
     Valid -->|Invalid| ShowError[Show Error<br/>Exit Application]
     LaunchGUI --> End([Application Running])
-    ShowWarning --> End
     ShowError --> Exit([Exit])
 ```
 
@@ -456,13 +455,12 @@ flowchart TD
     WarningLevel --> ValidLicense
     CriticalWarning --> ValidLicense
     ValidLicense --> UpdateUI[Update UI<br/>Color-coded Status]
-    NotFound --> ShowError[Show Error in UI<br/>Actionable Guidance]
+    NotFound --> ShowError[Show Error Message<br/>Actionable Guidance]
     VersionMismatch --> ShowError
     InvalidSig --> ShowError
-    Expired --> ShowWarning[Show Warning in UI<br/>Allow App to Open]
+    Expired --> ShowError
     UpdateUI --> End([Application Ready])
     ShowError --> Exit([Exit Application])
-    ShowWarning --> End
 ```
 
 ---

@@ -10,7 +10,7 @@ from typing import Optional
 import customtkinter as ctk
 
 from .. import APP_VERSION
-from ..core import run_merge, format_result_summary, format_result_detailed
+from ..core import run_merge, format_result_summary
 from ..licensing import LicenseManager, LicenseStatus
 from ..logger import get_logger, setup_logger
 from ..processor import ProcessingResult

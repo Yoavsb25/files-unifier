@@ -7,13 +7,13 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from .pdf_operations import find_source_file, merge_pdfs
 from .excel_converter import convert_excel_to_pdf
 from .file_reader import read_data_file
 from .logger import get_logger
-from .exceptions import PDFMergerError, InvalidFileFormatError
+from .exceptions import PDFMergerError
 from .enums import DEFAULT_SERIAL_NUMBERS_COLUMN, OUTPUT_FILENAME_PATTERN, EXCEL_FILE_EXTENSIONS
 from .models import Row, MergeJob, MergeResult, RowResult, RowStatus
 from .validators import validate_serial_number
@@ -46,10 +46,68 @@ class ProcessingResult:
                 f"Failed rows: {len(self.failed_rows)}")
 
 
+def _convert_excel_files_to_pdfs(source_files: List[Path], output_folder: Path) -> Tuple[List[Path], List[Path]]:
+    """
+    Convert Excel files to PDFs and return both PDF paths and temporary file paths.
+    
+    Args:
+        source_files: List of source file paths (PDF and Excel)
+        output_folder: Output folder for temporary PDFs
+        
+    Returns:
+        Tuple of (pdf_paths, temp_pdf_files) for cleanup
+    """
+    pdf_paths = []
+    temp_pdf_files = []
+    
+    for source_path in source_files:
+        if source_path.suffix.lower() in EXCEL_FILE_EXTENSIONS:
+            # Convert Excel to PDF
+            logger.info(f"  Converting {source_path.name} to PDF...")
+            temp_pdf = tempfile.NamedTemporaryFile(
+                suffix='.pdf',
+                delete=False,
+                dir=output_folder.parent if output_folder.parent.exists() else None
+            )
+            temp_pdf.close()
+            temp_pdf_path = Path(temp_pdf.name)
+            temp_pdf_files.append(temp_pdf_path)
+            
+            if convert_excel_to_pdf(source_path, temp_pdf_path):
+                pdf_paths.append(temp_pdf_path)
+                logger.info(f"  ✓ Converted {source_path.name} to PDF")
+            else:
+                logger.error(f"  ✗ Failed to convert {source_path.name} to PDF")
+        else:
+            # Already a PDF file
+            pdf_paths.append(source_path)
+    
+    return pdf_paths, temp_pdf_files
+
+
+def _cleanup_temp_files(temp_pdf_files: List[Path]) -> None:
+    """
+    Clean up temporary PDF files.
+    
+    Args:
+        temp_pdf_files: List of temporary file paths to clean up
+    """
+    for temp_pdf in temp_pdf_files:
+        try:
+            if temp_pdf.exists():
+                temp_pdf.unlink()
+                logger.debug(f"  Cleaned up temporary file: {temp_pdf.name}")
+        except Exception as e:
+            logger.warning(f"  Failed to clean up temporary file {temp_pdf.name}: {e}")
+
+
 def process_row(row_index: int, serial_numbers_str: str, source_folder: Path, 
                 output_folder: Path) -> bool:
     """
     Process a single row: find PDFs and Excel files, convert Excel to PDF, and merge them.
+    
+    Note: This function is kept for backward compatibility and testing.
+    New code should use process_row_with_models() with domain models.
     
     Args:
         row_index: Index of the row (0-based, for naming output file)
@@ -96,31 +154,8 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
         return False
     
     # Convert Excel files to PDF and collect all PDF paths
-    pdf_paths = []
-    temp_pdf_files = []  # Track temporary files for cleanup
-    
     try:
-        for source_path in source_files:
-            if source_path.suffix.lower() in EXCEL_FILE_EXTENSIONS:
-                # Convert Excel to PDF
-                logger.info(f"  Converting {source_path.name} to PDF...")
-                temp_pdf = tempfile.NamedTemporaryFile(
-                    suffix='.pdf',
-                    delete=False,
-                    dir=output_folder.parent if output_folder.parent.exists() else None
-                )
-                temp_pdf.close()
-                temp_pdf_path = Path(temp_pdf.name)
-                temp_pdf_files.append(temp_pdf_path)
-                
-                if convert_excel_to_pdf(source_path, temp_pdf_path):
-                    pdf_paths.append(temp_pdf_path)
-                    logger.info(f"  ✓ Converted {source_path.name} to PDF")
-                else:
-                    logger.error(f"  ✗ Failed to convert {source_path.name} to PDF")
-            else:
-                # Already a PDF file
-                pdf_paths.append(source_path)
+        pdf_paths, temp_pdf_files = _convert_excel_files_to_pdfs(source_files, output_folder)
         
         if not pdf_paths:
             logger.warning(f"Row {row_index + 1}: No PDF files to merge (conversions may have failed), skipping...")
@@ -141,13 +176,7 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
         
     finally:
         # Clean up temporary PDF files
-        for temp_pdf in temp_pdf_files:
-            try:
-                if temp_pdf.exists():
-                    temp_pdf.unlink()
-                    logger.debug(f"  Cleaned up temporary file: {temp_pdf.name}")
-            except Exception as e:
-                logger.warning(f"  Failed to clean up temporary file {temp_pdf.name}: {e}")
+        _cleanup_temp_files(temp_pdf_files)
 
 
 def process_row_with_models(
@@ -185,7 +214,6 @@ def process_row_with_models(
     # Find all source files (PDFs and Excel files) with ambiguity detection
     source_files = []
     missing_serial_numbers = []
-    ambiguous_matches = []
     
     for serial_number in row.serial_numbers:
         try:
@@ -200,7 +228,6 @@ def process_row_with_models(
                 metrics.record_counter("files_missing")
         except ValueError as e:
             # Ambiguous match detected
-            ambiguous_matches.append(str(e))
             metrics.record_counter("ambiguous_matches")
             logger.error(f"  Ambiguous match for '{serial_number}': {e}")
             if fail_on_ambiguous:
@@ -217,31 +244,8 @@ def process_row_with_models(
         )
     
     # Convert Excel files to PDF and collect all PDF paths
-    pdf_paths = []
-    temp_pdf_files = []  # Track temporary files for cleanup
-    
     try:
-        for source_path in source_files:
-            if source_path.suffix.lower() in EXCEL_FILE_EXTENSIONS:
-                # Convert Excel to PDF
-                logger.info(f"  Converting {source_path.name} to PDF...")
-                temp_pdf = tempfile.NamedTemporaryFile(
-                    suffix='.pdf',
-                    delete=False,
-                    dir=output_folder.parent if output_folder.parent.exists() else None
-                )
-                temp_pdf.close()
-                temp_pdf_path = Path(temp_pdf.name)
-                temp_pdf_files.append(temp_pdf_path)
-                
-                if convert_excel_to_pdf(source_path, temp_pdf_path):
-                    pdf_paths.append(temp_pdf_path)
-                    logger.info(f"  ✓ Converted {source_path.name} to PDF")
-                else:
-                    logger.error(f"  ✗ Failed to convert {source_path.name} to PDF")
-            else:
-                # Already a PDF file
-                pdf_paths.append(source_path)
+        pdf_paths, temp_pdf_files = _convert_excel_files_to_pdfs(source_files, output_folder)
         
         if not pdf_paths:
             logger.warning(f"Row {row.row_index + 1}: No PDF files to merge (conversions may have failed), skipping...")
@@ -295,13 +299,7 @@ def process_row_with_models(
         
     finally:
         # Clean up temporary PDF files
-        for temp_pdf in temp_pdf_files:
-            try:
-                if temp_pdf.exists():
-                    temp_pdf.unlink()
-                    logger.debug(f"  Cleaned up temporary file: {temp_pdf.name}")
-            except Exception as e:
-                logger.warning(f"  Failed to clean up temporary file {temp_pdf.name}: {e}")
+        _cleanup_temp_files(temp_pdf_files)
 
 
 def process_job(job: MergeJob, fail_on_ambiguous: bool = True) -> MergeResult:

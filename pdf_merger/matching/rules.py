@@ -82,7 +82,7 @@ def normalize_path_for_matching(path: Path) -> str:
 def find_matching_files(
     folder: Path,
     filename: str,
-    normalize_unicode: bool = True
+    normalize_unicode_flag: bool = True
 ) -> List[Path]:
     """
     Find all files matching the given filename in the folder.
@@ -92,7 +92,7 @@ def find_matching_files(
     Args:
         folder: Path to the folder containing source files
         filename: Filename (with or without extension) to search for
-        normalize_unicode: Whether to normalize Unicode (default: True)
+        normalize_unicode_flag: Whether to normalize Unicode (default: True)
         
     Returns:
         List of matching file paths, sorted alphabetically by full path
@@ -101,7 +101,7 @@ def find_matching_files(
         return []
     
     # Normalize input filename
-    if normalize_unicode:
+    if normalize_unicode_flag:
         filename_normalized = normalize_unicode(filename)
     else:
         filename_normalized = filename
@@ -121,7 +121,7 @@ def find_matching_files(
                 continue
             
             # Normalize file path for comparison
-            if normalize_unicode:
+            if normalize_unicode_flag:
                 file_name_normalized = normalize_path_for_matching(source_file)
             else:
                 file_name_normalized = source_file.name.lower()
@@ -153,7 +153,7 @@ def find_best_match(
     folder: Path,
     filename: str,
     behavior: MatchBehavior = MatchBehavior.FAIL_FAST,
-    normalize_unicode: bool = True
+    normalize_unicode_flag: bool = True
 ) -> MatchResult:
     """
     Find the best matching file using formal matching rules.
@@ -167,7 +167,7 @@ def find_best_match(
         folder: Path to the folder containing source files
         filename: Filename (with or without extension) to search for
         behavior: Behavior when multiple matches are found
-        normalize_unicode: Whether to normalize Unicode (default: True)
+        normalize_unicode_flag: Whether to normalize Unicode (default: True)
         
     Returns:
         MatchResult with the best match and ambiguity information
@@ -175,7 +175,7 @@ def find_best_match(
     Raises:
         ValueError: If behavior is FAIL_FAST and multiple matches are found
     """
-    all_matches = find_matching_files(folder, filename, normalize_unicode)
+    all_matches = find_matching_files(folder, filename, normalize_unicode_flag)
     
     if not all_matches:
         return MatchResult(
@@ -186,7 +186,7 @@ def find_best_match(
         )
     
     # Determine confidence level based on match type
-    if normalize_unicode:
+    if normalize_unicode_flag:
         filename_normalized = normalize_unicode(filename)
     else:
         filename_normalized = filename
@@ -198,7 +198,7 @@ def find_best_match(
     stem_matches = []
     
     for match in all_matches:
-        if normalize_unicode:
+        if normalize_unicode_flag:
             match_name_normalized = normalize_path_for_matching(match)
         else:
             match_name_normalized = match.name.lower()

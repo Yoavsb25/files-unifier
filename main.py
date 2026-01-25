@@ -58,30 +58,17 @@ def main():
             logger.error(f"Error launching GUI: {e}")
             print(f"Error: {e}")
             sys.exit(1)
-    elif license_status == LicenseStatus.EXPIRED:
-        # Show error but allow app to open (kill switch)
-        error_msg = license_manager.get_license_error_message(license_status)
-        print(f"\n{'='*60}")
-        print("LICENSE EXPIRED")
-        print("="*60)
-        print(error_msg)
-        print("="*60)
-        print("\nThe application will open, but merge functionality is disabled.")
-        print("Please contact support to renew your license.\n")
-        
-        # Still launch GUI (with disabled merge)
-        try:
-            run_gui()
-        except Exception as e:
-            logger.error(f"Error launching GUI: {e}")
-            print(f"Error: {e}")
-            sys.exit(1)
     else:
-        # Invalid license - show error and exit
+        # Invalid or expired license - show error and exit
         error_msg = license_manager.get_license_error_message(license_status)
-        print(f"\n{'='*60}")
-        print("LICENSE ERROR")
-        print("="*60)
+        if license_status == LicenseStatus.EXPIRED:
+            print(f"\n{'='*60}")
+            print("LICENSE EXPIRED")
+            print("="*60)
+        else:
+            print(f"\n{'='*60}")
+            print("LICENSE ERROR")
+            print("="*60)
         print(error_msg)
         print("="*60)
         print("\nThe application cannot run without a valid license.")
