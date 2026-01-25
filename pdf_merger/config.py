@@ -39,6 +39,12 @@ class AppConfig:
     pdf_dir: Optional[str] = None
     output_dir: Optional[str] = None
     required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN
+    # Observability settings
+    metrics_enabled: bool = True
+    telemetry_enabled: bool = False  # Opt-in by default
+    crash_reporting_enabled: bool = False  # Opt-in by default
+    # Matching behavior
+    fail_on_ambiguous_matches: bool = True  # Fail fast by default for production
     
     def to_dict(self) -> dict:
         """Convert config to dictionary."""
@@ -51,7 +57,11 @@ class AppConfig:
             input_file=data.get('input_file'),
             pdf_dir=data.get('pdf_dir'),
             output_dir=data.get('output_dir'),
-            required_column=data.get('required_column', DEFAULT_SERIAL_NUMBERS_COLUMN)
+            required_column=data.get('required_column', DEFAULT_SERIAL_NUMBERS_COLUMN),
+            metrics_enabled=data.get('metrics_enabled', True),
+            telemetry_enabled=data.get('telemetry_enabled', False),
+            crash_reporting_enabled=data.get('crash_reporting_enabled', False),
+            fail_on_ambiguous_matches=data.get('fail_on_ambiguous_matches', True)
         )
     
     def get_input_file_path(self) -> Optional[Path]:
@@ -80,7 +90,11 @@ class AppConfig:
             input_file=other.input_file if other.input_file else self.input_file,
             pdf_dir=other.pdf_dir if other.pdf_dir else self.pdf_dir,
             output_dir=other.output_dir if other.output_dir else self.output_dir,
-            required_column=other.required_column if other.required_column != DEFAULT_SERIAL_NUMBERS_COLUMN or self.required_column == DEFAULT_SERIAL_NUMBERS_COLUMN else self.required_column
+            required_column=other.required_column if other.required_column != DEFAULT_SERIAL_NUMBERS_COLUMN or self.required_column == DEFAULT_SERIAL_NUMBERS_COLUMN else self.required_column,
+            metrics_enabled=other.metrics_enabled if hasattr(other, 'metrics_enabled') else self.metrics_enabled,
+            telemetry_enabled=other.telemetry_enabled if hasattr(other, 'telemetry_enabled') else self.telemetry_enabled,
+            crash_reporting_enabled=other.crash_reporting_enabled if hasattr(other, 'crash_reporting_enabled') else self.crash_reporting_enabled,
+            fail_on_ambiguous_matches=other.fail_on_ambiguous_matches if hasattr(other, 'fail_on_ambiguous_matches') else self.fail_on_ambiguous_matches
         )
 
 

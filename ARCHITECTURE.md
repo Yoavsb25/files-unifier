@@ -17,12 +17,18 @@ PDF Batch Merger is a desktop application built with Python that merges multiple
 ### Key Features
 
 - **GUI Application**: Built with CustomTkinter for a modern, cross-platform interface
-- **License Management**: RSA-signed license validation system
+- **License Management**: RSA-signed license validation system with offline mode, clock skew tolerance, and expiry warnings
 - **Modular Design**: Clean separation between core logic, UI, and utilities
 - **Comprehensive Testing**: Full test coverage with pytest
 - **Multiple Input Formats**: Supports CSV and Excel files
 - **Mixed File Support**: Can merge PDF and Excel files together (Excel files are converted to PDF)
-- **Flexible File Matching**: Case-insensitive filename matching for PDF and Excel files
+- **Formal Matching Rules**: Deterministic file matching with ambiguity detection and Unicode normalization
+- **Configuration Management**: Multi-source configuration with precedence (env vars > CLI > config > presets > defaults)
+- **Domain Models**: Explicit type-safe models for rows, jobs, and results
+- **Cross-Platform Support**: Handles Windows/macOS path differences (case sensitivity, Unicode, long paths)
+- **Memory Efficiency**: Streaming mode for large PDF merging
+- **Excel Rendering**: Pagination support for wide tables with auto-sizing
+- **Observability**: Opt-in metrics, telemetry, and crash reporting
 
 ---
 
@@ -58,6 +64,17 @@ graph TB
     subgraph "Infrastructure Layer"
         Logger[Logger<br/>Logging System]
         Exceptions[Custom Exceptions<br/>Error Handling]
+        Config[Configuration<br/>Multi-Source Precedence]
+        Observability[Observability<br/>Metrics/Telemetry/Crash]
+        PathUtils[Path Utils<br/>Cross-Platform]
+    end
+    
+    subgraph "Domain Models"
+        Models[Domain Models<br/>Row/Job/Result]
+    end
+    
+    subgraph "Matching System"
+        Matching[Matching Rules<br/>Formal Spec]
     end
     
     GUI --> Main
@@ -71,10 +88,18 @@ graph TB
     Processor --> PDFOps
     Processor --> ExcelConv
     Processor --> Logger
+    Processor --> Models
+    Processor --> Observability
+    Processor --> Matching
     ExcelConv --> PDFOps
     Validator --> Exceptions
     FileReader --> Exceptions
     PDFOps --> Exceptions
+    PDFOps --> PathUtils
+    PDFOps --> Matching
+    Main --> Config
+    Main --> Observability
+    GUI --> Config
 ```
 
 ### Component Interaction Flow
@@ -147,11 +172,29 @@ files_unifeder/
 │   │   ├── merger.py           # Core merge orchestration
 │   │   └── reporter.py         # Result formatting
 │   │
+│   ├── models/                  # Domain models
+│   │   ├── row.py              # Row data model
+│   │   ├── merge_job.py        # Merge job model
+│   │   └── merge_result.py     # Merge result model
+│   │
+│   ├── matching/                # Matching rules
+│   │   ├── rules.py            # Formal matching rules
+│   │   └── spec.md             # Matching specification
+│   │
+│   ├── utils/                   # Utility modules
+│   │   └── path_utils.py       # Cross-platform path handling
+│   │
+│   ├── observability/           # Observability features
+│   │   ├── metrics.py          # Metrics collection
+│   │   ├── telemetry.py        # Telemetry (opt-in)
+│   │   └── crash_reporting.py  # Crash reporting (opt-in)
+│   │
 │   ├── processor.py            # Main processing orchestration
 │   ├── validators.py            # Input validation functions
 │   ├── data_parser.py           # Serial number parsing
 │   ├── file_reader.py           # CSV/Excel file reading
 │   ├── pdf_operations.py        # PDF finding and merging
+│   ├── pdf_operations_streaming.py  # Streaming PDF operations
 │   ├── excel_converter.py       # Excel to PDF conversion
 │   │
 │   ├── ui/                      # User interface
@@ -159,8 +202,8 @@ files_unifeder/
 │   │   └── __init__.py
 │   │
 │   └── licensing/               # License management
-│       ├── license_manager.py  # License validation
-│       ├── license_model.py    # License data model
+│       ├── license_manager.py  # License validation with UX improvements
+│       ├── license_model.py    # License data model with expiry warnings
 │       └── license_signer.py   # RSA signing/verification
 │
 ├── cli/                         # Command-line interfaces (optional)
@@ -181,12 +224,14 @@ files_unifeder/
 
 #### 1. Entry Point (`main.py`)
 
-- **Responsibility**: Application bootstrap and license checking
+- **Responsibility**: Application bootstrap, observability initialization, and license checking
 - **Flow**: 
   1. Initialize logging
-  2. Check license status
-  3. Launch GUI if license valid
-  4. Handle license errors gracefully
+  2. Load configuration
+  3. Initialize observability (metrics, telemetry, crash reporting - opt-in)
+  4. Check license status with expiry warnings
+  5. Launch GUI if license valid
+  6. Handle license errors gracefully with actionable messages
 
 ```mermaid
 flowchart TD
@@ -213,15 +258,23 @@ flowchart TD
 
 #### 3. Processor (`pdf_merger/processor.py`)
 
-- **Responsibility**: Main processing orchestration
+- **Responsibility**: Main processing orchestration using domain models
 - **Key Functions**:
-  - `process_file()`: Process entire CSV/Excel file
-  - `process_row()`: Process single row (handles PDF and Excel files)
-  - Returns `ProcessingResult` with statistics
+  - `process_file()`: Process entire CSV/Excel file (legacy, backward compatible)
+  - `process_job()`: Process MergeJob using domain models (recommended)
+  - `process_row_with_models()`: Process single row using Row model
+  - Returns `MergeResult` with detailed per-row results
+- **Domain Model Integration**:
+  - Uses `Row`, `MergeJob`, and `MergeResult` models for type safety
+  - Tracks detailed results per row (files found, missing, processing time)
+  - Supports ambiguous match detection with configurable behavior
+- **Observability Integration**:
+  - Records metrics (processing time, file sizes, success rates, ambiguous matches)
+  - Tracks counters and timers for performance analysis
 - **Excel Handling**:
-  - Finds both PDF and Excel files using `find_source_file()`
+  - Finds both PDF and Excel files using formal matching rules
   - Converts Excel files to temporary PDFs using `convert_excel_to_pdf()`
-  - Merges all PDFs (original + converted Excel PDFs)
+  - Merges all PDFs (original + converted Excel PDFs) with streaming support
   - Automatically cleans up temporary PDF files after merging
   - Handles conversion errors gracefully (logs and continues with other files)
 
@@ -254,47 +307,85 @@ flowchart TD
 
 #### 7. PDF Operations (`pdf_merger/pdf_operations.py`)
 
-- **Responsibility**: PDF file operations
+- **Responsibility**: PDF file operations with streaming support
 - **Features**:
-  - `find_source_file()`: Case-insensitive finding of PDF and Excel files
+  - `find_source_file()`: Uses formal matching rules with ambiguity detection
   - `find_pdf_file()`: Case-insensitive PDF finding (backward compatibility)
-  - `merge_pdfs()`: Merging multiple PDFs into one
+  - `merge_pdfs()`: Merging multiple PDFs with automatic streaming for large files
   - Lazy loading of PDF libraries (pypdf)
   - Suppresses noisy PDF read warnings (Apple-annotated PDFs)
+- **Streaming Support**:
+  - Auto-detects large files and uses streaming mode
+  - Processes pages incrementally to conserve memory
+  - Configurable threshold (default: 100 MB estimated memory usage)
+- **Matching Integration**:
+  - Uses formal matching rules from `matching/rules.py`
+  - Supports configurable ambiguity handling (FAIL_FAST, WARN_FIRST, LOG_ALL)
+  - Unicode normalization for cross-platform compatibility
 - **Implementation Details**:
   - Uses `strict=False` mode for pypdf to handle problematic PDFs
   - Suppresses stderr during PDF reading to avoid noisy warnings
   - Handles PdfReadError exceptions gracefully
   - Supports both pypdf and PyPDF2 libraries (with pypdf preferred)
+  - Cross-platform path handling via `utils/path_utils.py`
+
+#### 7b. PDF Streaming Operations (`pdf_merger/pdf_operations_streaming.py`)
+
+- **Responsibility**: Memory-efficient PDF merging for large files
+- **Features**:
+  - `merge_pdfs_streaming()`: Processes pages in chunks
+  - `should_use_streaming()`: Auto-detects when streaming is needed
+  - `estimate_memory_usage()`: Estimates memory requirements
+- **Performance**:
+  - Processes pages incrementally (default: 10 pages per chunk)
+  - Reduces memory footprint for large PDFs
+  - Progress logging for files with >100 pages
 
 #### 7a. Excel Converter (`pdf_merger/excel_converter.py`)
 
-- **Responsibility**: Converting Excel files to PDF format
+- **Responsibility**: Converting Excel files to PDF format with advanced rendering
 - **Features**:
   - `convert_excel_to_pdf()`: Converts .xlsx and .xls files to PDF
   - Uses openpyxl to read Excel files and reportlab to generate PDFs
   - Handles empty cells and None values gracefully
   - Creates formatted PDF tables from Excel data
   - Supports both .xlsx and .xls formats (note: openpyxl primarily supports .xlsx)
+- **Advanced Features**:
+  - **Pagination**: Automatically splits wide tables across multiple pages
+  - **Auto-sizing**: Calculates optimal column widths based on content
+  - **Configurable page size**: Supports letter, A4, and custom sizes
+  - **Orientation support**: Portrait and landscape modes
+  - **Improved fidelity**: Enhanced fonts, colors, borders, and alternating row colors
 - **Dependencies**:
   - `openpyxl>=3.0.0` - Excel file reading
   - `reportlab>=3.6.0` - PDF generation
 - **Implementation Details**:
   - Reads all rows from the active Excel sheet
   - Converts data to a formatted PDF table with headers
-  - Handles styling (headers, borders, colors)
+  - Handles styling (headers, borders, colors, alternating rows)
   - Preserves data structure in PDF format
+  - Splits tables wider than 8 columns (configurable) across pages
 
 #### 8. UI Module (`pdf_merger/ui/app.py`)
 
-- **Responsibility**: GUI application
+- **Responsibility**: GUI application with configuration integration
 - **Technology**: CustomTkinter
 - **Features**:
   - File/folder selection dialogs
   - Real-time progress logging
   - Result display
-  - License status indicator
+  - License status indicator with expiry warnings
+  - Configuration loading (pre-populates fields from config)
   - Updated labels: "Source Directory" (supports PDF and Excel files)
+- **License UX**:
+  - Shows expiry warnings (critical/warning/info based on days remaining)
+  - Displays days until expiry
+  - Color-coded status (green/yellow/orange/red)
+  - Offline mode detection
+- **Configuration Integration**:
+  - Loads configuration on startup
+  - Pre-populates file/directory fields from config
+  - Supports all configuration sources (env vars, config files, presets)
 - **UI Updates**:
   - Changed "PDF Directory" to "Source Directory" to reflect Excel support
   - Updated dialog titles and validation messages
@@ -302,8 +393,16 @@ flowchart TD
 
 #### 9. Licensing System (`pdf_merger/licensing/`)
 
-- **`license_manager.py`**: License validation and status checking
-- **`license_model.py`**: License data structure
+- **`license_manager.py`**: License validation with enhanced UX
+  - Offline mode detection
+  - Clock skew tolerance (configurable, default ±5 minutes)
+  - Expiry warning messages (30/14/7 days before expiry)
+  - Actionable error messages
+  - License refresh mechanism
+- **`license_model.py`**: License data structure with expiry utilities
+  - `days_until_expiry()`: Calculates days until license expires
+  - `get_expiry_warning_level()`: Returns warning level (critical/warning/info)
+  - `is_expired()`: Checks expiration with clock skew tolerance
 - **`license_signer.py`**: RSA signature generation and verification
 
 ```mermaid
@@ -400,12 +499,16 @@ graph TB
 
 1. **Separation of Concerns**: Clear boundaries between UI, business logic, and data processing
 2. **Modularity**: Each module has a single, well-defined responsibility
-3. **Testability**: Components are designed to be easily testable with mocks
+3. **Testability**: Components are designed to be easily testable with mocks and domain models
 4. **Extensibility**: New features can be added without modifying core logic (Excel support added without breaking existing PDF-only workflows)
 5. **Error Handling**: Comprehensive exception hierarchy for clear error messages
 6. **Logging**: Structured logging throughout for debugging and monitoring
 7. **Backward Compatibility**: Existing functionality preserved when adding new features
 8. **Resource Management**: Automatic cleanup of temporary files (Excel-to-PDF conversions)
+9. **Type Safety**: Explicit domain models with type hints for better contracts
+10. **Determinism**: Formal matching rules ensure consistent behavior across runs
+11. **Cross-Platform**: Handles platform differences (case sensitivity, Unicode, long paths)
+12. **Privacy-First**: All observability features are opt-in with anonymization
 
 ---
 
@@ -455,6 +558,8 @@ The application supports multiple configuration sources with a clear precedence 
 - `config_schema.py` - Schema validation and path validation
 - All configuration values are validated (paths must exist, column names must be valid)
 - Invalid values are logged as warnings and defaults are used
+- Supports observability settings (metrics, telemetry, crash reporting)
+- Supports matching behavior configuration (fail_on_ambiguous_matches)
 
 **Use Cases**:
 - Environment variables for CI/CD and automated workflows
@@ -464,12 +569,125 @@ The application supports multiple configuration sources with a clear precedence 
 
 See `docs/CONFIGURATION.md` for detailed configuration documentation.
 
+### Domain Models
+
+The application uses explicit domain models for type safety and better contracts:
+
+**Models** (`pdf_merger/models/`):
+- **`Row`**: Represents a single row from input data
+  - Parses and validates serial numbers
+  - Tracks raw data and normalized serial numbers
+  - Provides validation methods
+- **`MergeJob`**: Represents a complete merge job
+  - Contains input file, source folder, output folder
+  - Tracks all rows to process
+  - Supports job metadata and identifiers
+- **`MergeResult`**: Detailed result of processing
+  - Per-row results with status (SUCCESS, FAILED, SKIPPED, PARTIAL)
+  - Tracks files found, files missing, processing times
+  - Provides success rate calculations
+  - Backward compatible with legacy `ProcessingResult`
+
+**Benefits**:
+- Type safety throughout the codebase
+- Clear contracts between components
+- Better testability with explicit models
+- Detailed result tracking for debugging
+
+### Matching Rules
+
+The application uses formal matching rules for deterministic file finding:
+
+**Matching System** (`pdf_merger/matching/`):
+- **Formal Specification**: Documented matching algorithm with examples
+- **Priority Order**:
+  1. Exact match (case-insensitive, with any supported extension)
+  2. Stem match (filename without extension)
+  3. Deterministic tie-breaking (alphabetical by full path)
+- **Unicode Normalization**: NFC normalization for cross-platform compatibility
+- **Ambiguity Detection**: Detects when multiple files match
+- **Configurable Behavior**:
+  - `FAIL_FAST`: Raises error on ambiguous matches (production default)
+  - `WARN_FIRST`: Warns and uses first match (development)
+  - `LOG_ALL`: Logs all matches for debugging
+
+**Performance**:
+- O(n) complexity for directory scanning
+- Lazy sorting (only when needed)
+- Future: Indexing support for very large directories
+
+See `pdf_merger/matching/spec.md` and `docs/MATCHING_RULES.md` for detailed specifications.
+
+### Cross-Platform Path Handling
+
+The application handles path differences between Windows, macOS, and Linux:
+
+**Path Utilities** (`pdf_merger/utils/path_utils.py`):
+- **Case Sensitivity**: Case-insensitive comparison on Windows, case-sensitive on Unix
+- **Unicode Normalization**: NFC normalization (handles macOS NFD)
+- **Long Path Support**: Detection and handling for Windows paths >260 characters
+- **Path Validation**: Cross-platform path validation with existence checks
+
+**Use Cases**:
+- Consistent file matching across platforms
+- Handling accented characters and special Unicode
+- Supporting long file paths on Windows
+
+### Observability
+
+The application includes opt-in observability features:
+
+**Observability Package** (`pdf_merger/observability/`):
+- **Metrics** (`metrics.py`):
+  - Processing time per row
+  - File sizes processed
+  - Success/failure rates
+  - Match ambiguity counts
+  - Memory usage (if available)
+- **Telemetry** (`telemetry.py`):
+  - Opt-in anonymous usage statistics
+  - No personal data collected
+  - Session tracking (optional)
+- **Crash Reporting** (`crash_reporting.py`):
+  - Opt-in crash reporting with stack traces
+  - Local crash report storage
+  - Context information capture
+
+**Privacy**:
+- All observability features are opt-in (disabled by default)
+- Telemetry is anonymized (no personal data)
+- Crash reports stored locally (not automatically sent)
+- Configurable via configuration system
+
+### Excel Rendering Improvements
+
+Enhanced Excel to PDF conversion with professional rendering:
+
+**Features**:
+- **Pagination**: Automatically splits wide tables across pages
+- **Auto-sizing**: Calculates optimal column widths based on content
+- **Page Configuration**: Supports letter, A4, portrait, landscape
+- **Rendering Fidelity**:
+  - Professional table styling
+  - Alternating row colors
+  - Header row highlighting
+  - Grid lines and borders
+  - Font and color preservation
+
+**Configuration**:
+- `max_cols_per_page`: Maximum columns per page (default: 8)
+- `auto_size_columns`: Enable/disable auto-sizing (default: True)
+- `page_size`: Page size selection (default: 'letter')
+- `orientation`: Portrait or landscape (default: 'portrait')
+
 ## Additional Resources
 
 - **Installation Guide**: See `INSTALLATION.md`
 - **Testing Guide**: See `TESTING.md`
 - **User Guide**: See `docs/README_USER.md`
 - **Configuration Guide**: See `docs/CONFIGURATION.md`
+- **Matching Rules**: See `docs/MATCHING_RULES.md` and `pdf_merger/matching/spec.md`
+- **Packaging Guide**: See `docs/PACKAGING.md` for signing and notarization
 - **Build Guide**: See `BUILD.md` for packaging instructions
 - **License Tools**: See `tools/README.md` for license generation
 
@@ -477,10 +695,29 @@ See `docs/CONFIGURATION.md` for detailed configuration documentation.
 
 ## Version
 
-Current version: **1.0.0**
+Current version: **1.1.0**
 
-### Recent Changes (v1.0.0)
+### Recent Changes (v1.1.0)
 
+**Major Enhancements:**
+- **Configuration Management**: Multi-source configuration with precedence (env vars > CLI > config > presets > defaults)
+- **Domain Models**: Explicit type-safe models (Row, MergeJob, MergeResult) for better contracts
+- **Formal Matching Rules**: Deterministic file matching with ambiguity detection and Unicode normalization
+- **Cross-Platform Path Handling**: Handles Windows/macOS differences (case sensitivity, Unicode, long paths)
+- **PDF Streaming**: Memory-efficient merging for large PDFs with auto-detection
+- **Excel Rendering**: Pagination support for wide tables with auto-sizing and improved fidelity
+- **Observability**: Opt-in metrics, telemetry, and crash reporting with privacy controls
+- **License UX**: Offline mode detection, clock skew tolerance, expiry warnings (30/14/7 days)
+
+**Improvements:**
+- Enhanced Excel to PDF conversion with professional styling
+- Ambiguous match detection with configurable handling (FAIL_FAST, WARN_FIRST, LOG_ALL)
+- License expiry warnings with color-coded UI indicators
+- Configuration integration in GUI (pre-populates fields)
+- Detailed per-row result tracking with processing times
+- Memory usage monitoring and warnings
+
+**Previous Version (v1.0.0):**
 - Added Excel file support (.xlsx, .xls)
 - Excel files automatically converted to PDF before merging
 - Support for mixed merges (PDF + Excel combinations)

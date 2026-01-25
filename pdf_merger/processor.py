@@ -16,6 +16,14 @@ from .logger import get_logger
 from .exceptions import PDFMergerError, InvalidFileFormatError
 from .enums import DEFAULT_SERIAL_NUMBERS_COLUMN, OUTPUT_FILENAME_PATTERN, EXCEL_FILE_EXTENSIONS
 from .models import Row, MergeJob, MergeResult, RowResult, RowStatus
+from .validators import validate_serial_number
+from .data_parser import (
+    split_serial_numbers,
+    deduplicate_serial_numbers,
+    normalize_serial_number
+)
+from .observability import get_metrics_collector
+from .matching import MatchBehavior
 
 logger = get_logger("processor")
 
@@ -142,7 +150,12 @@ def process_row(row_index: int, serial_numbers_str: str, source_folder: Path,
                 logger.warning(f"  Failed to clean up temporary file {temp_pdf.name}: {e}")
 
 
-def process_row_with_models(row: Row, source_folder: Path, output_folder: Path) -> RowResult:
+def process_row_with_models(
+    row: Row, 
+    source_folder: Path, 
+    output_folder: Path,
+    fail_on_ambiguous: bool = True
+) -> RowResult:
     """
     Process a single row using domain models: find PDFs and Excel files, convert Excel to PDF, and merge them.
     
@@ -150,14 +163,17 @@ def process_row_with_models(row: Row, source_folder: Path, output_folder: Path) 
         row: Row instance to process
         source_folder: Folder containing the PDF and Excel files
         output_folder: Folder where merged PDFs will be saved
+        fail_on_ambiguous: If True, raises ValueError on ambiguous matches (default: True)
         
     Returns:
         RowResult with processing details
     """
     start_time = time.time()
+    metrics = get_metrics_collector()
     
     if not row.has_serial_numbers():
         logger.warning(f"Row {row.row_index + 1}: No valid serial numbers, skipping...")
+        metrics.record_counter("rows_skipped", tags={"reason": "no_serial_numbers"})
         return RowResult(
             row_index=row.row_index,
             status=RowStatus.SKIPPED,
@@ -166,18 +182,30 @@ def process_row_with_models(row: Row, source_folder: Path, output_folder: Path) 
     
     logger.info(f"Row {row.row_index + 1}: Processing serial numbers: {', '.join(row.serial_numbers)}")
     
-    # Find all source files (PDFs and Excel files)
+    # Find all source files (PDFs and Excel files) with ambiguity detection
     source_files = []
     missing_serial_numbers = []
+    ambiguous_matches = []
     
     for serial_number in row.serial_numbers:
-        source_path = find_source_file(source_folder, serial_number)
-        if source_path:
-            source_files.append(source_path)
-            logger.info(f"  Found: {source_path.name}")
-        else:
-            missing_serial_numbers.append(serial_number)
-            logger.warning(f"  File not found for serial number '{serial_number}'")
+        try:
+            source_path = find_source_file(source_folder, serial_number, fail_on_ambiguous=fail_on_ambiguous)
+            if source_path:
+                source_files.append(source_path)
+                logger.info(f"  Found: {source_path.name}")
+                metrics.record_counter("files_found")
+            else:
+                missing_serial_numbers.append(serial_number)
+                logger.warning(f"  File not found for serial number '{serial_number}'")
+                metrics.record_counter("files_missing")
+        except ValueError as e:
+            # Ambiguous match detected
+            ambiguous_matches.append(str(e))
+            metrics.record_counter("ambiguous_matches")
+            logger.error(f"  Ambiguous match for '{serial_number}': {e}")
+            if fail_on_ambiguous:
+                # Re-raise if we should fail fast
+                raise
     
     if not source_files:
         logger.warning(f"Row {row.row_index + 1}: No files found for any serial numbers, skipping...")
@@ -232,9 +260,18 @@ def process_row_with_models(row: Row, source_folder: Path, output_folder: Path) 
         success = merge_pdfs(pdf_paths, output_path)
         
         processing_time = time.time() - start_time
+        metrics.record_timer("row_processing_time", processing_time)
         
         if success:
             logger.info(f"  ✓ Successfully created {output_filename}")
+            metrics.record_counter("rows_successful")
+            # Record file size if available
+            try:
+                file_size_mb = output_path.stat().st_size / (1024 * 1024)
+                metrics.record_gauge("output_file_size_mb", file_size_mb)
+            except Exception:
+                pass
+            
             status = RowStatus.PARTIAL if missing_serial_numbers else RowStatus.SUCCESS
             return RowResult(
                 row_index=row.row_index,
@@ -246,6 +283,7 @@ def process_row_with_models(row: Row, source_folder: Path, output_folder: Path) 
             )
         else:
             logger.error(f"  ✗ Failed to create {output_filename}")
+            metrics.record_counter("rows_failed", tags={"reason": "merge_failed"})
             return RowResult(
                 row_index=row.row_index,
                 status=RowStatus.FAILED,
@@ -266,12 +304,13 @@ def process_row_with_models(row: Row, source_folder: Path, output_folder: Path) 
                 logger.warning(f"  Failed to clean up temporary file {temp_pdf.name}: {e}")
 
 
-def process_job(job: MergeJob) -> MergeResult:
+def process_job(job: MergeJob, fail_on_ambiguous: bool = True) -> MergeResult:
     """
     Process a merge job using domain models.
     
     Args:
         job: MergeJob instance to process
+        fail_on_ambiguous: If True, raises ValueError on ambiguous matches (default: True)
         
     Returns:
         MergeResult with detailed processing results
@@ -285,22 +324,41 @@ def process_job(job: MergeJob) -> MergeResult:
     )
     
     start_time = time.time()
+    metrics = get_metrics_collector()
+    metrics.record_counter("jobs_started")
     
     try:
         for row in job.rows:
-            row_result = process_row_with_models(row, job.source_folder, job.output_folder)
+            row_result = process_row_with_models(
+                row, 
+                job.source_folder, 
+                job.output_folder,
+                fail_on_ambiguous=fail_on_ambiguous
+            )
             result.add_row_result(row_result)
         
         result.total_processing_time = time.time() - start_time
+        metrics.record_timer("job_processing_time", result.total_processing_time)
+        metrics.record_counter("jobs_completed")
+        metrics.record_gauge("job_success_rate", result.get_success_rate())
+        
         logger.info(f"Job {job.job_id or 'default'} completed: {result}")
         return result
         
     except PDFMergerError as e:
         logger.error(f"PDF Merger error: {e}")
+        metrics.record_counter("jobs_failed", tags={"error_type": "PDFMergerError"})
+        result.total_processing_time = time.time() - start_time
+        return result
+    except ValueError as e:
+        # Ambiguous match error
+        logger.error(f"Ambiguous match error: {e}")
+        metrics.record_counter("jobs_failed", tags={"error_type": "AmbiguousMatch"})
         result.total_processing_time = time.time() - start_time
         return result
     except Exception as e:
         logger.error(f"Unexpected error processing job: {e}")
+        metrics.record_counter("jobs_failed", tags={"error_type": "UnexpectedError"})
         result.total_processing_time = time.time() - start_time
         return result
 

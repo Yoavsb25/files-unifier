@@ -65,7 +65,8 @@ def run_merge_job(
     pdf_dir: Path,
     output_dir: Path,
     required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN,
-    job_id: Optional[str] = None
+    job_id: Optional[str] = None,
+    fail_on_ambiguous: bool = True
 ) -> MergeResult:
     """
     Run the merge operation using domain models.
@@ -109,7 +110,7 @@ def run_merge_job(
         )
     
     # Process job
-    result = process_job(job)
+    result = process_job(job, fail_on_ambiguous=fail_on_ambiguous)
     
     logger.info(f"Merge job {job_id or 'default'} completed")
     logger.info(f"  Total rows: {result.total_rows}")
