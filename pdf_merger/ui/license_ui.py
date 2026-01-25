@@ -57,7 +57,6 @@ def match_color_to_warning_level(warning_level: str) -> str:
     }
     return dict_warning_level_to_color.get(warning_level, YELLOW_COLOR)
 
-
 def update_license_display(license_manager: LicenseManager, license_label) -> bool:
     """
     Update license status display and return whether license is valid.
