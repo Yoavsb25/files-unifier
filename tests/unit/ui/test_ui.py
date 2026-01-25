@@ -538,6 +538,275 @@ class TestPDFMergerApp:
         app._update_ui_state()
         
         app.run_button.configure.assert_called_once_with(state="disabled")
+    
+    @patch('pdf_merger.ui.app.load_config')
+    @patch('pdf_merger.ui.app.validate_file')
+    @patch('pdf_merger.ui.app.validate_folder')
+    def test_load_config_into_ui_all_fields(self, mock_validate_folder, mock_validate_file, mock_load_config, tmp_path):
+        """Test loading config into UI with all fields."""
+        input_file = tmp_path / "input.csv"
+        input_file.write_text("test")
+        source_dir = tmp_path / "source"
+        source_dir.mkdir()
+        output_dir = tmp_path / "output"
+        
+        from pdf_merger.config import AppConfig
+        mock_config = AppConfig(
+            input_file=str(input_file),
+            pdf_dir=str(source_dir),
+            output_dir=str(output_dir)
+        )
+        mock_load_config.return_value = mock_config
+        
+        app = self._create_mock_app()
+        app.config = mock_config
+        app._update_ui_state = MagicMock()
+        
+        app._load_config_into_ui()
+        
+        assert app.input_file_path == input_file
+        assert app.pdf_dir_path == source_dir
+        assert app.output_dir_path == output_dir
+        app._update_ui_state.assert_called()
+    
+    @patch('pdf_merger.ui.app.load_config')
+    def test_load_config_into_ui_invalid_input_file(self, mock_load_config, tmp_path):
+        """Test loading config with invalid input file."""
+        from pdf_merger.config import AppConfig
+        mock_config = AppConfig(
+            input_file="/nonexistent/file.csv"
+        )
+        mock_load_config.return_value = mock_config
+        
+        app = self._create_mock_app()
+        app.config = mock_config
+        app._update_ui_state = MagicMock()
+        
+        app._load_config_into_ui()
+        
+        # Invalid file should not be loaded
+        assert app.input_file_path is None
+    
+    @patch('pdf_merger.ui.app.load_config')
+    def test_load_config_into_ui_invalid_source_dir(self, mock_load_config):
+        """Test loading config with invalid source directory."""
+        from pdf_merger.config import AppConfig
+        mock_config = AppConfig(
+            pdf_dir="/nonexistent/dir"
+        )
+        mock_load_config.return_value = mock_config
+        
+        app = self._create_mock_app()
+        app.config = mock_config
+        app._update_ui_state = MagicMock()
+        
+        app._load_config_into_ui()
+        
+        # Invalid directory should not be loaded
+        assert app.pdf_dir_path is None
+    
+    @patch('pdf_merger.ui.app.load_config')
+    def test_load_config_into_ui_output_dir_creation(self, mock_load_config, tmp_path):
+        """Test loading config with output directory that gets created."""
+        output_dir = tmp_path / "new_output"
+        
+        from pdf_merger.config import AppConfig
+        mock_config = AppConfig(
+            output_dir=str(output_dir)
+        )
+        mock_load_config.return_value = mock_config
+        
+        app = self._create_mock_app()
+        app.config = mock_config
+        app._update_ui_state = MagicMock()
+        
+        app._load_config_into_ui()
+        
+        # Output directory should be created and loaded
+        assert app.output_dir_path == output_dir
+        assert output_dir.exists()
+    
+    @patch('pdf_merger.ui.app.LicenseManager')
+    def test_check_license_with_warning_critical(self, mock_license_manager):
+        """Test checking license with critical expiry warning."""
+        mock_manager = MagicMock()
+        mock_manager.get_license_status.return_value = LicenseStatus.VALID
+        mock_manager.get_license_info.return_value = {
+            'company': 'Test Company',
+            'expires': '2027-12-31',
+            'days_until_expiry': 5,
+            'expiry_warning_level': 'critical'
+        }
+        mock_manager.get_expiry_warning_message.return_value = "License expires in 5 days. Please renew soon."
+        mock_license_manager.return_value = mock_manager
+        
+        app = self._create_mock_app()
+        app.license_manager = mock_manager
+        app._update_ui_state = MagicMock()
+        
+        app._check_license()
+        
+        assert app.license_valid is True
+        app.license_label.configure.assert_called()
+        # Check that text_color was set to red for critical
+        call_args = app.license_label.configure.call_args[1]
+        assert call_args['text_color'] == "red"
+    
+    @patch('pdf_merger.ui.app.LicenseManager')
+    def test_check_license_with_warning_warning(self, mock_license_manager):
+        """Test checking license with warning level expiry."""
+        mock_manager = MagicMock()
+        mock_manager.get_license_status.return_value = LicenseStatus.VALID
+        mock_manager.get_license_info.return_value = {
+            'company': 'Test Company',
+            'expires': '2027-12-31',
+            'days_until_expiry': 10,
+            'expiry_warning_level': 'warning'
+        }
+        mock_manager.get_expiry_warning_message.return_value = "License expires in 10 days. Consider renewing."
+        mock_license_manager.return_value = mock_manager
+        
+        app = self._create_mock_app()
+        app.license_manager = mock_manager
+        app._update_ui_state = MagicMock()
+        
+        app._check_license()
+        
+        assert app.license_valid is True
+        call_args = app.license_label.configure.call_args[1]
+        assert call_args['text_color'] == "orange"
+    
+    @patch('pdf_merger.ui.app.LicenseManager')
+    def test_check_license_with_warning_info(self, mock_license_manager):
+        """Test checking license with info level expiry."""
+        mock_manager = MagicMock()
+        mock_manager.get_license_status.return_value = LicenseStatus.VALID
+        mock_manager.get_license_info.return_value = {
+            'company': 'Test Company',
+            'expires': '2027-12-31',
+            'days_until_expiry': 20,
+            'expiry_warning_level': 'info'
+        }
+        mock_manager.get_expiry_warning_message.return_value = "License expires in 20 days."
+        mock_license_manager.return_value = mock_manager
+        
+        app = self._create_mock_app()
+        app.license_manager = mock_manager
+        app._update_ui_state = MagicMock()
+        
+        app._check_license()
+        
+        assert app.license_valid is True
+        call_args = app.license_label.configure.call_args[1]
+        assert call_args['text_color'] == "yellow"
+    
+    @patch('pdf_merger.ui.app.LicenseManager')
+    def test_check_license_without_warning(self, mock_license_manager):
+        """Test checking license without expiry warning."""
+        mock_manager = MagicMock()
+        mock_manager.get_license_status.return_value = LicenseStatus.VALID
+        mock_manager.get_license_info.return_value = {
+            'company': 'Test Company',
+            'expires': '2027-12-31'
+        }
+        mock_manager.get_expiry_warning_message.return_value = None
+        mock_license_manager.return_value = mock_manager
+        
+        app = self._create_mock_app()
+        app.license_manager = mock_manager
+        app._update_ui_state = MagicMock()
+        
+        app._check_license()
+        
+        assert app.license_valid is True
+        call_args = app.license_label.configure.call_args[1]
+        assert call_args['text_color'] == "green"
+    
+    @patch('pdf_merger.ui.app.LicenseManager')
+    def test_check_license_no_info(self, mock_license_manager):
+        """Test checking license when get_license_info returns None."""
+        mock_manager = MagicMock()
+        mock_manager.get_license_status.return_value = LicenseStatus.VALID
+        mock_manager.get_license_info.return_value = None
+        mock_license_manager.return_value = mock_manager
+        
+        app = self._create_mock_app()
+        app.license_manager = mock_manager
+        app._update_ui_state = MagicMock()
+        
+        app._check_license()
+        
+        assert app.license_valid is True
+        call_args = app.license_label.configure.call_args[1]
+        assert call_args['text_color'] == "green"
+        assert "License valid" in call_args['text']
+    
+    @patch('pdf_merger.ui.app.LicenseManager')
+    def test_check_license_invalid_status(self, mock_license_manager):
+        """Test checking license with invalid status."""
+        mock_manager = MagicMock()
+        mock_manager.get_license_status.return_value = LicenseStatus.INVALID_SIGNATURE
+        mock_manager.get_license_error_message.return_value = "License signature is invalid."
+        mock_license_manager.return_value = mock_manager
+        
+        app = self._create_mock_app()
+        app.license_manager = mock_manager
+        app._update_ui_state = MagicMock()
+        
+        app._check_license()
+        
+        assert app.license_valid is False
+        call_args = app.license_label.configure.call_args[1]
+        assert call_args['text_color'] == "red"
+        assert "License signature is invalid" in call_args['text']
+    
+    @patch('pdf_merger.ui.app.format_result_summary')
+    def test_merge_complete_partial_success(self, mock_format_summary):
+        """Test merge completion with partial success."""
+        app = self._create_mock_app()
+        app.is_processing = True
+        app._log = MagicMock()
+        app._update_ui_state = MagicMock()
+        
+        result = ProcessingResult(
+            total_rows=5,
+            successful_merges=3,
+            failed_rows=[2, 4]
+        )
+        mock_format_summary.return_value = "Summary text"
+        
+        app._merge_complete(result)
+        
+        assert app.is_processing is False
+        # Should show "Partial success" status
+        status_call = [call for call in app.status_label.configure.call_args_list 
+                      if 'text' in (call[1] if call[1] else {})]
+        assert len(status_call) > 0
+        status_text = status_call[0][1].get('text', '')
+        assert "Partial success" in status_text or "orange" in str(status_call)
+    
+    @patch('pdf_merger.ui.app.format_result_summary')
+    def test_merge_complete_failed(self, mock_format_summary):
+        """Test merge completion with all failures."""
+        app = self._create_mock_app()
+        app.is_processing = True
+        app._log = MagicMock()
+        app._update_ui_state = MagicMock()
+        
+        result = ProcessingResult(
+            total_rows=5,
+            successful_merges=0,
+            failed_rows=[1, 2, 3, 4, 5]
+        )
+        mock_format_summary.return_value = "Summary text"
+        
+        app._merge_complete(result)
+        
+        assert app.is_processing is False
+        # Should show "Failed" status
+        status_call = [call for call in app.status_label.configure.call_args_list 
+                      if 'text' in (call[1] if call[1] else {})]
+        assert len(status_call) > 0
 
 
 class TestRunGui:

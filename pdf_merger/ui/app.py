@@ -19,12 +19,13 @@ from ..exceptions import PDFMergerError
 from ..config import load_config
 
 # Setup logging
-setup_logger("pdf_merger", level=20)  # INFO level
+setup_logger("pdf_merger", level=20)
 logger = get_logger("ui.app")
 
 # Set CustomTkinter appearance
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
+APP_NAME = "PDF Batch Merger"
 
 
 class LogHandler:
@@ -54,7 +55,7 @@ class PDFMergerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        self.title("PDF Batch Merger")
+        self.title(APP_NAME)
         self.geometry("800x700")
         self.minsize(600, 500)
         
@@ -91,7 +92,7 @@ class PDFMergerApp(ctk.CTk):
         # Title
         title_label = ctk.CTkLabel(
             main_frame,
-            text="PDF Batch Merger",
+            text=APP_NAME,
             font=ctk.CTkFont(size=24, weight="bold")
         )
         title_label.pack(pady=(0, 20))
@@ -227,7 +228,7 @@ class PDFMergerApp(ctk.CTk):
         
         version_label = ctk.CTkLabel(
             footer_frame,
-            text=f"PDF Batch Merger v{APP_VERSION}",
+            text=f"{APP_NAME} v{APP_VERSION}",
             font=ctk.CTkFont(size=10),
             anchor="w"
         )
@@ -253,6 +254,7 @@ class PDFMergerApp(ctk.CTk):
                 warning_msg = self.license_manager.get_expiry_warning_message()
                 days = info.get('days_until_expiry')
                 warning_level = info.get('expiry_warning_level')
+                company_name = info.get('company')
                 
                 if warning_msg:
                     if warning_level == 'critical':
@@ -261,10 +263,10 @@ class PDFMergerApp(ctk.CTk):
                         text_color = "orange"
                     else:
                         text_color = "yellow"
-                    display_text = f"✓ Licensed to: {info['company']} - {warning_msg}"
+                    display_text = f"✓ Licensed to: {company_name} - {warning_msg}"
                 else:
                     text_color = "green"
-                    display_text = f"✓ Licensed to: {info['company']} (Expires: {info['expires']})"
+                    display_text = f"✓ Licensed to: {company_name} (Expires: {info['expires']})"
                 
                 self.license_label.configure(
                     text=display_text,

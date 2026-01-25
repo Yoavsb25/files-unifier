@@ -275,6 +275,125 @@ class TestMergePdfs:
         result = merge_pdfs(pdf_paths, output_path)
         
         assert result is False
+    
+    @patch('pdf_merger.pdf_operations_streaming.merge_pdfs_streaming')
+    @patch('pdf_merger.pdf_operations_streaming.should_use_streaming')
+    @patch('pdf_merger.pdf_operations.logger')
+    def test_merge_pdfs_auto_streaming_enabled(self, mock_logger, mock_should_stream, mock_stream_merge, tmp_path):
+        """Test merge_pdfs with auto-detected streaming mode."""
+        output_path = tmp_path / "merged.pdf"
+        pdf_paths = [tmp_path / "file1.pdf"]
+        pdf_paths[0].write_bytes(b"x" * (60 * 1024 * 1024))  # 60 MB file
+        
+        mock_should_stream.return_value = True
+        mock_stream_merge.return_value = True
+        
+        result = merge_pdfs(pdf_paths, output_path, use_streaming=None)
+        
+        assert result is True
+        mock_should_stream.assert_called_once()
+        mock_stream_merge.assert_called_once_with(pdf_paths, output_path)
+        mock_logger.info.assert_called()
+    
+    @patch('pdf_merger.pdf_operations_streaming.should_use_streaming')
+    def test_merge_pdfs_auto_streaming_disabled(self, mock_should_stream, tmp_path):
+        """Test merge_pdfs with auto-detected non-streaming mode."""
+        output_path = tmp_path / "merged.pdf"
+        pdf_paths = [tmp_path / "file1.pdf"]
+        pdf_paths[0].write_bytes(b"small pdf")
+        
+        mock_should_stream.return_value = False
+        
+        with patch('pdf_merger.pdf_operations._get_pdf_libraries') as mock_get_libs:
+            mock_writer_class = MagicMock()
+            mock_reader_class = MagicMock()
+            mock_writer_instance = MagicMock()
+            mock_writer_class.return_value = mock_writer_instance
+            mock_reader_instance = MagicMock()
+            mock_reader_instance.pages = [MagicMock()]
+            mock_reader_class.return_value = mock_reader_instance
+            mock_get_libs.return_value = (mock_writer_class, mock_reader_class)
+            
+            result = merge_pdfs(pdf_paths, output_path, use_streaming=None)
+            
+            assert result is True
+            mock_should_stream.assert_called_once()
+    
+    @patch('pdf_merger.pdf_operations_streaming.merge_pdfs_streaming')
+    def test_merge_pdfs_manual_streaming_enabled(self, mock_stream_merge, tmp_path):
+        """Test merge_pdfs with manually enabled streaming mode."""
+        output_path = tmp_path / "merged.pdf"
+        pdf_paths = [tmp_path / "file1.pdf"]
+        pdf_paths[0].write_bytes(b"fake pdf")
+        
+        mock_stream_merge.return_value = True
+        
+        result = merge_pdfs(pdf_paths, output_path, use_streaming=True)
+        
+        assert result is True
+        mock_stream_merge.assert_called_once_with(pdf_paths, output_path)
+    
+    @patch('pdf_merger.pdf_operations.logger')
+    def test_merge_pdfs_streaming_import_error(self, mock_logger, tmp_path):
+        """Test merge_pdfs when streaming import fails."""
+        output_path = tmp_path / "merged.pdf"
+        pdf_paths = [tmp_path / "file1.pdf"]
+        pdf_paths[0].write_bytes(b"fake pdf")
+        
+        # Simulate ImportError when trying to import merge_pdfs_streaming
+        with patch('pdf_merger.pdf_operations_streaming.merge_pdfs_streaming', side_effect=ImportError("Streaming not available")):
+            # Should fall back to standard mode
+            with patch('pdf_merger.pdf_operations._get_pdf_libraries') as mock_get_libs:
+                mock_writer_class = MagicMock()
+                mock_reader_class = MagicMock()
+                mock_writer_instance = MagicMock()
+                mock_writer_class.return_value = mock_writer_instance
+                mock_reader_instance = MagicMock()
+                mock_reader_instance.pages = [MagicMock()]
+                mock_reader_class.return_value = mock_reader_instance
+                mock_get_libs.return_value = (mock_writer_class, mock_reader_class)
+                
+                result = merge_pdfs(pdf_paths, output_path, use_streaming=True)
+                
+                assert result is True
+                mock_logger.warning.assert_called()
+    
+    @patch('pdf_merger.pdf_operations.logger')
+    def test_merge_pdfs_auto_streaming_import_error(self, mock_logger, tmp_path):
+        """Test merge_pdfs when streaming auto-detect import fails."""
+        output_path = tmp_path / "merged.pdf"
+        pdf_paths = [tmp_path / "file1.pdf"]
+        pdf_paths[0].write_bytes(b"fake pdf")
+        
+        # Simulate ImportError when trying to import should_use_streaming
+        with patch('pdf_merger.pdf_operations_streaming.should_use_streaming', side_effect=ImportError):
+            with patch('pdf_merger.pdf_operations._get_pdf_libraries') as mock_get_libs:
+                mock_writer_class = MagicMock()
+                mock_reader_class = MagicMock()
+                mock_writer_instance = MagicMock()
+                mock_writer_class.return_value = mock_writer_instance
+                mock_reader_instance = MagicMock()
+                mock_reader_instance.pages = [MagicMock()]
+                mock_reader_class.return_value = mock_reader_instance
+                mock_get_libs.return_value = (mock_writer_class, mock_reader_class)
+                
+                result = merge_pdfs(pdf_paths, output_path, use_streaming=None)
+                
+                # Should fall back to standard mode
+                assert result is True
+    
+    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    def test_merge_pdfs_general_exception(self, mock_get_libraries, tmp_path):
+        """Test merging when general exception occurs."""
+        output_path = tmp_path / "merged.pdf"
+        pdf_paths = [tmp_path / "file1.pdf"]
+        pdf_paths[0].write_bytes(b"fake pdf content")
+        
+        mock_get_libraries.side_effect = Exception("Unexpected error")
+        
+        result = merge_pdfs(pdf_paths, output_path)
+        
+        assert result is False
 
 
 class TestGetPdfLibraries:
