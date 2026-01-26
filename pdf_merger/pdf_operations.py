@@ -10,9 +10,12 @@ from pathlib import Path
 from typing import List, Optional
 
 from .logger import get_logger
-from .enums import PDF_FILE_EXTENSION, SOURCE_FILE_EXTENSIONS, EXCEL_FILE_EXTENSIONS
+from .constants import Constants
 
 logger = get_logger("pdf_operations")
+
+# Module-level constants
+PDF_FILE_EXTENSION = Constants.PDF_FILE_EXTENSION
 
 # Lazy import of PDF libraries - only import when merge_pdfs is called
 _PdfWriter = None

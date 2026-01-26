@@ -6,20 +6,12 @@ Represents the result of processing a merge job with detailed per-row results.
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
-from enum import Enum
 
 from .row import Row
+from ..enums import RowStatus
 from ..logger import get_logger
 
 logger = get_logger("models.merge_result")
-
-
-class RowStatus(Enum):
-    """Status of a row processing operation."""
-    SUCCESS = "success"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    PARTIAL = "partial"  # Some files found but not all
 
 
 @dataclass

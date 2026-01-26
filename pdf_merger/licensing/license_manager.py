@@ -4,26 +4,15 @@ Main license validation and verification logic with enhanced UX.
 """
 
 import socket
-from enum import Enum
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
 
 from .license_model import License
 from .license_signer import get_embedded_public_key, verify_license_signature
+from ..enums import LicenseStatus
 from ..logger import get_logger
 
 logger = get_logger("licensing.manager")
-
-
-class LicenseStatus(Enum):
-    """License validation status."""
-    VALID = "valid"
-    EXPIRED = "expired"
-    INVALID_SIGNATURE = "invalid_signature"
-    NOT_FOUND = "not_found"
-    INVALID_FORMAT = "invalid_format"
-    VERSION_MISMATCH = "version_mismatch"
 
 
 class LicenseManager:

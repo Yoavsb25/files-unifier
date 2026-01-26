@@ -7,9 +7,12 @@ from pathlib import Path
 from typing import Optional, List, Tuple
 
 from .logger import get_logger
-from .enums import EXCEL_FILE_EXTENSIONS
+from .constants import Constants
 
 logger = get_logger("excel_converter")
+
+# Module-level constants
+EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS
 
 
 def _safe_str(value) -> str:
