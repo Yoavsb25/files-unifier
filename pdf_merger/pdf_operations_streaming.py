@@ -3,9 +3,6 @@ Streaming PDF operations module.
 Provides memory-efficient PDF merging for large files.
 """
 
-import sys
-import os
-from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional
 

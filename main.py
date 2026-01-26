@@ -5,7 +5,6 @@ Launches GUI application with license checking.
 """
 
 import sys
-from pathlib import Path
 
 from pdf_merger import APP_VERSION
 from pdf_merger.licensing import LicenseManager, LicenseStatus
