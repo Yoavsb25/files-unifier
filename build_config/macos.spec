@@ -3,15 +3,29 @@
 PyInstaller spec file for macOS build of PDF Batch Merger.
 """
 
+import os
+from pathlib import Path
+
 block_cipher = None
+
+# Collect data files (only include if they exist)
+# Use absolute path resolution to avoid path issues
+datas = []
+try:
+    # Resolve path relative to current working directory (project root)
+    public_key_path = Path('pdf_merger/licensing/public_key.pem').resolve()
+    if public_key_path.exists() and public_key_path.is_file():
+        datas.append((str(public_key_path), 'pdf_merger/licensing'))
+    else:
+        print(f"Warning: Public key not found at {public_key_path}, license verification may not work.")
+except Exception as e:
+    print(f"Warning: Could not check for public key: {e}. License verification may not work.")
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('pdf_merger/licensing/public_key.pem', 'pdf_merger/licensing'),
-    ],
+    datas=datas,
     hiddenimports=[
         'customtkinter',
         'pypdf',
