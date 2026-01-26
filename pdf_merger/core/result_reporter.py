@@ -1,16 +1,16 @@
 """
-Reporter module.
+Result reporter module.
 Format processing results for UI display.
 Supports both legacy ProcessingResult and new MergeResult domain models.
 """
 
 from typing import Union
-from ..processor import ProcessingResult
+from .merge_processor import ProcessingResult
 from ..models import MergeResult, RowStatus
-from ..constants import Constants
-from ..logger import get_logger
+from .constants import Constants
+from ..utils.logging_utils import get_logger
 
-logger = get_logger("core.reporter")
+logger = get_logger("core.result_reporter")
 
 # Module-level constants
 MAX_DISPLAY_STRING_LENGTH = Constants.MAX_DISPLAY_STRING_LENGTH

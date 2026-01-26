@@ -1,5 +1,5 @@
 """
-Processor module.
+Merge processor module.
 Main orchestration logic for processing files and merging PDFs.
 """
 
@@ -9,23 +9,23 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
-from .pdf_operations import find_source_file, merge_pdfs
-from .excel_converter import convert_excel_to_pdf
-from .file_reader import read_data_file
-from .logger import get_logger
-from .exceptions import PDFMergerError
+from ..operations.pdf_merger import find_source_file, merge_pdfs
+from ..operations.excel_to_pdf_converter import convert_excel_to_pdf
+from .csv_excel_reader import read_data_file
+from ..utils.logging_utils import get_logger
+from ..utils.exceptions import PDFMergerError
 from .constants import Constants
-from .models import Row, MergeJob, MergeResult, RowResult, RowStatus
-from .validators import validate_serial_number
-from .data_parser import (
+from ..models import Row, MergeJob, MergeResult, RowResult, RowStatus
+from ..utils.validators import validate_serial_number
+from .serial_number_parser import (
     split_serial_numbers,
     deduplicate_serial_numbers,
     normalize_serial_number
 )
-from .observability import get_metrics_collector
-from .matching import MatchBehavior
+from ..observability import get_metrics_collector
+from ..matching import MatchBehavior
 
-logger = get_logger("processor")
+logger = get_logger("merge_processor")
 
 # Module-level constants
 EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS

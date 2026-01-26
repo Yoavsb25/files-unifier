@@ -1,5 +1,5 @@
 """
-Validation module.
+Validation utilities module.
 Handles validation of files, folders, and paths.
 
 Validation Strategy:
@@ -8,10 +8,10 @@ Validation Strategy:
 """
 
 from pathlib import Path
-from .file_reader import get_file_columns
-from .logger import get_logger
+from .logging_utils import get_logger
 from .exceptions import MissingColumnError, FileNotFoundError, ValidationError, InvalidFileFormatError
-from .constants import Constants
+from ..core.constants import Constants
+from ..core.csv_excel_reader import get_file_columns
 
 logger = get_logger("validators")
 

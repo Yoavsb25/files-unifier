@@ -1,5 +1,5 @@
 """
-Data parsing module.
+Serial number parsing module.
 Handles parsing serial numbers from strings.
 """
 

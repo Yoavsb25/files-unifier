@@ -1,5 +1,5 @@
 """
-Logging configuration for PDF Merger.
+Logging utilities for PDF Merger.
 Provides centralized logging setup and management.
 """
 

@@ -6,7 +6,7 @@ import json
 import pytest
 from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
-from pdf_merger.config import (
+from pdf_merger.config.config_manager import (
     AppConfig,
     get_config_path,
     load_config,
@@ -16,7 +16,7 @@ from pdf_merger.config import (
     load_user_config,
     load_env_config
 )
-from pdf_merger.constants import Constants
+from pdf_merger.core.constants import Constants
 
 
 class TestAppConfig:
@@ -202,7 +202,7 @@ class TestGetConfigPath:
     
     def test_get_config_path_app_directory_exists(self, tmp_path):
         """Test getting config path from app directory when it exists."""
-        from pdf_merger.config import get_config_path
+        from pdf_merger.config.config_manager import get_config_path
         
         app_dir = tmp_path / "app"
         app_dir.mkdir()
@@ -210,7 +210,7 @@ class TestGetConfigPath:
         app_config.write_text("{}")
         
         # Mock __file__ to point to app_dir
-        with patch('pdf_merger.config.__file__', str(app_dir / 'config.py')):
+        with patch('pdf_merger.config.config_manager.__file__', str(app_dir / 'config_manager.py')):
             result = get_config_path()
             # Should return app directory config if it exists
             # Note: This test verifies the function works, actual path may vary
@@ -218,7 +218,7 @@ class TestGetConfigPath:
     
     def test_get_config_path_fallback_to_home(self, tmp_path, monkeypatch):
         """Test getting config path falls back to home directory."""
-        from pdf_merger.config import get_config_path
+        from pdf_merger.config.config_manager import get_config_path
         
         home_dir = tmp_path / "home"
         home_dir.mkdir()
@@ -232,7 +232,7 @@ class TestGetConfigPath:
         app_dir = tmp_path / "app"
         app_dir.mkdir()
         
-        with patch('pdf_merger.config.__file__', str(app_dir / 'config.py')):
+        with patch('pdf_merger.config.config_manager.__file__', str(app_dir / 'config_manager.py')):
             result = get_config_path()
             # Should return home directory config when app config doesn't exist
             assert '.pdf_merger' in str(result) or 'home' in str(result)
@@ -244,7 +244,7 @@ class TestLoadConfig:
     
     def test_load_config_file_not_found(self, tmp_path):
         """Test loading config when file doesn't exist."""
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_get_path.return_value = tmp_path / "nonexistent.json"
             
             result = load_config()
@@ -254,9 +254,9 @@ class TestLoadConfig:
             assert result.pdf_dir is None
             assert result.output_dir is None
     
-    @patch('pdf_merger.config.load_env_config')
-    @patch('pdf_merger.config.load_project_preset')
-    @patch('pdf_merger.config.load_user_config')
+    @patch('pdf_merger.config.config_manager.load_env_config')
+    @patch('pdf_merger.config.config_manager.load_project_preset')
+    @patch('pdf_merger.config.config_manager.load_user_config')
     def test_load_config_success(self, mock_user_config, mock_project_preset, mock_env_config, tmp_path):
         """Test successfully loading config from file."""
         config_file = tmp_path / "config.json"
@@ -283,9 +283,9 @@ class TestLoadConfig:
         assert result.output_dir == '/path/to/output'
         assert result.required_column == 'custom_column'
     
-    @patch('pdf_merger.config.load_env_config')
-    @patch('pdf_merger.config.load_project_preset')
-    @patch('pdf_merger.config.load_user_config')
+    @patch('pdf_merger.config.config_manager.load_env_config')
+    @patch('pdf_merger.config.config_manager.load_project_preset')
+    @patch('pdf_merger.config.config_manager.load_user_config')
     def test_load_config_precedence_env_overrides_all(self, mock_user_config, mock_project_preset, mock_env_config, tmp_path):
         """Test that environment variables override user config and project preset."""
         # Project preset
@@ -308,9 +308,9 @@ class TestLoadConfig:
         # output_dir from user config (env doesn't have it)
         assert result.output_dir == "/user/output"
     
-    @patch('pdf_merger.config.load_env_config')
-    @patch('pdf_merger.config.load_project_preset')
-    @patch('pdf_merger.config.load_user_config')
+    @patch('pdf_merger.config.config_manager.load_env_config')
+    @patch('pdf_merger.config.config_manager.load_project_preset')
+    @patch('pdf_merger.config.config_manager.load_user_config')
     def test_load_config_precedence_user_overrides_project(self, mock_user_config, mock_project_preset, mock_env_config, tmp_path):
         """Test that user config overrides project preset."""
         # Project preset
@@ -331,9 +331,9 @@ class TestLoadConfig:
         assert result.pdf_dir == "/project/pdfs"  # From project (user doesn't have it)
         assert result.output_dir == "/user/output"
     
-    @patch('pdf_merger.config.load_env_config')
-    @patch('pdf_merger.config.load_project_preset')
-    @patch('pdf_merger.config.load_user_config')
+    @patch('pdf_merger.config.config_manager.load_env_config')
+    @patch('pdf_merger.config.config_manager.load_project_preset')
+    @patch('pdf_merger.config.config_manager.load_user_config')
     def test_load_config_with_start_path(self, mock_user_config, mock_project_preset, mock_env_config, tmp_path):
         """Test load_config with start_path parameter."""
         preset_file = tmp_path / ".pdf_merger_config.json"
@@ -353,7 +353,7 @@ class TestLoadConfig:
         config_file = tmp_path / "config.json"
         config_file.write_text("invalid json {")
         
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_get_path.return_value = config_file
             
             result = load_config()
@@ -364,7 +364,7 @@ class TestLoadConfig:
     
     def test_load_config_file_read_error(self, tmp_path):
         """Test loading config when file read fails."""
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_path = MagicMock()
             mock_path.exists.return_value = True
             mock_path.__truediv__ = lambda self, other: mock_path
@@ -389,7 +389,7 @@ class TestSaveConfig:
             output_dir="/path/to/output"
         )
         
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_get_path.return_value = config_file
             
             result = save_config(config)
@@ -409,7 +409,7 @@ class TestSaveConfig:
         config_file = config_dir / "config.json"
         config = AppConfig()
         
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_get_path.return_value = config_file
             
             result = save_config(config)
@@ -422,7 +422,7 @@ class TestSaveConfig:
         """Test saving config when write fails."""
         config = AppConfig()
         
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_path = MagicMock()
             mock_path.parent.mkdir = MagicMock()
             mock_get_path.return_value = mock_path
@@ -436,7 +436,7 @@ class TestSaveConfig:
         """Test saving config when directory creation fails."""
         config = AppConfig()
         
-        with patch('pdf_merger.config.get_config_path') as mock_get_path:
+        with patch('pdf_merger.config.config_manager.get_config_path') as mock_get_path:
             mock_path = MagicMock()
             mock_path.parent.mkdir.side_effect = PermissionError("Permission denied")
             mock_get_path.return_value = mock_path
@@ -451,7 +451,7 @@ class TestFindProjectPreset:
     
     def test_find_project_preset_in_current_dir(self, tmp_path):
         """Test finding preset in current directory."""
-        from pdf_merger.config import find_project_preset
+        from pdf_merger.config.config_manager import find_project_preset
         
         preset_file = tmp_path / ".pdf_merger_config.json"
         preset_file.write_text("{}")
@@ -462,7 +462,7 @@ class TestFindProjectPreset:
     
     def test_find_project_preset_in_parent_dir(self, tmp_path):
         """Test finding preset in parent directory."""
-        from pdf_merger.config import find_project_preset
+        from pdf_merger.config.config_manager import find_project_preset
         
         subdir = tmp_path / "subdir" / "nested"
         subdir.mkdir(parents=True)
@@ -475,7 +475,7 @@ class TestFindProjectPreset:
     
     def test_find_project_preset_not_found(self, tmp_path):
         """Test when preset is not found."""
-        from pdf_merger.config import find_project_preset
+        from pdf_merger.config.config_manager import find_project_preset
         
         subdir = tmp_path / "subdir"
         subdir.mkdir()
@@ -486,7 +486,7 @@ class TestFindProjectPreset:
     
     def test_find_project_preset_defaults_to_cwd(self):
         """Test that find_project_preset defaults to current working directory."""
-        from pdf_merger.config import find_project_preset
+        from pdf_merger.config.config_manager import find_project_preset
         
         with patch('pathlib.Path.cwd', return_value=Path("/tmp")):
             with patch('pathlib.Path.exists', return_value=False):
@@ -501,7 +501,7 @@ class TestLoadProjectPreset:
     
     def test_load_project_preset_success(self, tmp_path):
         """Test successfully loading project preset."""
-        from pdf_merger.config import load_project_preset
+        from pdf_merger.config.config_manager import load_project_preset
         
         preset_file = tmp_path / ".pdf_merger_config.json"
         preset_data = {
@@ -518,7 +518,7 @@ class TestLoadProjectPreset:
     
     def test_load_project_preset_not_found(self, tmp_path):
         """Test loading preset when not found."""
-        from pdf_merger.config import load_project_preset
+        from pdf_merger.config.config_manager import load_project_preset
         
         result = load_project_preset(tmp_path)
         
@@ -526,7 +526,7 @@ class TestLoadProjectPreset:
     
     def test_load_project_preset_invalid_json(self, tmp_path):
         """Test loading preset with invalid JSON."""
-        from pdf_merger.config import load_project_preset
+        from pdf_merger.config.config_manager import load_project_preset
         
         preset_file = tmp_path / ".pdf_merger_config.json"
         preset_file.write_text("invalid json {")
@@ -537,7 +537,7 @@ class TestLoadProjectPreset:
     
     def test_load_project_preset_read_error(self, tmp_path):
         """Test loading preset when read fails."""
-        from pdf_merger.config import load_project_preset
+        from pdf_merger.config.config_manager import load_project_preset
         
         preset_file = tmp_path / ".pdf_merger_config.json"
         preset_file.write_text("{}")
@@ -553,9 +553,9 @@ class TestLoadUserConfig:
     
     def test_load_user_config_not_found(self, tmp_path):
         """Test loading user config when file doesn't exist."""
-        from pdf_merger.config import load_user_config
+        from pdf_merger.config.config_manager import load_user_config
         
-        with patch('pdf_merger.config.get_config_path', return_value=tmp_path / "nonexistent.json"):
+        with patch('pdf_merger.config.config_manager.get_config_path', return_value=tmp_path / "nonexistent.json"):
             result = load_user_config()
             
             assert isinstance(result, AppConfig)
@@ -563,7 +563,7 @@ class TestLoadUserConfig:
     
     def test_load_user_config_success(self, tmp_path):
         """Test successfully loading user config."""
-        from pdf_merger.config import load_user_config
+        from pdf_merger.config.config_manager import load_user_config
         
         # Create valid paths that exist
         input_file = tmp_path / "input.csv"
@@ -578,7 +578,7 @@ class TestLoadUserConfig:
         }
         config_file.write_text(json.dumps(config_data))
         
-        with patch('pdf_merger.config.get_config_path', return_value=config_file):
+        with patch('pdf_merger.config.config_manager.get_config_path', return_value=config_file):
             result = load_user_config()
             
             assert result.input_file == str(input_file)
@@ -586,12 +586,12 @@ class TestLoadUserConfig:
     
     def test_load_user_config_invalid_json(self, tmp_path):
         """Test loading user config with invalid JSON."""
-        from pdf_merger.config import load_user_config
+        from pdf_merger.config.config_manager import load_user_config
         
         config_file = tmp_path / "config.json"
         config_file.write_text("invalid json {")
         
-        with patch('pdf_merger.config.get_config_path', return_value=config_file):
+        with patch('pdf_merger.config.config_manager.get_config_path', return_value=config_file):
             result = load_user_config()
             
             # Should return default config on error
@@ -604,7 +604,7 @@ class TestLoadEnvConfig:
     
     def test_load_env_config_no_vars(self):
         """Test loading env config when no variables are set."""
-        from pdf_merger.config import load_env_config
+        from pdf_merger.config.config_manager import load_env_config
         
         with patch.dict('os.environ', {}, clear=True):
             result = load_env_config()
@@ -615,7 +615,7 @@ class TestLoadEnvConfig:
     
     def test_load_env_config_all_vars(self, tmp_path):
         """Test loading env config with all variables set."""
-        from pdf_merger.config import load_env_config, ENV_INPUT_FILE, ENV_SOURCE_DIR, ENV_OUTPUT_DIR, ENV_COLUMN
+        from pdf_merger.config.config_manager import load_env_config, ENV_INPUT_FILE, ENV_SOURCE_DIR, ENV_OUTPUT_DIR, ENV_COLUMN
         
         input_file = tmp_path / "input.csv"
         input_file.write_text("test")
@@ -640,7 +640,7 @@ class TestLoadEnvConfig:
     
     def test_load_env_config_partial_vars(self, tmp_path):
         """Test loading env config with partial variables."""
-        from pdf_merger.config import load_env_config, ENV_INPUT_FILE
+        from pdf_merger.config.config_manager import load_env_config, ENV_INPUT_FILE
         
         input_file = tmp_path / "input.csv"
         input_file.write_text("test")

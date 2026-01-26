@@ -1,16 +1,16 @@
 """
-Excel converter module.
+Excel to PDF converter module.
 Handles converting Excel files to PDF format with pagination and wide table support.
 """
 
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-from .logger import get_logger
-from .constants import Constants
-from .enums import PageOrientation, PageSize
+from ..utils.logging_utils import get_logger
+from ..core.constants import Constants
+from ..core.enums import PageOrientation, PageSize
 
-logger = get_logger("excel_converter")
+logger = get_logger("excel_to_pdf_converter")
 
 # Module-level constants
 EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS

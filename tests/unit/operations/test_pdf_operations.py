@@ -5,8 +5,8 @@ Unit tests for pdf_operations module.
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
-from pdf_merger.pdf_operations import find_pdf_file, find_source_file, merge_pdfs, _get_pdf_libraries
-from pdf_merger.constants import Constants
+from pdf_merger.operations.pdf_merger import find_pdf_file, find_source_file, merge_pdfs, _get_pdf_libraries
+from pdf_merger.core.constants import Constants
 
 
 class TestFindPdfFile:
@@ -148,7 +148,7 @@ class TestFindPdfFile:
 class TestMergePdfs:
     """Test cases for merge_pdfs function."""
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
     def test_merge_pdfs_success(self, mock_get_libraries, tmp_path):
         """Test successful PDF merging."""
         output_path = tmp_path / "merged.pdf"
@@ -185,8 +185,8 @@ class TestMergePdfs:
         assert mock_writer_instance.add_page.call_count == 4  # 2 pages per PDF
         assert mock_writer_instance.write.called
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations.logger')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger.logger')
     def test_merge_pdfs_empty_list(self, mock_logger, mock_get_libraries, tmp_path):
         """Test merging with empty PDF list."""
         output_path = tmp_path / "merged.pdf"
@@ -197,7 +197,7 @@ class TestMergePdfs:
         mock_get_libraries.assert_not_called()
         mock_logger.warning.assert_called_once()
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
     def test_merge_pdfs_read_error(self, mock_get_libraries, tmp_path):
         """Test merging when PDF reading fails."""
         output_path = tmp_path / "merged.pdf"
@@ -216,7 +216,7 @@ class TestMergePdfs:
         
         assert result is False
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
     def test_merge_pdfs_write_error(self, mock_get_libraries, tmp_path):
         """Test merging when PDF writing fails."""
         output_path = tmp_path / "merged.pdf"
@@ -239,7 +239,7 @@ class TestMergePdfs:
         
         assert result is False
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
     def test_merge_pdfs_single_pdf(self, mock_get_libraries, tmp_path):
         """Test merging a single PDF."""
         output_path = tmp_path / "merged.pdf"
@@ -263,7 +263,7 @@ class TestMergePdfs:
         assert result is True
         assert mock_writer_instance.add_page.call_count == 1
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
     def test_merge_pdfs_import_error(self, mock_get_libraries, tmp_path):
         """Test merging when ImportError is raised."""
         output_path = tmp_path / "merged.pdf"
@@ -276,9 +276,9 @@ class TestMergePdfs:
         
         assert result is False
     
-    @patch('pdf_merger.pdf_operations_streaming.merge_pdfs_streaming')
-    @patch('pdf_merger.pdf_operations_streaming.should_use_streaming')
-    @patch('pdf_merger.pdf_operations.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger.merge_pdfs_streaming')
+    @patch('pdf_merger.operations.streaming_pdf_merger.should_use_streaming')
+    @patch('pdf_merger.operations.pdf_merger.logger')
     def test_merge_pdfs_auto_streaming_enabled(self, mock_logger, mock_should_stream, mock_stream_merge, tmp_path):
         """Test merge_pdfs with auto-detected streaming mode."""
         output_path = tmp_path / "merged.pdf"
@@ -295,7 +295,7 @@ class TestMergePdfs:
         mock_stream_merge.assert_called_once_with(pdf_paths, output_path)
         mock_logger.info.assert_called()
     
-    @patch('pdf_merger.pdf_operations_streaming.should_use_streaming')
+    @patch('pdf_merger.operations.streaming_pdf_merger.should_use_streaming')
     def test_merge_pdfs_auto_streaming_disabled(self, mock_should_stream, tmp_path):
         """Test merge_pdfs with auto-detected non-streaming mode."""
         output_path = tmp_path / "merged.pdf"
@@ -304,7 +304,7 @@ class TestMergePdfs:
         
         mock_should_stream.return_value = False
         
-        with patch('pdf_merger.pdf_operations._get_pdf_libraries') as mock_get_libs:
+        with patch('pdf_merger.operations.pdf_merger._get_pdf_libraries') as mock_get_libs:
             mock_writer_class = MagicMock()
             mock_reader_class = MagicMock()
             mock_writer_instance = MagicMock()
@@ -319,7 +319,7 @@ class TestMergePdfs:
             assert result is True
             mock_should_stream.assert_called_once()
     
-    @patch('pdf_merger.pdf_operations_streaming.merge_pdfs_streaming')
+    @patch('pdf_merger.operations.streaming_pdf_merger.merge_pdfs_streaming')
     def test_merge_pdfs_manual_streaming_enabled(self, mock_stream_merge, tmp_path):
         """Test merge_pdfs with manually enabled streaming mode."""
         output_path = tmp_path / "merged.pdf"
@@ -333,7 +333,7 @@ class TestMergePdfs:
         assert result is True
         mock_stream_merge.assert_called_once_with(pdf_paths, output_path)
     
-    @patch('pdf_merger.pdf_operations.logger')
+    @patch('pdf_merger.operations.pdf_merger.logger')
     def test_merge_pdfs_streaming_import_error(self, mock_logger, tmp_path):
         """Test merge_pdfs when streaming import fails."""
         output_path = tmp_path / "merged.pdf"
@@ -341,9 +341,9 @@ class TestMergePdfs:
         pdf_paths[0].write_bytes(b"fake pdf")
         
         # Simulate ImportError when trying to import merge_pdfs_streaming
-        with patch('pdf_merger.pdf_operations_streaming.merge_pdfs_streaming', side_effect=ImportError("Streaming not available")):
+        with patch('pdf_merger.operations.streaming_pdf_merger.merge_pdfs_streaming', side_effect=ImportError("Streaming not available")):
             # Should fall back to standard mode
-            with patch('pdf_merger.pdf_operations._get_pdf_libraries') as mock_get_libs:
+            with patch('pdf_merger.operations.pdf_merger._get_pdf_libraries') as mock_get_libs:
                 mock_writer_class = MagicMock()
                 mock_reader_class = MagicMock()
                 mock_writer_instance = MagicMock()
@@ -358,7 +358,7 @@ class TestMergePdfs:
                 assert result is True
                 mock_logger.warning.assert_called()
     
-    @patch('pdf_merger.pdf_operations.logger')
+    @patch('pdf_merger.operations.pdf_merger.logger')
     def test_merge_pdfs_auto_streaming_import_error(self, mock_logger, tmp_path):
         """Test merge_pdfs when streaming auto-detect import fails."""
         output_path = tmp_path / "merged.pdf"
@@ -366,8 +366,8 @@ class TestMergePdfs:
         pdf_paths[0].write_bytes(b"fake pdf")
         
         # Simulate ImportError when trying to import should_use_streaming
-        with patch('pdf_merger.pdf_operations_streaming.should_use_streaming', side_effect=ImportError):
-            with patch('pdf_merger.pdf_operations._get_pdf_libraries') as mock_get_libs:
+        with patch('pdf_merger.operations.streaming_pdf_merger.should_use_streaming', side_effect=ImportError):
+            with patch('pdf_merger.operations.pdf_merger._get_pdf_libraries') as mock_get_libs:
                 mock_writer_class = MagicMock()
                 mock_reader_class = MagicMock()
                 mock_writer_instance = MagicMock()
@@ -382,7 +382,7 @@ class TestMergePdfs:
                 # Should fall back to standard mode
                 assert result is True
     
-    @patch('pdf_merger.pdf_operations._get_pdf_libraries')
+    @patch('pdf_merger.operations.pdf_merger._get_pdf_libraries')
     def test_merge_pdfs_general_exception(self, mock_get_libraries, tmp_path):
         """Test merging when general exception occurs."""
         output_path = tmp_path / "merged.pdf"
@@ -401,7 +401,7 @@ class TestGetPdfLibraries:
     
     def test_get_pdf_libraries_imports_pypdf(self):
         """Test that _get_pdf_libraries imports pypdf when available."""
-        import pdf_merger.pdf_operations as pdf_ops
+        import pdf_merger.operations.pdf_merger as pdf_ops
         
         # Reset the global variables
         original_writer = pdf_ops._PdfWriter
@@ -426,7 +426,7 @@ class TestGetPdfLibraries:
     
     def test_get_pdf_libraries_uses_cached_imports(self):
         """Test that _get_pdf_libraries uses cached imports on subsequent calls."""
-        import pdf_merger.pdf_operations as pdf_ops
+        import pdf_merger.operations.pdf_merger as pdf_ops
         
         # Set up cached values
         original_writer = pdf_ops._PdfWriter

@@ -6,7 +6,7 @@ import pytest
 import logging
 import sys
 from unittest.mock import patch, MagicMock
-from pdf_merger.logger import setup_logger, get_logger
+from pdf_merger.utils.logging_utils import setup_logger, get_logger
 
 
 class TestSetupLogger:

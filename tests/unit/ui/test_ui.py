@@ -88,9 +88,9 @@ sys.modules['customtkinter'] = mock_ctk
 
 from pdf_merger.ui.app import PDFMergerApp, run_gui
 from pdf_merger.ui.components import LogHandler
-from pdf_merger.enums import StatusColor
+from pdf_merger.core.enums import StatusColor
 from pdf_merger.licensing import LicenseStatus
-from pdf_merger.processor import ProcessingResult
+from pdf_merger.core.merge_processor import ProcessingResult
 
 
 class TestPDFMergerApp:
@@ -416,8 +416,8 @@ class TestPDFMergerApp:
         
         app.run_button.configure.assert_called_once_with(state="disabled")
     
-    @patch('pdf_merger.validators.validate_file')
-    @patch('pdf_merger.validators.validate_folder')
+    @patch('pdf_merger.utils.validators.validate_file')
+    @patch('pdf_merger.utils.validators.validate_folder')
     def test_load_config_into_ui_all_fields(self, mock_validate_folder, mock_validate_file, tmp_path):
         """Test loading config into UI with all fields."""
         input_file = tmp_path / "input.csv"
@@ -426,7 +426,7 @@ class TestPDFMergerApp:
         source_dir.mkdir()
         output_dir = tmp_path / "output"
         
-        from pdf_merger.config import AppConfig
+        from pdf_merger.config.config_manager import AppConfig
         mock_config = AppConfig(
             input_file=str(input_file),
             pdf_dir=str(source_dir),
@@ -446,7 +446,7 @@ class TestPDFMergerApp:
     
     def test_load_config_into_ui_invalid_input_file(self, tmp_path):
         """Test loading config with invalid input file."""
-        from pdf_merger.config import AppConfig
+        from pdf_merger.config.config_manager import AppConfig
         mock_config = AppConfig(
             input_file="/nonexistent/file.csv"
         )
@@ -462,7 +462,7 @@ class TestPDFMergerApp:
     
     def test_load_config_into_ui_invalid_source_dir(self):
         """Test loading config with invalid source directory."""
-        from pdf_merger.config import AppConfig
+        from pdf_merger.config.config_manager import AppConfig
         mock_config = AppConfig(
             pdf_dir="/nonexistent/dir"
         )
@@ -480,7 +480,7 @@ class TestPDFMergerApp:
         """Test loading config with output directory that gets created."""
         output_dir = tmp_path / "new_output"
         
-        from pdf_merger.config import AppConfig
+        from pdf_merger.config.config_manager import AppConfig
         mock_config = AppConfig(
             output_dir=str(output_dir)
         )

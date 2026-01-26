@@ -7,8 +7,8 @@ import sys
 import warnings
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from pdf_merger.excel_converter import convert_excel_to_pdf, _safe_str
-from pdf_merger.constants import Constants
+from pdf_merger.operations.excel_to_pdf_converter import convert_excel_to_pdf, _safe_str
+from pdf_merger.core.constants import Constants
 
 
 class TestSafeStr:
@@ -120,7 +120,7 @@ class TestConvertExcelToPdf:
         mock_doc_template.assert_called_once()
         mock_doc.build.assert_called_once()
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_file_not_found(self, mock_logger, tmp_path):
         """Test conversion when Excel file doesn't exist."""
         excel_file = tmp_path / "nonexistent.xlsx"
@@ -131,7 +131,7 @@ class TestConvertExcelToPdf:
         assert result is False
         mock_logger.error.assert_called_once()
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_invalid_file_type(self, mock_logger, tmp_path):
         """Test conversion when file is not an Excel file."""
         text_file = tmp_path / "test.txt"
@@ -143,7 +143,7 @@ class TestConvertExcelToPdf:
         assert result is False
         mock_logger.error.assert_called_once()
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_import_error_openpyxl(self, mock_logger, tmp_path):
         """Test conversion when openpyxl is not installed."""
         excel_file = tmp_path / "test.xlsx"
@@ -162,7 +162,7 @@ class TestConvertExcelToPdf:
         assert result is False
         mock_logger.error.assert_called()
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_import_error_reportlab(self, mock_logger, tmp_path):
         """Test conversion when reportlab is not installed."""
         excel_file = tmp_path / "test.xlsx"
@@ -193,7 +193,7 @@ class TestConvertExcelToPdf:
         assert result is False
         mock_logger.error.assert_called()
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_load_error(self, mock_logger, tmp_path):
         """Test conversion when Excel file cannot be loaded."""
         excel_file = tmp_path / "test.xlsx"
@@ -300,7 +300,7 @@ class TestConvertExcelToPdf:
         
         assert result is False
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_empty_file(self, mock_logger, tmp_path):
         """Test conversion of empty Excel file."""
         excel_file = tmp_path / "test.xlsx"
@@ -356,7 +356,7 @@ class TestConvertExcelToPdf:
         mock_logger.warning.assert_called_once()
         mock_doc.build.assert_called_once_with([])
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_wide_table(self, mock_logger, tmp_path):
         """Test conversion with wide table (more than max_cols_per_page)."""
         excel_file = tmp_path / "test.xlsx"
@@ -756,7 +756,7 @@ class TestConvertExcelToPdf:
         assert result is True
         # None values should be converted to empty strings by _safe_str
     
-    @patch('pdf_merger.excel_converter.logger')
+    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_build_exception(self, mock_logger, tmp_path):
         """Test conversion when PDF build raises exception."""
         excel_file = tmp_path / "test.xlsx"

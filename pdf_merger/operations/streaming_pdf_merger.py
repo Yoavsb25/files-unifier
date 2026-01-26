@@ -1,16 +1,16 @@
 """
-Streaming PDF operations module.
+Streaming PDF merger module.
 Provides memory-efficient PDF merging for large files.
 """
 
 from pathlib import Path
 from typing import List, Optional
 
-from .logger import get_logger
-from .pdf_operations import suppress_stderr
-from .constants import Constants
+from ..utils.logging_utils import get_logger
+from .pdf_merger import suppress_stderr
+from ..core.constants import Constants
 
-logger = get_logger("pdf_operations_streaming")
+logger = get_logger("streaming_pdf_merger")
 
 # Module-level constants
 STREAMING_CHUNK_SIZE = Constants.STREAMING_CHUNK_SIZE

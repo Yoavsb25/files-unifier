@@ -31,7 +31,7 @@ from pdf_merger.licensing.license_manager import (
     LicenseManager,
     LicenseStatus
 )
-from pdf_merger.enums import WarningLevel
+from pdf_merger.core.enums import WarningLevel
 
 # Skip all tests if cryptography is not available
 pytestmark = pytest.mark.skipif(

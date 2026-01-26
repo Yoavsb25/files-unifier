@@ -5,7 +5,7 @@ Unit tests for pdf_operations_streaming module.
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from pdf_merger.pdf_operations_streaming import (
+from pdf_merger.operations.streaming_pdf_merger import (
     merge_pdfs_streaming,
     get_pdf_size_mb,
     estimate_memory_usage,
@@ -24,8 +24,8 @@ class TestMergePdfsStreaming:
         
         assert result is False
     
-    @patch('pdf_merger.pdf_operations_streaming._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations_streaming.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.streaming_pdf_merger.logger')
     def test_merge_pdfs_streaming_success(self, mock_logger, mock_get_libs, tmp_path):
         """Test successful streaming merge."""
         pdf1 = tmp_path / "test1.pdf"
@@ -53,8 +53,8 @@ class TestMergePdfsStreaming:
         mock_writer.add_page.assert_called()
         mock_writer.write.assert_called_once()
     
-    @patch('pdf_merger.pdf_operations_streaming._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations_streaming.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.streaming_pdf_merger.logger')
     def test_merge_pdfs_streaming_with_chunks(self, mock_logger, mock_get_libs, tmp_path):
         """Test streaming merge with chunk processing."""
         pdf1 = tmp_path / "test1.pdf"
@@ -79,8 +79,8 @@ class TestMergePdfsStreaming:
         # Should have added all 25 pages
         assert mock_writer.add_page.call_count == 25
     
-    @patch('pdf_merger.pdf_operations_streaming._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations_streaming.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.streaming_pdf_merger.logger')
     def test_merge_pdfs_streaming_read_error(self, mock_logger, mock_get_libs, tmp_path):
         """Test streaming merge when PDF read fails."""
         pdf1 = tmp_path / "test1.pdf"
@@ -96,8 +96,8 @@ class TestMergePdfsStreaming:
         assert result is False
         mock_logger.error.assert_called()
     
-    @patch('pdf_merger.pdf_operations_streaming._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations_streaming.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.streaming_pdf_merger.logger')
     def test_merge_pdfs_streaming_import_error(self, mock_logger, mock_get_libs, tmp_path):
         """Test streaming merge when PDF libraries are not available."""
         pdf1 = tmp_path / "test1.pdf"
@@ -111,8 +111,8 @@ class TestMergePdfsStreaming:
         assert result is False
         mock_logger.error.assert_called()
     
-    @patch('pdf_merger.pdf_operations_streaming._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations_streaming.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.streaming_pdf_merger.logger')
     def test_merge_pdfs_streaming_write_error(self, mock_logger, mock_get_libs, tmp_path):
         """Test streaming merge when PDF write fails."""
         pdf1 = tmp_path / "test1.pdf"
@@ -135,8 +135,8 @@ class TestMergePdfsStreaming:
         assert result is False
         mock_logger.error.assert_called()
     
-    @patch('pdf_merger.pdf_operations_streaming._get_pdf_libraries')
-    @patch('pdf_merger.pdf_operations_streaming.logger')
+    @patch('pdf_merger.operations.streaming_pdf_merger._get_pdf_libraries')
+    @patch('pdf_merger.operations.streaming_pdf_merger.logger')
     def test_merge_pdfs_streaming_progress_logging(self, mock_logger, mock_get_libs, tmp_path):
         """Test that progress is logged for large files."""
         pdf1 = tmp_path / "test1.pdf"

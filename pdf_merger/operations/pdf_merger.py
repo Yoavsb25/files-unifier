@@ -1,5 +1,5 @@
 """
-PDF operations module.
+PDF merger module.
 Handles finding and merging PDF files.
 """
 
@@ -9,10 +9,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional
 
-from .logger import get_logger
-from .constants import Constants
+from ..utils.logging_utils import get_logger
+from ..core.constants import Constants
 
-logger = get_logger("pdf_operations")
+logger = get_logger("pdf_merger")
 
 # Module-level constants
 PDF_FILE_EXTENSION = Constants.PDF_FILE_EXTENSION
@@ -80,7 +80,7 @@ def find_source_file(
     Raises:
         ValueError: If fail_on_ambiguous is True and multiple matches are found
     """
-    from .matching import find_best_match, MatchBehavior
+    from ..matching import find_best_match, MatchBehavior
     
     behavior = MatchBehavior.FAIL_FAST if fail_on_ambiguous else MatchBehavior.WARN_FIRST
     
@@ -159,7 +159,7 @@ def merge_pdfs(
     # Auto-detect streaming mode if not specified
     if use_streaming is None:
         try:
-            from .pdf_operations_streaming import should_use_streaming
+            from .streaming_pdf_merger import should_use_streaming
             use_streaming = should_use_streaming(pdf_paths, streaming_threshold_mb)
             if use_streaming:
                 logger.info(f"Using streaming mode for large PDF merge (estimated size > {streaming_threshold_mb} MB)")
@@ -169,7 +169,7 @@ def merge_pdfs(
     # Use streaming mode for large files
     if use_streaming:
         try:
-            from .pdf_operations_streaming import merge_pdfs_streaming
+            from .streaming_pdf_merger import merge_pdfs_streaming
             return merge_pdfs_streaming(pdf_paths, output_path)
         except ImportError:
             logger.warning("Streaming mode requested but not available, falling back to standard mode")

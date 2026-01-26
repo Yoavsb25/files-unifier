@@ -7,7 +7,7 @@ import csv
 from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
 import pandas as pd
-from pdf_merger.file_reader import (
+from pdf_merger.core.csv_excel_reader import (
     detect_file_type,
     read_csv,
     read_excel,
@@ -15,8 +15,8 @@ from pdf_merger.file_reader import (
     get_file_columns,
     _detect_csv_delimiter
 )
-from pdf_merger.exceptions import InvalidFileFormatError
-from pdf_merger.enums import FileType
+from pdf_merger.utils.exceptions import InvalidFileFormatError
+from pdf_merger.core.enums import FileType
 
 
 class TestDetectFileType:
@@ -158,7 +158,7 @@ class TestReadCsv:
 class TestReadExcel:
     """Test cases for read_excel function."""
     
-    @patch('pdf_merger.file_reader.pd.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.pd.read_excel')
     def test_read_excel_simple(self, mock_read_excel, tmp_path):
         """Test reading a simple Excel file."""
         file_path = tmp_path / "test.xlsx"
@@ -177,7 +177,7 @@ class TestReadExcel:
         assert rows[1] == {"col1": "val3", "col2": "val4"}
         assert mock_read_excel.call_count == 1  # Called once in the refactored function
     
-    @patch('pdf_merger.file_reader.pd.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.pd.read_excel')
     def test_read_excel_with_nan(self, mock_read_excel, tmp_path):
         """Test reading Excel file with NaN values."""
         file_path = tmp_path / "test.xlsx"
@@ -195,7 +195,7 @@ class TestReadExcel:
         assert rows[0] == {"col1": "val1", "col2": ""}
         assert rows[1] == {"col1": "", "col2": "val4"}
     
-    @patch('pdf_merger.file_reader.pd.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.pd.read_excel')
     def test_read_excel_error(self, mock_read_excel, tmp_path):
         """Test reading Excel raises InvalidFileFormatError on error."""
         file_path = tmp_path / "test.xlsx"
@@ -208,7 +208,7 @@ class TestReadExcel:
 class TestReadDataFile:
     """Test cases for read_data_file function."""
     
-    @patch('pdf_merger.file_reader.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.read_excel')
     def test_read_data_file_excel(self, mock_read_excel, tmp_path):
         """Test reading Excel file through unified interface."""
         file_path = tmp_path / "test.xlsx"
@@ -221,7 +221,7 @@ class TestReadDataFile:
         assert len(rows) == 1
         mock_read_excel.assert_called_once_with(file_path)
     
-    @patch('pdf_merger.file_reader.read_csv')
+    @patch('pdf_merger.core.csv_excel_reader.read_csv')
     def test_read_data_file_csv(self, mock_read_csv, tmp_path):
         """Test reading CSV file through unified interface."""
         file_path = tmp_path / "test.csv"
@@ -238,7 +238,7 @@ class TestReadDataFile:
 class TestGetFileColumns:
     """Test cases for get_file_columns function."""
     
-    @patch('pdf_merger.file_reader.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.read_excel')
     def test_get_file_columns_excel(self, mock_read_excel, tmp_path):
         """Test getting columns from Excel file."""
         file_path = tmp_path / "test.xlsx"
@@ -269,7 +269,7 @@ class TestGetFileColumns:
         
         assert columns == []
     
-    @patch('pdf_merger.file_reader.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.read_excel')
     def test_get_file_columns_excel_error(self, mock_read_excel, tmp_path):
         """Test getting columns raises InvalidFileFormatError on error."""
         file_path = tmp_path / "test.xlsx"
@@ -299,14 +299,14 @@ class TestGetFileColumns:
             # Other exceptions are also acceptable for invalid data
             pass
     
-    @patch('pdf_merger.file_reader.pd', None)
+    @patch('pdf_merger.core.csv_excel_reader.pd', None)
     def test_get_file_columns_excel_no_pandas(self, tmp_path):
         """Test getting columns from Excel file when pandas is not available."""
         file_path = tmp_path / "test.xlsx"
         file_path.touch()
         
         # Import the module to patch pd
-        import pdf_merger.file_reader as file_reader_module
+        import pdf_merger.core.csv_excel_reader as file_reader_module
         original_pd = file_reader_module.pd
         
         try:
@@ -319,7 +319,7 @@ class TestGetFileColumns:
         finally:
             file_reader_module.pd = original_pd
     
-    @patch('pdf_merger.file_reader.pd.read_excel')
+    @patch('pdf_merger.core.csv_excel_reader.pd.read_excel')
     def test_get_file_columns_excel_import_error_re_raised(self, mock_read_excel, tmp_path):
         """Test that ImportError is re-raised when reading Excel file."""
         file_path = tmp_path / "test.xlsx"

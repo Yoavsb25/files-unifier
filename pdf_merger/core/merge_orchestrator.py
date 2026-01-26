@@ -1,18 +1,18 @@
 """
-Merger module.
+Merge orchestrator module.
 Wrapper around process_file and process_job for UI consumption.
 """
 
 from pathlib import Path
 from typing import Optional
 
-from ..processor import process_file, process_job, ProcessingResult
+from .merge_processor import process_file, process_job, ProcessingResult
 from ..models import MergeJob, MergeResult, Row
-from ..file_reader import read_data_file
-from ..constants import Constants
-from ..logger import get_logger
+from .csv_excel_reader import read_data_file
+from .constants import Constants
+from ..utils.logging_utils import get_logger
 
-logger = get_logger("core.merger")
+logger = get_logger("core.merge_orchestrator")
 
 # Module-level constants
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN

@@ -5,13 +5,13 @@ Unit tests for validators module.
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from pdf_merger.validators import (
+from pdf_merger.utils.validators import (
     validate_serial_number,
     validate_folder,
     validate_file,
     validate_paths
 )
-from pdf_merger.exceptions import FileNotFoundError, MissingColumnError, ValidationError, InvalidFileFormatError
+from pdf_merger.utils.exceptions import FileNotFoundError, MissingColumnError, ValidationError, InvalidFileFormatError
 
 
 class TestValidateSerialNumber:
@@ -82,7 +82,7 @@ class TestValidateFolder:
 class TestValidateFile:
     """Test cases for validate_file function."""
     
-    @patch('pdf_merger.validators.get_file_columns')
+    @patch('pdf_merger.utils.validators.get_file_columns')
     def test_valid_file_with_required_column(self, mock_get_columns, tmp_path):
         """Test validation of file with required column."""
         file_path = tmp_path / "test.csv"
@@ -93,7 +93,7 @@ class TestValidateFile:
         validate_file(file_path)
         mock_get_columns.assert_called_once_with(file_path)
     
-    @patch('pdf_merger.validators.get_file_columns')
+    @patch('pdf_merger.utils.validators.get_file_columns')
     def test_invalid_file_missing_column(self, mock_get_columns, tmp_path):
         """Test validation of file missing required column."""
         file_path = tmp_path / "test.csv"
@@ -105,7 +105,7 @@ class TestValidateFile:
         assert exc_info.value.column_name == "serial_numbers"
         assert "other" in exc_info.value.available_columns
     
-    @patch('pdf_merger.validators.get_file_columns')
+    @patch('pdf_merger.utils.validators.get_file_columns')
     def test_invalid_nonexistent_file(self, mock_get_columns, tmp_path):
         """Test validation of non-existent file."""
         file_path = tmp_path / "nonexistent.csv"
@@ -116,7 +116,7 @@ class TestValidateFile:
         assert "nonexistent.csv" in str(exc_info.value)
         mock_get_columns.assert_not_called()
     
-    @patch('pdf_merger.validators.get_file_columns')
+    @patch('pdf_merger.utils.validators.get_file_columns')
     def test_invalid_file_read_error(self, mock_get_columns, tmp_path):
         """Test validation when file reading raises an error."""
         file_path = tmp_path / "test.csv"
@@ -127,7 +127,7 @@ class TestValidateFile:
             validate_file(file_path)
         assert "Read error" in str(exc_info.value)
     
-    @patch('pdf_merger.validators.get_file_columns')
+    @patch('pdf_merger.utils.validators.get_file_columns')
     def test_custom_required_column(self, mock_get_columns, tmp_path):
         """Test validation with custom required column."""
         file_path = tmp_path / "test.csv"
@@ -141,8 +141,8 @@ class TestValidateFile:
 class TestValidatePaths:
     """Test cases for validate_paths function."""
     
-    @patch('pdf_merger.validators.validate_file')
-    @patch('pdf_merger.validators.validate_folder')
+    @patch('pdf_merger.utils.validators.validate_file')
+    @patch('pdf_merger.utils.validators.validate_folder')
     def test_valid_all_paths(self, mock_validate_folder, mock_validate_file, tmp_path):
         """Test validation when all paths are valid."""
         file_path = tmp_path / "data.csv"
@@ -159,8 +159,8 @@ class TestValidatePaths:
         mock_validate_file.assert_called_once_with(file_path, "serial_numbers")
         assert mock_validate_folder.call_count == 1
     
-    @patch('pdf_merger.validators.validate_file')
-    @patch('pdf_merger.validators.validate_folder')
+    @patch('pdf_merger.utils.validators.validate_file')
+    @patch('pdf_merger.utils.validators.validate_folder')
     def test_invalid_file(self, mock_validate_folder, mock_validate_file, tmp_path):
         """Test validation when file is invalid."""
         file_path = tmp_path / "data.csv"
@@ -173,8 +173,8 @@ class TestValidatePaths:
         with pytest.raises(FileNotFoundError):
             validate_paths(file_path, source_folder, output_folder)
     
-    @patch('pdf_merger.validators.validate_file')
-    @patch('pdf_merger.validators.validate_folder')
+    @patch('pdf_merger.utils.validators.validate_file')
+    @patch('pdf_merger.utils.validators.validate_folder')
     def test_invalid_source_folder(self, mock_validate_folder, mock_validate_file, tmp_path):
         """Test validation when source folder is invalid."""
         file_path = tmp_path / "data.csv"
@@ -187,8 +187,8 @@ class TestValidatePaths:
         with pytest.raises(FileNotFoundError):
             validate_paths(file_path, source_folder, output_folder)
     
-    @patch('pdf_merger.validators.validate_file')
-    @patch('pdf_merger.validators.validate_folder')
+    @patch('pdf_merger.utils.validators.validate_file')
+    @patch('pdf_merger.utils.validators.validate_folder')
     def test_invalid_output_folder_parent(self, mock_validate_folder, mock_validate_file, tmp_path):
         """Test validation when output folder parent doesn't exist."""
         file_path = tmp_path / "data.csv"
@@ -204,8 +204,8 @@ class TestValidatePaths:
         assert "output_folder" in str(exc_info.value)
         assert "nonexistent" in str(exc_info.value)
     
-    @patch('pdf_merger.validators.validate_file')
-    @patch('pdf_merger.validators.validate_folder')
+    @patch('pdf_merger.utils.validators.validate_file')
+    @patch('pdf_merger.utils.validators.validate_folder')
     def test_custom_required_column(self, mock_validate_folder, mock_validate_file, tmp_path):
         """Test validation with custom required column."""
         file_path = tmp_path / "data.csv"

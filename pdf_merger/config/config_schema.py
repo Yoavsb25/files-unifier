@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from .constants import Constants
-from .logger import get_logger
+from ..core.constants import Constants
+from ..utils.logging_utils import get_logger
 
 logger = get_logger("config_schema")
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN

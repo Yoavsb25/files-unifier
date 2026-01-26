@@ -1,5 +1,5 @@
 """
-File reader module.
+CSV and Excel file reader module.
 Handles reading CSV and Excel files with a unified interface.
 """
 
@@ -7,7 +7,7 @@ import csv
 import pandas as pd
 from pathlib import Path
 from typing import Iterator, Dict, Any, List
-from .exceptions import InvalidFileFormatError, MissingColumnError
+from ..utils.exceptions import InvalidFileFormatError, MissingColumnError
 from .constants import Constants
 from .enums import FileType
 

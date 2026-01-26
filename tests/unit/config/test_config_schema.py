@@ -4,8 +4,8 @@ Unit tests for config_schema module.
 
 import pytest
 from pathlib import Path
-from pdf_merger.config_schema import ConfigSchema
-from pdf_merger.constants import Constants
+from pdf_merger.config.config_schema import ConfigSchema
+from pdf_merger.core.constants import Constants
 
 
 class TestConfigSchema:

@@ -5,17 +5,17 @@ Unit tests for core module (merger and reporter).
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from pdf_merger.core.merger import run_merge, run_merge_job
-from pdf_merger.core.reporter import format_result_summary, format_result_detailed
-from pdf_merger.processor import ProcessingResult
+from pdf_merger.core.merge_orchestrator import run_merge, run_merge_job
+from pdf_merger.core.result_reporter import format_result_summary, format_result_detailed
+from pdf_merger.core.merge_processor import ProcessingResult
 from pdf_merger.models import MergeResult, RowResult, RowStatus
 
 
 class TestRunMerge:
     """Test cases for run_merge function."""
     
-    @patch('pdf_merger.core.merger.process_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_success(self, mock_logger, mock_process_file, tmp_path):
         """Test successful merge operation."""
         input_file = tmp_path / "input.csv"
@@ -40,8 +40,8 @@ class TestRunMerge:
         )
         assert mock_logger.info.called
     
-    @patch('pdf_merger.core.merger.process_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_with_custom_column(self, mock_logger, mock_process_file, tmp_path):
         """Test merge operation with custom required column."""
         input_file = tmp_path / "input.csv"
@@ -65,8 +65,8 @@ class TestRunMerge:
             required_column="custom_column"
         )
     
-    @patch('pdf_merger.core.merger.process_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_exception(self, mock_logger, mock_process_file, tmp_path):
         """Test merge operation when exception occurs."""
         input_file = tmp_path / "input.csv"
@@ -306,9 +306,9 @@ class TestFormatResultDetailed:
 class TestRunMergeJob:
     """Test cases for run_merge_job function."""
     
-    @patch('pdf_merger.core.merger.process_job')
-    @patch('pdf_merger.core.merger.read_data_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_job')
+    @patch('pdf_merger.core.merge_orchestrator.read_data_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_job_success(self, mock_logger, mock_read_data, mock_process_job, tmp_path):
         """Test successful merge job."""
         input_file = tmp_path / "input.csv"
@@ -337,8 +337,8 @@ class TestRunMergeJob:
         mock_process_job.assert_called_once()
         assert mock_logger.info.called
     
-    @patch('pdf_merger.core.merger.read_data_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.read_data_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_job_read_error(self, mock_logger, mock_read_data, tmp_path):
         """Test merge job when file reading fails."""
         input_file = tmp_path / "input.csv"
@@ -354,9 +354,9 @@ class TestRunMergeJob:
         assert result.job_id == "test-job"
         mock_logger.error.assert_called_once()
     
-    @patch('pdf_merger.core.merger.process_job')
-    @patch('pdf_merger.core.merger.read_data_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_job')
+    @patch('pdf_merger.core.merge_orchestrator.read_data_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_job_with_fail_on_ambiguous(self, mock_logger, mock_read_data, mock_process_job, tmp_path):
         """Test merge job with fail_on_ambiguous parameter."""
         input_file = tmp_path / "input.csv"
@@ -379,9 +379,9 @@ class TestRunMergeJob:
         call_args = mock_process_job.call_args
         assert call_args[1]['fail_on_ambiguous'] is False
     
-    @patch('pdf_merger.core.merger.process_job')
-    @patch('pdf_merger.core.merger.read_data_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_job')
+    @patch('pdf_merger.core.merge_orchestrator.read_data_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_job_with_custom_column(self, mock_logger, mock_read_data, mock_process_job, tmp_path):
         """Test merge job with custom required column."""
         input_file = tmp_path / "input.csv"
@@ -403,9 +403,9 @@ class TestRunMergeJob:
         # Verify the job was created with custom column
         mock_read_data.assert_called_once_with(input_file)
     
-    @patch('pdf_merger.core.merger.process_job')
-    @patch('pdf_merger.core.merger.read_data_file')
-    @patch('pdf_merger.core.merger.logger')
+    @patch('pdf_merger.core.merge_orchestrator.process_job')
+    @patch('pdf_merger.core.merge_orchestrator.read_data_file')
+    @patch('pdf_merger.core.merge_orchestrator.logger')
     def test_run_merge_job_empty_file(self, mock_logger, mock_read_data, mock_process_job, tmp_path):
         """Test merge job with empty file."""
         input_file = tmp_path / "input.csv"
