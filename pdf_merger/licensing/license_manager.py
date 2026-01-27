@@ -3,6 +3,7 @@ License manager.
 Main license validation and verification logic with enhanced UX.
 """
 
+import sys
 import socket
 from pathlib import Path
 from typing import Optional
@@ -37,18 +38,46 @@ class LicenseManager:
         Get the path to the license file.
         
         Returns:
-            Path to license.json (checks app directory first, then user home)
+            Path to license.json (checks multiple locations in order)
         """
-        # Try app directory first (for packaged app)
+        # For PyInstaller builds, check the directory where the .exe is located
+        if hasattr(sys, 'frozen') or hasattr(sys, '_MEIPASS'):
+            # Running from PyInstaller bundle
+            if hasattr(sys, '_MEIPASS'):
+                # Get the directory where the .exe is located (not the temp extraction dir)
+                exe_path = Path(sys.executable)
+                exe_dir = exe_path.parent
+                exe_license = exe_dir / 'license.json'
+                if exe_license.exists():
+                    logger.info(f"Found license at executable directory: {exe_license}")
+                    return exe_license
+        
+        # Try app directory (for development or non-PyInstaller builds)
         app_dir = Path(__file__).parent.parent.parent
         app_license = app_dir / 'license.json'
         if app_license.exists():
+            logger.info(f"Found license at app directory: {app_license}")
             return app_license
         
         # Fall back to user home directory
         home_dir = Path.home()
         license_dir = home_dir / '.pdf_merger'
-        return license_dir / 'license.json'
+        home_license = license_dir / 'license.json'
+        if home_license.exists():
+            logger.info(f"Found license at home directory: {home_license}")
+            return home_license
+        
+        # Build list of checked paths for logging
+        checked_paths = [str(app_license)]
+        if hasattr(sys, '_MEIPASS'):
+            exe_path = Path(sys.executable)
+            exe_dir = exe_path.parent
+            checked_paths.insert(0, str(exe_dir / 'license.json'))
+        checked_paths.append(str(home_license))
+        
+        # Return the home directory path as default (for error messages)
+        logger.warning(f"License not found. Checked locations: {', '.join(checked_paths)}")
+        return home_license
     
     def load_license(self, force_refresh: bool = False) -> Optional[License]:
         """
@@ -195,8 +224,11 @@ class LicenseManager:
                 "Please contact support to obtain a new license file."
             ),
             LicenseStatus.NOT_FOUND: (
-                "License file not found. Please ensure license.json is in the application directory "
-                f"or in {Path.home() / '.pdf_merger'}. Contact support if you need a license file."
+                "License file not found. Please ensure license.json is in one of these locations:\n"
+                f"  - Same folder as the application (.exe file)\n"
+                f"  - {Path.home() / '.pdf_merger' / 'license.json'}\n\n"
+                "Note: The file must be named exactly 'license.json' (not 'license' or 'license.txt').\n"
+                "Contact support if you need a license file."
             ),
             LicenseStatus.INVALID_FORMAT: (
                 "License file format is invalid. Please ensure the license.json file is valid JSON. "
