@@ -2,9 +2,43 @@ import argparse
 import os
 from typing import Optional
 
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+
+
+def _build_drive_service():
+    """
+    Build an authenticated Google Drive service using OAuth 2.0 user credentials.
+
+    Expects the following environment variables to be set:
+      - GDRIVE_CLIENT_ID
+      - GDRIVE_CLIENT_SECRET
+      - GDRIVE_REFRESH_TOKEN
+    """
+    client_id = os.environ.get("GDRIVE_CLIENT_ID")
+    client_secret = os.environ.get("GDRIVE_CLIENT_SECRET")
+    refresh_token = os.environ.get("GDRIVE_REFRESH_TOKEN")
+
+    if not all([client_id, client_secret, refresh_token]):
+        raise RuntimeError(
+            "Missing one or more required environment variables: "
+            "GDRIVE_CLIENT_ID, GDRIVE_CLIENT_SECRET, GDRIVE_REFRESH_TOKEN"
+        )
+
+    creds = Credentials(
+        token=None,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        client_secret=client_secret,
+        token_uri="https://oauth2.googleapis.com/token",
+    )
+
+    if not creds.valid:
+        creds.refresh(Request())
+
+    return build("drive", "v3", credentials=creds)
 
 
 def _detect_mime_type(file_path: str, explicit: Optional[str]) -> str:
@@ -18,16 +52,14 @@ def _detect_mime_type(file_path: str, explicit: Optional[str]) -> str:
 
 
 def upload_file(
-    credentials_path: str,
     folder_id: str,
     file_path: str,
     mime_type: Optional[str] = None,
     overwrite: str = "skip",
 ) -> None:
     """
-    Upload a file to Google Drive using a service account.
+    Upload a file to Google Drive using OAuth 2.0 user credentials.
 
-    :param credentials_path: Path to service account JSON key.
     :param folder_id: Target Drive folder ID.
     :param file_path: Local file path to upload.
     :param mime_type: Optional MIME type; if None, inferred from extension.
@@ -37,17 +69,10 @@ def upload_file(
     if overwrite not in {"skip", "replace"}:
         raise ValueError(f"Unsupported overwrite mode: {overwrite}")
 
-    if not os.path.isfile(credentials_path):
-        raise FileNotFoundError(f"Credentials file not found: {credentials_path}")
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"File to upload not found: {file_path}")
 
-    scopes = ["https://www.googleapis.com/auth/drive.file"]
-    credentials = service_account.Credentials.from_service_account_file(
-        credentials_path, scopes=scopes
-    )
-
-    service = build("drive", "v3", credentials=credentials)
+    service = _build_drive_service()
 
     file_name = os.path.basename(file_path)
     resolved_mime_type = _detect_mime_type(file_path, mime_type)
@@ -58,12 +83,13 @@ def upload_file(
         f"name = '{escaped_name}' and "
         f"'{folder_id}' in parents and trashed = false"
     )
-    existing_files = (
-        service.files()
-        .list(q=query, spaces="drive", fields="files(id, name)")
-        .execute()
-        .get("files", [])
-    )
+    existing_files = service.files().list(
+        q=query,
+        spaces="drive",
+        fields="files(id, name)",
+        supportsAllDrives=True,
+        includeItemsFromAllDrives=True,
+    ).execute().get("files", [])
 
     if existing_files and overwrite == "skip":
         print(
@@ -85,7 +111,12 @@ def upload_file(
 
     created = (
         service.files()
-        .create(body=file_metadata, media_body=media, fields="id, webViewLink")
+        .create(
+            body=file_metadata,
+            media_body=media,
+            fields="id, webViewLink",
+            supportsAllDrives=True,
+        )
         .execute()
     )
 
@@ -100,11 +131,6 @@ def upload_file(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Upload a file to Google Drive using a service account key."
-    )
-    parser.add_argument(
-        "--credentials",
-        required=True,
-        help="Path to the service account JSON key file.",
     )
     parser.add_argument(
         "--folder-id",
@@ -134,7 +160,6 @@ def main() -> None:
     args = parser.parse_args()
 
     upload_file(
-        credentials_path=args.credentials,
         folder_id=args.folder_id,
         file_path=args.file_path,
         mime_type=args.mime_type,
