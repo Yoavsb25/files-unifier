@@ -23,11 +23,19 @@ on:
         options:
           - windows
           - macos
+      upload_to_drive:
+        description: 'Upload ZIP to Google Drive'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-windows:
     runs-on: windows-latest
     if: github.event.inputs.platform == 'windows'
+    defaults:
+      run:
+        shell: pwsh
     
     steps:
     - name: Checkout code
@@ -39,14 +47,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        cache: 'pip'
+        cache-dependency-path: 'requirements.txt'
     
     - name: Install dependencies
       run: |
@@ -54,7 +56,6 @@ jobs:
         pip install --upgrade-strategy only-if-needed --no-warn-script-location -r requirements.txt
     
     - name: Generate keys (if needed)
-      shell: pwsh
       env:
         PYTHONIOENCODING: utf-8
       run: |
@@ -65,7 +66,6 @@ jobs:
       continue-on-error: true
     
     - name: Generate license
-      shell: pwsh
       env:
         PYTHONIOENCODING: utf-8
       run: |
@@ -81,7 +81,6 @@ jobs:
         build_config\build.bat
     
     - name: Create delivery package directory
-      shell: pwsh
       id: set-delivery-name
       run: |
         $date = Get-Date -Format 'yyyyMMdd'
@@ -92,7 +91,6 @@ jobs:
         Write-Output "delivery-name=$deliveryName" >> $env:GITHUB_OUTPUT
     
     - name: Copy application and files
-      shell: pwsh
       run: |
         $deliveryName = "${{ steps.set-delivery-name.outputs.delivery-name }}"
         Copy-Item "dist\PDF Batch Merger.exe" "deliveries\$deliveryName\PDF Batch Merger.exe"
@@ -100,7 +98,6 @@ jobs:
         Copy-Item "docs\README_USER.md" "deliveries\$deliveryName\User_Guide.md"
     
     - name: Create installation instructions
-      shell: pwsh
       run: |
         $deliveryName = "${{ steps.set-delivery-name.outputs.delivery-name }}"
         $company = "${{ github.event.inputs.company }}"
@@ -121,10 +118,24 @@ jobs:
         $instructions | Out-File -FilePath "deliveries\$deliveryName\INSTALLATION_INSTRUCTIONS.txt" -Encoding utf8
     
     - name: Create zip file with folder structure
-      shell: pwsh
       run: |
         $deliveryName = "${{ steps.set-delivery-name.outputs.delivery-name }}"
         Compress-Archive -Path "deliveries\$deliveryName" -DestinationPath "deliveries\$deliveryName.zip" -Force
+    
+    - name: Upload ZIP to Google Drive
+      if: github.event.inputs.upload_to_drive == true
+      env:
+        GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+        GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+        GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+      run: |
+        $deliveryName = "${{ steps.set-delivery-name.outputs.delivery-name }}"
+        python tools\upload_to_drive.py `
+          --folder-id "$env:GOOGLE_DRIVE_FOLDER_ID" `
+          --file-path "deliveries\$deliveryName.zip" `
+          --mime-type "application/zip" `
+          --overwrite "skip"
     
     - name: Upload client package
       uses: actions/upload-artifact@v4
@@ -147,14 +158,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
-    - name: Cache pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/Library/Caches/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        cache: 'pip'
+        cache-dependency-path: 'requirements.txt'
     
     - name: Install dependencies
       run: |
@@ -232,6 +237,21 @@ jobs:
         DELIVERY_NAME="${{ steps.set-delivery-name.outputs.delivery-name }}"
         cd deliveries
         zip -r "${DELIVERY_NAME}.zip" "${DELIVERY_NAME}"
+    
+    - name: Upload ZIP to Google Drive
+      if: github.event.inputs.upload_to_drive == true
+      env:
+        GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+        GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+        GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+      run: |
+        DELIVERY_NAME="${{ steps.set-delivery-name.outputs.delivery-name }}"
+        python tools/upload_to_drive.py \
+          --folder-id "$GOOGLE_DRIVE_FOLDER_ID" \
+          --file-path "deliveries/${DELIVERY_NAME}.zip" \
+          --mime-type "application/zip" \
+          --overwrite "skip"
     
     - name: Upload client package
       uses: actions/upload-artifact@v4
