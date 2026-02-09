@@ -10,9 +10,11 @@ import customtkinter as ctk
 from .. import APP_VERSION
 from ..licensing import LicenseManager
 from ..utils.logging_utils import get_logger, setup_logger
+from ..utils.validators import validate_file, validate_folder
+from ..utils.exceptions import FileNotFoundError, MissingColumnError, InvalidFileFormatError
 from ..core.merge_processor import ProcessingResult
 from ..config.config_manager import load_config
-from .components import FileSelector, LicenseFrame, LogArea, Footer
+from .components import FileSelector, LicenseFrame, LogArea, Footer, CompletionSummaryFrame
 from .license_ui import update_license_display
 from .handlers import FileSelectionHandler, MergeHandler
 from ..core.enums import StatusColor
@@ -102,7 +104,8 @@ class PDFMergerApp(ctk.CTk):
         self.input_file_selector = FileSelector(
             file_frame,
             label_text="CSV/Excel File:",
-            on_select=self._select_input_file
+            on_select=self._select_input_file,
+            helper_text="Must include a serial_numbers column"
         )
         self.input_file_selector.pack(fill="x", padx=10, pady=(12, 14))
         
@@ -110,7 +113,8 @@ class PDFMergerApp(ctk.CTk):
         self.pdf_dir_selector = FileSelector(
             file_frame,
             label_text="Source Directory:",
-            on_select=self._select_pdf_directory
+            on_select=self._select_pdf_directory,
+            helper_text="All referenced PDFs & Excel files must live here"
         )
         self.pdf_dir_selector.pack(fill="x", padx=10, pady=(12, 14))
         
@@ -118,7 +122,8 @@ class PDFMergerApp(ctk.CTk):
         self.output_dir_selector = FileSelector(
             file_frame,
             label_text="Output Directory:",
-            on_select=self._select_output_directory
+            on_select=self._select_output_directory,
+            helper_text="Merged PDFs will be saved here"
         )
         self.output_dir_selector.pack(fill="x", padx=10, pady=(12, 14))
         
@@ -131,7 +136,11 @@ class PDFMergerApp(ctk.CTk):
             height=40
         )
         self.run_button.pack(fill="x", pady=(SECTION_PADY + 2, SECTION_PADY + 2))
-        
+
+        # Completion summary (hidden until merge completes)
+        self.completion_summary = CompletionSummaryFrame(main_frame)
+        # Not packed initially; show_result() will pack it
+
         # Log/output area
         self.log_area = LogArea(main_frame)
         self.log_area.pack(fill="both", expand=True, pady=(0, SECTION_PADY))
@@ -209,15 +218,17 @@ class PDFMergerApp(ctk.CTk):
     
     def _select_input_file(self):
         """Open file dialog to select input CSV/Excel file."""
+        self.input_file_selector.set_error(None)
         path = self.file_handler.select_input_file()
         if path:
             self.input_file_path = path
             self.input_file_selector.set_path(str(path))
             self._log(f"Selected input file: {path.name}")
             self._update_ui_state()
-    
+
     def _select_pdf_directory(self):
         """Open directory dialog to select source directory."""
+        self.pdf_dir_selector.set_error(None)
         path = self.file_handler.select_directory(
             title="Select Source Directory (PDF and Excel files)",
             validate=True,
@@ -228,9 +239,10 @@ class PDFMergerApp(ctk.CTk):
             self.pdf_dir_selector.set_path(str(path))
             self._log(f"Selected source directory: {path}")
             self._update_ui_state()
-    
+
     def _select_output_directory(self):
         """Open directory dialog to select output directory."""
+        self.output_dir_selector.set_error(None)
         path = self.file_handler.select_directory(
             title="Select Output Directory",
             validate=False
@@ -256,11 +268,47 @@ class PDFMergerApp(ctk.CTk):
         if not self.license_valid:
             self._show_error("License is not valid. Cannot run merge operation.")
             return
-        
+
+        # Clear previous inline errors
+        self.input_file_selector.set_error(None)
+        self.pdf_dir_selector.set_error(None)
+        self.output_dir_selector.set_error(None)
+
         if not all([self.input_file_path, self.pdf_dir_path, self.output_dir_path]):
             self._show_error("Please select all required files and directories.")
+            self.input_file_selector.set_error("Please select all required files and directories.")
             return
-        
+
+        # Pre-run validation: file exists + column, source dir, output dir
+        try:
+            validate_file(self.input_file_path)
+        except FileNotFoundError as e:
+            self.input_file_selector.set_error(str(e.message))
+            self._log(f"ERROR: {e.message}")
+            return
+        except MissingColumnError as e:
+            self.input_file_selector.set_error(f"Missing column: {e.column_name}")
+            self._log(f"ERROR: {e.message}")
+            return
+        except InvalidFileFormatError as e:
+            self.input_file_selector.set_error(str(e.message))
+            self._log(f"ERROR: {e.message}")
+            return
+
+        try:
+            validate_folder(self.pdf_dir_path, "Source")
+        except FileNotFoundError as e:
+            self.pdf_dir_selector.set_error(str(e.message))
+            self._log(f"ERROR: {e.message}")
+            return
+
+        try:
+            validate_folder(self.output_dir_path, "Output")
+        except FileNotFoundError as e:
+            self.output_dir_selector.set_error(str(e.message))
+            self._log(f"ERROR: {e.message}")
+            return
+
         self.merge_handler.run_merge(
             input_file=self.input_file_path,
             pdf_dir=self.pdf_dir_path,
@@ -271,6 +319,7 @@ class PDFMergerApp(ctk.CTk):
         """Handle merge operation start."""
         self.run_button.configure(state="disabled", text="Processing...")
         self.footer.update_status("Processing...", StatusColor.BLUE)
+        self.completion_summary.hide()
         self.log_area.clear()
         self._log("=" * 60)
         self._log("Starting merge operation...")
@@ -285,12 +334,21 @@ class PDFMergerApp(ctk.CTk):
         # Reset processing state
         self.merge_handler.is_processing = False
         self.run_button.configure(state="normal", text="Run Merge")
-        
+
+        # Show visual completion summary with open-output action
+        if self.output_dir_path is not None:
+            self.completion_summary.show_result(
+                total_rows=result.total_rows,
+                successful_merges=result.successful_merges,
+                failed_count=len(result.failed_rows),
+                output_path=self.output_dir_path,
+            )
+
         self._log("")
         self._log("=" * 60)
         summary = self.merge_handler.format_result(result)
         self._log(summary)
-        
+
         if result.successful_merges == result.total_rows:
             self.footer.update_status("Success", StatusColor.GREEN)
         elif result.successful_merges > 0:

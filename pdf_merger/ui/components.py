@@ -5,8 +5,11 @@ UI components for PDF Merger application.
 import customtkinter as ctk
 from typing import Callable, Optional, Union
 
+from pathlib import Path
+
 from .. import APP_VERSION, APP_NAME
 from ..core.enums import StatusColor
+from ..utils.path_utils import open_path_in_explorer
 
 
 class LogHandler:
@@ -38,7 +41,8 @@ class FileSelector(ctk.CTkFrame):
         parent,
         label_text: str,
         button_text: str = "Browse...",
-        on_select: Optional[Callable] = None
+        on_select: Optional[Callable] = None,
+        helper_text: Optional[str] = None
     ):
         super().__init__(parent)
         
@@ -76,6 +80,39 @@ class FileSelector(ctk.CTkFrame):
             border_color=("#3B8ED0", "#1F6AA5")
         )
         self.browse_button.pack(side="right")
+        
+        # Optional helper text (muted, below button row)
+        self._helper_label = None
+        if helper_text:
+            self._helper_label = ctk.CTkLabel(
+                self,
+                text=helper_text,
+                font=ctk.CTkFont(size=10),
+                text_color=("gray50", "gray55"),
+                anchor="w"
+            )
+            self._helper_label.pack(anchor="w", pady=(4, 0))
+        
+        # Inline error label (hidden until set_error is called)
+        self._error_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=10),
+            text_color=("#CC0000", "#E57373"),
+            anchor="w"
+        )
+        # Pack with 0 height so layout is stable; we'll update text and pady when showing
+        self._error_label.pack(anchor="w", pady=(2, 0))
+        self._error_label.pack_forget()
+    
+    def set_error(self, message: Optional[str]) -> None:
+        """Show or hide inline error message below the field."""
+        if message:
+            self._error_label.configure(text=message)
+            self._error_label.pack(anchor="w", pady=(2, 0))
+        else:
+            self._error_label.configure(text="")
+            self._error_label.pack_forget()
     
     def _on_browse_clicked(self):
         """Handle browse button click."""
@@ -113,6 +150,72 @@ class LicenseFrame(ctk.CTkFrame):
         """
         color_value = color.value if isinstance(color, StatusColor) else color
         self.license_label.configure(text=text, text_color=color_value)
+
+
+class CompletionSummaryFrame(ctk.CTkFrame):
+    """Visual summary block shown after merge completes (rows processed, failed, open output)."""
+
+    def __init__(self, parent):
+        super().__init__(parent, fg_color=("gray92", "gray18"), corner_radius=8)
+        self._rows_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=12),
+            anchor="w",
+            text_color=("gray20", "gray90")
+        )
+        self._failed_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=12),
+            anchor="w",
+            text_color=("gray20", "gray90")
+        )
+        self._output_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=ctk.CTkFont(size=11),
+            anchor="w",
+            text_color=("gray45", "gray55")
+        )
+        self._open_btn = ctk.CTkButton(
+            self,
+            text="Open output folder",
+            command=self._on_open_output,
+            width=140,
+            fg_color="transparent",
+            border_width=1,
+            border_color=("#3B8ED0", "#1F6AA5")
+        )
+        self._output_path: Optional[Path] = None
+        # Layout: rows and failed on first row or stacked; output path; button
+        self._rows_label.pack(anchor="w", padx=12, pady=(10, 2))
+        self._failed_label.pack(anchor="w", padx=12, pady=(0, 2))
+        self._output_label.pack(anchor="w", padx=12, pady=(4, 2))
+        self._open_btn.pack(anchor="w", padx=12, pady=(4, 10))
+
+    def show_result(
+        self,
+        total_rows: int,
+        successful_merges: int,
+        failed_count: int,
+        output_path: Path,
+    ) -> None:
+        """Populate and show the summary block."""
+        self._rows_label.configure(text=f"\u2713 {total_rows} rows processed")
+        self._failed_label.configure(text=f"\u2717 {failed_count} failed")
+        self._output_label.configure(text=f"Output: {output_path}")
+        self._output_path = output_path
+        self.pack(fill="x", pady=(0, 10))
+
+    def hide(self) -> None:
+        """Clear and hide the summary block."""
+        self._output_path = None
+        self.pack_forget()
+
+    def _on_open_output(self) -> None:
+        if self._output_path is not None:
+            open_path_in_explorer(self._output_path)
 
 
 class LogArea(ctk.CTkFrame):

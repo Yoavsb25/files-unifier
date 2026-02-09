@@ -5,6 +5,7 @@ Handles path differences between Windows, macOS, and Linux.
 
 import os
 import platform
+import subprocess
 import unicodedata
 from pathlib import Path
 from typing import Optional
@@ -193,4 +194,34 @@ def validate_path(path: Path, must_exist: bool = True, must_be_file: bool = Fals
     
     except Exception as e:
         logger.warning(f"Error validating path {path}: {e}")
+        return False
+
+
+def open_path_in_explorer(path: Path) -> bool:
+    """
+    Open a path (file or directory) in the system's default file manager.
+
+    Args:
+        path: Path to open (directory or file; directory is opened in explorer).
+
+    Returns:
+        True if the operation was started successfully, False otherwise.
+    """
+    path = Path(path)
+    if not path.exists():
+        logger.warning(f"Cannot open non-existent path in explorer: {path}")
+        return False
+    # If it's a file, open its parent directory
+    to_open = path if path.is_dir() else path.parent
+    try:
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(str(to_open))
+        elif system == "Darwin":
+            subprocess.run(["open", str(to_open)], check=False)
+        else:
+            subprocess.run(["xdg-open", str(to_open)], check=False)
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to open path in explorer: {to_open} - {e}")
         return False
