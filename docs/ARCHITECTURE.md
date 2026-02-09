@@ -361,8 +361,9 @@ flowchart TD
   - `openpyxl>=3.0.0` - Excel file reading
   - `reportlab>=3.6.0` - PDF generation
 - **Implementation Details**:
-  - Reads all rows from the active Excel sheet
+  - Reads all worksheets in order; empty sheets produce a blank page
   - Converts data to a formatted PDF table with headers
+  - Constrains table width to usable page width; cell text wrapped via Paragraph for large tables
   - Handles styling (headers, borders, colors, alternating rows)
   - Preserves data structure in PDF format
   - Splits tables wider than 8 columns (configurable) across pages
@@ -577,18 +578,23 @@ graph TB
 ```mermaid
 flowchart TD
     Start([Excel File]) --> LoadExcel[Load Excel with openpyxl]
-    LoadExcel --> ReadData[Read All Rows<br/>from Active Sheet]
-    ReadData --> CheckEmpty{Empty<br/>Sheet?}
-    CheckEmpty -->|Yes| CreateEmpty[Create Empty PDF]
-    CheckEmpty -->|No| CalculateWidths[Calculate Column Widths<br/>Auto-Size Based on Content]
+    LoadExcel --> ForSheets[For Each Worksheet<br/>in Workbook Order]
+    ForSheets --> MoreSheets{More<br/>Sheets?}
+    MoreSheets -->|No| BuildPDF
+    MoreSheets -->|Yes| PageBreak[Page Break<br/>if not first sheet]
+    PageBreak --> CheckEmpty{Empty<br/>Sheet?}
+    CheckEmpty -->|Yes| BlankPage[Add Blank Page]
+    CheckEmpty -->|No| ReadData[Read All Rows<br/>from Sheet]
+    BlankPage --> ForSheets
+    ReadData --> CalculateWidths[Calculate Column Widths<br/>Auto-Size Based on Content]
     CalculateWidths --> CheckWide{Table Width<br/>> max_cols_per_page?}
     CheckWide -->|Yes| SplitTable[Split Table<br/>Across Multiple Pages]
     CheckWide -->|No| CreateTable[Create Single Table]
     SplitTable --> CreatePages[Create Multiple Tables<br/>One per Page]
     CreatePages --> StyleTables[Apply Styling<br/>Headers, Borders, Colors<br/>Alternating Rows]
     CreateTable --> StyleTables
-    StyleTables --> BuildPDF[Build PDF Document<br/>with reportlab]
-    CreateEmpty --> BuildPDF
+    StyleTables --> ForSheets
+    BuildPDF[Build PDF Document<br/>with reportlab]
     BuildPDF --> SavePDF[Save PDF File]
     SavePDF --> End([PDF Ready])
 ```
@@ -625,12 +631,15 @@ This section provides comprehensive mermaid diagrams explaining the code structu
 The Excel converter uses a two-step process:
 
 1. **Reading**: Uses `openpyxl` to read Excel files (.xlsx format)
-   - Reads all rows from the active sheet
+   - Converts all worksheets (tabs) in workbook order; each sheet starts on a new page
+   - Empty sheets produce a blank page in the PDF
    - Handles empty cells (converts None to empty strings)
    - Preserves data structure
 
 2. **PDF Generation**: Uses `reportlab` to create formatted PDFs
    - Creates a table structure with headers
+   - Table width is constrained to the document's usable width (`doc.width`) so large tables fit on the page
+   - Cell content is wrapped using ReportLab `Paragraph` so long text wraps within columns
    - Applies styling (colors, borders, fonts)
    - Handles page sizing and layout
 
