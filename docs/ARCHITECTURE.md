@@ -363,6 +363,7 @@ flowchart TD
 - **Implementation Details**:
   - Reads all worksheets in order; empty sheets produce a blank page
   - Converts data to a formatted PDF table with headers
+  - Constrains table width to usable page width; cell text wrapped via Paragraph for large tables
   - Handles styling (headers, borders, colors, alternating rows)
   - Preserves data structure in PDF format
   - Splits tables wider than 8 columns (configurable) across pages
@@ -637,6 +638,8 @@ The Excel converter uses a two-step process:
 
 2. **PDF Generation**: Uses `reportlab` to create formatted PDFs
    - Creates a table structure with headers
+   - Table width is constrained to the document's usable width (`doc.width`) so large tables fit on the page
+   - Cell content is wrapped using ReportLab `Paragraph` so long text wraps within columns
    - Applies styling (colors, borders, fonts)
    - Handles page sizing and layout
 

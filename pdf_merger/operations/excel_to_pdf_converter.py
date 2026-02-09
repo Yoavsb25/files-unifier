@@ -18,6 +18,16 @@ DEFAULT_PAGE_SIZE = Constants.DEFAULT_PAGE_SIZE
 DEFAULT_ORIENTATION = Constants.DEFAULT_ORIENTATION
 DEFAULT_MAX_COLS_PER_PAGE = Constants.DEFAULT_MAX_COLS_PER_PAGE
 
+__all__ = [
+    "convert_excel_to_pdf",
+    "_safe_str",
+    "_escape_for_paragraph",
+    "EXCEL_FILE_EXTENSIONS",
+    "DEFAULT_PAGE_SIZE",
+    "DEFAULT_ORIENTATION",
+    "DEFAULT_MAX_COLS_PER_PAGE",
+]
+
 
 def _safe_str(value) -> str:
     """
@@ -64,6 +74,19 @@ def _calculate_column_widths(data: List[List[str]], max_width: float = 3.0) -> L
     widths = [max(w, min_width) for w in widths]
     
     return widths
+
+
+def _escape_for_paragraph(text: str) -> str:
+    """
+    Escape XML-special characters so text is safe for ReportLab Paragraph.
+    """
+    if not text:
+        return text
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
 
 
 def _split_wide_table(data: List[List[str]], max_cols_per_page: int = 8) -> List[List[List[str]]]:
@@ -145,7 +168,7 @@ def convert_excel_to_pdf(
             from reportlab.lib import colors
             from reportlab.lib.units import inch
             from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         except ImportError:
             raise ImportError(
                 "reportlab library is required for PDF generation. "
@@ -174,6 +197,13 @@ def convert_excel_to_pdf(
         
         # Create PDF document once; we will build elements from all worksheets
         doc = SimpleDocTemplate(str(output_path), pagesize=selected_pagesize)
+        styles = getSampleStyleSheet()
+        cell_style = ParagraphStyle(
+            "TableCell",
+            parent=styles["Normal"],
+            fontSize=9,
+            leading=11,
+        )
         elements = []
         first_sheet = True
 
@@ -212,11 +242,32 @@ def convert_excel_to_pdf(
                 if chunk_idx > 0:
                     elements.append(PageBreak())
 
-                if col_widths:
-                    chunk_col_widths = col_widths[:len(chunk_data[0])] if chunk_data else []
-                    table = Table(chunk_data, colWidths=[w * inch for w in chunk_col_widths])
+                num_cols = len(chunk_data[0]) if chunk_data else 0
+                if col_widths and num_cols:
+                    chunk_col_widths = col_widths[:num_cols]
                 else:
-                    table = Table(chunk_data)
+                    # Equal column widths summing to doc.width when not auto-sizing
+                    usable_width_inches = doc.width / inch
+                    chunk_col_widths = [usable_width_inches / num_cols] * num_cols if num_cols else []
+
+                # Scale column widths so table fits within doc.width (points)
+                if chunk_col_widths:
+                    total_pts = sum(w * inch for w in chunk_col_widths)
+                    scale = min(1.0, doc.width / total_pts) if total_pts > 0 else 1.0
+                    col_widths_pts = [w * inch * scale for w in chunk_col_widths]
+                else:
+                    col_widths_pts = []
+
+                # Convert cell strings to Paragraphs for wrapping; escape XML for Paragraph
+                chunk_flowables = [
+                    [Paragraph(_escape_for_paragraph(cell), cell_style) for cell in row]
+                    for row in chunk_data
+                ]
+
+                if col_widths_pts:
+                    table = Table(chunk_flowables, colWidths=col_widths_pts)
+                else:
+                    table = Table(chunk_flowables)
 
                 style = TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
