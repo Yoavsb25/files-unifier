@@ -11,7 +11,7 @@ from ..core.constants import Constants
 from ..utils.logging_utils import get_logger
 
 logger = get_logger("config_schema")
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN_NAME
+DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
 
 
 @dataclass
