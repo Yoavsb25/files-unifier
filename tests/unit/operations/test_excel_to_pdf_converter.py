@@ -51,6 +51,7 @@ class TestConvertExcelToPdf:
             ("A2", "B2")
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -177,6 +178,7 @@ class TestConvertExcelToPdf:
         mock_sheet.max_row = 1
         mock_sheet.iter_rows.return_value = [[MagicMock(value="A1")]]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         mock_openpyxl.load_workbook.return_value = mock_wb
         
         # Mock import to raise ImportError for reportlab
@@ -228,6 +230,7 @@ class TestConvertExcelToPdf:
         # iter_rows with values_only=True returns tuples directly
         mock_sheet.iter_rows.return_value = [("A1",)]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -300,9 +303,8 @@ class TestConvertExcelToPdf:
         
         assert result is False
     
-    @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
-    def test_convert_excel_empty_file(self, mock_logger, tmp_path):
-        """Test conversion of empty Excel file."""
+    def test_convert_excel_empty_file(self, tmp_path):
+        """Test conversion of empty Excel file: produces PDF with one blank page."""
         excel_file = tmp_path / "test.xlsx"
         excel_file.write_bytes(b"fake excel content")
         output_pdf = tmp_path / "test.pdf"
@@ -313,6 +315,7 @@ class TestConvertExcelToPdf:
         mock_sheet.max_column = 0
         mock_sheet.max_row = 0
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -353,8 +356,12 @@ class TestConvertExcelToPdf:
             result = convert_excel_to_pdf(excel_file, output_pdf)
         
         assert result is True
-        mock_logger.warning.assert_called_once()
-        mock_doc.build.assert_called_once_with([])
+        assert output_pdf.exists()
+        mock_doc.build.assert_called_once()
+        # One empty sheet: PageBreak (blank page) + PageBreak = 2 elements
+        call_args = mock_doc.build.call_args
+        elements = call_args[0][0] if call_args[0] else []
+        assert len(elements) == 2
     
     @patch('pdf_merger.operations.excel_to_pdf_converter.logger')
     def test_convert_excel_wide_table(self, mock_logger, tmp_path):
@@ -374,6 +381,7 @@ class TestConvertExcelToPdf:
             tuple(f"Data{i}" for i in range(10))
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -451,6 +459,7 @@ class TestConvertExcelToPdf:
             ("A2", "B2")
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -547,6 +556,7 @@ class TestConvertExcelToPdf:
             ("A2", "B2")
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -622,6 +632,7 @@ class TestConvertExcelToPdf:
             ("A2", "B2")
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -699,6 +710,7 @@ class TestConvertExcelToPdf:
             (None, "B2")
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -773,6 +785,7 @@ class TestConvertExcelToPdf:
             ("A2", "B2")
         ]
         mock_wb.active = mock_sheet
+        mock_wb.worksheets = [mock_sheet]
         
         # Mock openpyxl module
         mock_openpyxl = MagicMock()
@@ -827,3 +840,212 @@ class TestConvertExcelToPdf:
         
         assert result is False
         mock_logger.error.assert_called()
+
+    def test_convert_excel_multiple_sheets(self, tmp_path):
+        """Test conversion of Excel file with multiple worksheets."""
+        excel_file = tmp_path / "multi.xlsx"
+        excel_file.write_bytes(b"fake excel content")
+        output_pdf = tmp_path / "multi.pdf"
+
+        mock_sheet1 = MagicMock()
+        mock_sheet1.max_column = 2
+        mock_sheet1.max_row = 2
+        mock_sheet1.iter_rows.return_value = [("H1", "H2"), ("A1", "A2")]
+
+        mock_sheet2 = MagicMock()
+        mock_sheet2.max_column = 2
+        mock_sheet2.max_row = 2
+        mock_sheet2.iter_rows.return_value = [("X1", "X2"), ("Y1", "Y2")]
+
+        mock_wb = MagicMock()
+        mock_wb.worksheets = [mock_sheet1, mock_sheet2]
+
+        mock_openpyxl = MagicMock()
+        mock_openpyxl.load_workbook.return_value = mock_wb
+
+        mock_doc_template = MagicMock()
+        mock_doc = MagicMock()
+
+        def build_side_effect(*args, **kwargs):
+            output_pdf.touch()
+
+        mock_doc.build.side_effect = build_side_effect
+        mock_doc_template.return_value = mock_doc
+
+        mock_colors = MagicMock()
+        mock_colors.white = "white"
+        mock_colors.black = "black"
+        mock_colors.whitesmoke = "whitesmoke"
+        mock_colors.HexColor = MagicMock(return_value="hexcolor")
+
+        mock_platypus = MagicMock()
+        mock_table = MagicMock()
+        mock_page_break = MagicMock()
+        mock_platypus.Table = mock_table
+        mock_platypus.TableStyle = MagicMock()
+        mock_platypus.PageBreak = mock_page_break
+        mock_platypus.SimpleDocTemplate = mock_doc_template
+
+        mock_pagesizes = MagicMock()
+        mock_pagesizes.letter = (612, 792)
+        mock_pagesizes.A4 = (595, 842)
+        mock_pagesizes.landscape = lambda x: x
+
+        mock_lib = MagicMock()
+        mock_lib.colors = mock_colors
+        mock_lib.units = MagicMock(inch=72)
+
+        mock_styles = MagicMock()
+        mock_styles.getSampleStyleSheet.return_value = MagicMock()
+
+        with patch.dict("sys.modules", {
+            "openpyxl": mock_openpyxl,
+            "reportlab": MagicMock(),
+            "reportlab.lib": mock_lib,
+            "reportlab.lib.pagesizes": mock_pagesizes,
+            "reportlab.lib.units": mock_lib.units,
+            "reportlab.platypus": mock_platypus,
+            "reportlab.lib.styles": mock_styles,
+        }):
+            result = convert_excel_to_pdf(excel_file, output_pdf)
+
+        assert result is True
+        assert output_pdf.exists()
+        mock_doc.build.assert_called_once()
+        call_args = mock_doc.build.call_args
+        elements = call_args[0][0] if call_args[0] else []
+        page_breaks = [e for e in elements if e is mock_page_break.return_value]
+        assert len(page_breaks) >= 1  # At least one PageBreak between the two sheets
+
+    def test_convert_excel_all_sheets_empty(self, tmp_path):
+        """Test conversion when every worksheet is empty: produces PDF with blank pages."""
+        excel_file = tmp_path / "empty.xlsx"
+        excel_file.write_bytes(b"fake excel content")
+        output_pdf = tmp_path / "empty.pdf"
+
+        mock_sheet1 = MagicMock()
+        mock_sheet1.max_column = 0
+        mock_sheet1.max_row = 0
+
+        mock_sheet2 = MagicMock()
+        mock_sheet2.max_column = 0
+        mock_sheet2.max_row = 0
+
+        mock_wb = MagicMock()
+        mock_wb.worksheets = [mock_sheet1, mock_sheet2]
+
+        mock_openpyxl = MagicMock()
+        mock_openpyxl.load_workbook.return_value = mock_wb
+
+        mock_doc_template = MagicMock()
+        mock_doc = MagicMock()
+
+        def build_side_effect(*args, **kwargs):
+            output_pdf.touch()
+
+        mock_doc.build.side_effect = build_side_effect
+        mock_doc_template.return_value = mock_doc
+
+        mock_page_break = MagicMock()
+        mock_platypus = MagicMock()
+        mock_platypus.SimpleDocTemplate = mock_doc_template
+        mock_platypus.PageBreak = mock_page_break
+
+        mock_pagesizes = MagicMock()
+        mock_pagesizes.letter = (612, 792)
+        mock_pagesizes.landscape = lambda x: x
+
+        mock_lib = MagicMock()
+        mock_lib.colors = MagicMock()
+        mock_lib.units = MagicMock(inch=72)
+
+        with patch.dict("sys.modules", {
+            "openpyxl": mock_openpyxl,
+            "reportlab": MagicMock(),
+            "reportlab.lib": mock_lib,
+            "reportlab.lib.pagesizes": mock_pagesizes,
+            "reportlab.lib.units": mock_lib.units,
+            "reportlab.platypus": mock_platypus,
+            "reportlab.lib.styles": MagicMock(),
+        }):
+            result = convert_excel_to_pdf(excel_file, output_pdf)
+
+        assert result is True
+        assert output_pdf.exists()
+        mock_doc.build.assert_called_once()
+        # Two empty sheets: each gets PageBreak (before sheet) + PageBreak (blank page) = 4 elements
+        call_args = mock_doc.build.call_args
+        elements = call_args[0][0] if call_args[0] else []
+        assert len(elements) == 4
+
+    def test_convert_excel_one_empty_sheet_one_with_data(self, tmp_path):
+        """Test conversion with one empty sheet and one sheet with data."""
+        excel_file = tmp_path / "mixed.xlsx"
+        excel_file.write_bytes(b"fake excel content")
+        output_pdf = tmp_path / "mixed.pdf"
+
+        mock_empty = MagicMock()
+        mock_empty.max_column = 0
+        mock_empty.max_row = 0
+
+        mock_sheet = MagicMock()
+        mock_sheet.max_column = 2
+        mock_sheet.max_row = 2
+        mock_sheet.iter_rows.return_value = [("A", "B"), ("1", "2")]
+
+        mock_wb = MagicMock()
+        mock_wb.worksheets = [mock_empty, mock_sheet]
+
+        mock_openpyxl = MagicMock()
+        mock_openpyxl.load_workbook.return_value = mock_wb
+
+        mock_doc_template = MagicMock()
+        mock_doc = MagicMock()
+
+        def build_side_effect(*args, **kwargs):
+            output_pdf.touch()
+
+        mock_doc.build.side_effect = build_side_effect
+        mock_doc_template.return_value = mock_doc
+
+        mock_colors = MagicMock()
+        mock_colors.white = "white"
+        mock_colors.black = "black"
+        mock_colors.whitesmoke = "whitesmoke"
+        mock_colors.HexColor = MagicMock(return_value="hexcolor")
+
+        mock_platypus = MagicMock()
+        mock_table = MagicMock()
+        mock_platypus.Table = mock_table
+        mock_platypus.TableStyle = MagicMock()
+        mock_platypus.SimpleDocTemplate = mock_doc_template
+
+        mock_pagesizes = MagicMock()
+        mock_pagesizes.letter = (612, 792)
+        mock_pagesizes.landscape = lambda x: x
+
+        mock_lib = MagicMock()
+        mock_lib.colors = mock_colors
+        mock_lib.units = MagicMock(inch=72)
+
+        mock_styles = MagicMock()
+        mock_styles.getSampleStyleSheet.return_value = MagicMock()
+
+        with patch.dict("sys.modules", {
+            "openpyxl": mock_openpyxl,
+            "reportlab": MagicMock(),
+            "reportlab.lib": mock_lib,
+            "reportlab.lib.pagesizes": mock_pagesizes,
+            "reportlab.lib.units": mock_lib.units,
+            "reportlab.platypus": mock_platypus,
+            "reportlab.lib.styles": mock_styles,
+        }):
+            result = convert_excel_to_pdf(excel_file, output_pdf)
+
+        assert result is True
+        assert output_pdf.exists()
+        mock_doc.build.assert_called_once()
+        call_args = mock_doc.build.call_args
+        elements = call_args[0][0] if call_args[0] else []
+        tables = [e for e in elements if e is mock_table.return_value]
+        assert len(tables) == 1  # Only the non-empty sheet produced one table
