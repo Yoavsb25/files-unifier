@@ -17,8 +17,7 @@ from ..utils.logging_utils import get_logger
 from ..utils.exceptions import PDFMergerError
 from .constants import Constants
 from ..models import Row, MergeJob, MergeResult, RowResult, RowStatus
-from ..utils.validators import validate_serial_number
-from .serial_number_parser import (
+from ..utils.serial_number_parser import (
     split_serial_numbers,
     deduplicate_serial_numbers,
     normalize_serial_number
@@ -34,53 +33,6 @@ logger = get_logger("pdf_merger.core.merge_processor")
 EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS
 BYTES_PER_MB = Constants.BYTES_PER_MB
 MAX_MISSING_TO_LIST = Constants.MAX_MISSING_TO_LIST
-
-
-def process_row(row_index: int, serial_numbers_str: str, source_folder: Path, 
-                output_folder: Path) -> bool:
-    """
-    Process a single row: find PDFs and Excel files, convert Excel to PDF, and merge them.
-    
-    Note: This function is kept for backward compatibility and testing.
-    New code should use process_row_with_models() with domain models.
-    
-    Args:
-        row_index: Index of the row (0-based, for naming output file)
-        serial_numbers_str: Comma-separated filenames from the serial_numbers column
-        source_folder: Folder containing the PDF and Excel files
-        output_folder: Folder where merged PDFs will be saved
-        
-    Returns:
-        True if successful, False otherwise
-    """
-    all_serial_numbers = split_serial_numbers(serial_numbers_str)
-    if not all_serial_numbers:
-        logger.warning(f"Row {row_index + 1}: No serial numbers found, skipping...")
-        return False
-    
-    valid_serial_numbers = []
-    for serial_number in all_serial_numbers:
-        if validate_serial_number(serial_number):
-            valid_serial_numbers.append(serial_number)
-            continue
-        logger.warning(f"Row {row_index + 1}: Invalid serial number format: {serial_number}")
-        
-    unique_serial_numbers = deduplicate_serial_numbers(valid_serial_numbers, preserve_order=True)
-    normalized_serial_numbers = [normalize_serial_number(s, to_uppercase=True) for s in unique_serial_numbers]
-    
-    if not normalized_serial_numbers:
-        logger.warning(f"Row {row_index + 1}: No valid serial numbers after filtering, skipping...")
-        return False
-    
-    logger.info(f"Row {row_index + 1}: Processing serial numbers: {', '.join(normalized_serial_numbers)}")
-    pipeline = run_row_pipeline(
-        row_index, normalized_serial_numbers, source_folder, output_folder, fail_on_ambiguous=False, quiet=False
-    )
-    if not pipeline.success and not pipeline.source_files:
-        logger.warning(f"Row {row_index + 1}: No files found for any serial numbers, skipping...")
-    elif not pipeline.success and pipeline.error_message == Constants.NO_PDF_AVAILABLE:
-        logger.warning(f"Row {row_index + 1}: No PDF files to merge (conversions may have failed), skipping...")
-    return pipeline.success
 
 
 def _pipeline_result_to_row_result(

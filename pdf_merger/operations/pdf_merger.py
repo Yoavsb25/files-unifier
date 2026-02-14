@@ -106,43 +106,6 @@ def find_source_file(
         raise
 
 
-def find_pdf_file(folder: Path, filename: str) -> Optional[Path]:
-    """
-    Find a PDF file matching the filename in the given folder.
-    
-    Deprecated: For finding both PDF and Excel files, use find_source_file() instead.
-    This function is kept for backward compatibility and tests.
-    
-    Args:
-        folder: Path to the folder containing PDF files
-        filename: Filename (with or without .pdf extension) to search for
-        
-    Returns:
-        Path to the PDF file if found, None otherwise
-    """
-    # If filename already has .pdf extension, try that first
-    filename_lower = filename.lower()
-    if filename_lower.endswith(PDF_FILE_EXTENSION):
-        pdf_path = folder / filename
-        if pdf_path.exists():
-            return pdf_path
-    
-    # Try with .pdf extension appended
-    pdf_path = folder / f"{filename_lower}{PDF_FILE_EXTENSION}"
-    if pdf_path.exists():
-        return pdf_path
-    
-    # Try case-insensitive search (exact filename match)
-    for pdf_file in folder.glob(f"*{PDF_FILE_EXTENSION}"):
-        if pdf_file.name.lower() == filename_lower or pdf_file.name.lower() == f"{filename_lower}{PDF_FILE_EXTENSION}":
-            return pdf_file
-        # Also try matching just the stem (filename without extension)
-        if pdf_file.stem.lower() == filename_lower:
-            return pdf_file
-    
-    return None
-
-
 def merge_pdfs(
     pdf_paths: List[Path],
     output_path: Path,

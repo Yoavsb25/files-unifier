@@ -215,9 +215,8 @@ class TestFooter:
         
         assert footer is not None
 
-    def test_footer_update_status_no_op(self):
-        """Footer.update_status is a no-op for backward compatibility."""
+    def test_footer_has_no_update_status(self):
+        """Footer no longer has update_status (legacy method removed)."""
         mock_parent = MagicMock()
         footer = Footer(mock_parent)
-        footer.update_status("Processing...", "blue")
-        # No assertion - update_status does not configure any widget
+        assert not hasattr(footer, "update_status")

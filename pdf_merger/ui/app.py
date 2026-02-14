@@ -29,7 +29,7 @@ from .theme import (
     CORNER_RADIUS,
     SECTION_SPACING,
     APP_BACKGROUND,
-    CARD_BG,
+    CARD_BACKGROUND,
     PRIMARY_BLUE,
     PRIMARY_BLUE_HOVER,
     WINDOW_SIZE_DEFAULT,
@@ -123,7 +123,7 @@ class PDFMergerApp(ctk.CTk):
         self.scrollable_frame = ctk.CTkScrollableFrame(
             outer_frame,
             fg_color="transparent",
-            scrollbar_button_color=CARD_BG,
+            scrollbar_button_color=CARD_BACKGROUND,
         )
         self.scrollable_frame.grid(row=0, column=0, sticky="nsew")
         self.scrollable_frame.grid_columnconfigure(0, weight=1)

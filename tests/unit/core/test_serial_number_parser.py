@@ -3,7 +3,7 @@ Unit tests for serial_number_parser module.
 """
 
 import pytest
-from pdf_merger.core.serial_number_parser import (
+from pdf_merger.utils.serial_number_parser import (
     split_serial_numbers,
     normalize_serial_number,
     deduplicate_serial_numbers

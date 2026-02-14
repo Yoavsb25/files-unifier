@@ -8,7 +8,7 @@ This file collects suggestions for improving the codebase. They are non-blocking
 
 - **Removed / updated**: Stale references to `ProcessingResult`, `run_merge`, `process_file`, and `as_processing_result` have been removed from ARCHITECTURE.md, CODE_IMPROVEMENTS.md, and DEPRECATION.md. The pipeline uses only `MergeResult`.
 - **Single source of truth**: Default column canonical value is `pdf_merger.models.defaults.DEFAULT_SERIAL_NUMBERS_COLUMN`; `core.csv_serial_constants` must stay in sync (test in `tests/unit/core/test_constants_sync.py`).
-- **Legacy APIs kept (documented)**: `find_pdf_file` and `process_row` (bool-returning) are kept for backward compatibility and tests; prefer `find_source_file` and `process_row_with_models` + `MergeResult`.
+- **Legacy removal**: Legacy APIs `find_pdf_file` and `process_row` have been removed. Use `find_source_file` and `process_row_with_models` + `MergeResult`. See [docs/DEPRECATION.md](docs/DEPRECATION.md) and [docs/LEGACY_REMOVAL_PLAN.md](docs/LEGACY_REMOVAL_PLAN.md) for reference.
 - **Core enums**: `MatchConfidence` and `MatchBehavior` are no longer re-exported from `core.enums`; use `pdf_merger.models.enums` or `pdf_merger.matching` for matching.
 - **Config**: All config load sites use `AppConfig.from_validated_dict()` so no raw dict builds config without validation.
 

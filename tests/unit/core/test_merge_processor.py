@@ -7,7 +7,6 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from pdf_merger.core.merge_processor import (
-    process_row,
     process_row_with_models,
     process_job,
 )
@@ -15,23 +14,20 @@ from pdf_merger.utils.exceptions import PDFMergerError, InvalidFileFormatError
 from pdf_merger.models import Row, MergeJob, MergeResult, RowResult, RowStatus
 
 
-class TestProcessRow:
-    """Test cases for process_row function. Legacy API; prefer process_row_with_models / process_job.
-
-    split_serial_numbers is patched at pdf_merger.core.merge_processor (core re-exports from utils.serial_number_parser).
-    """
+class TestProcessRowWithModelsLegacyScenarios:
+    """Test cases covering legacy process_row scenarios via process_row_with_models + Row."""
+    
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_success(self, mock_parse, mock_find, mock_merge, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_success(self, mock_metrics, mock_find, mock_merge, tmp_path):
         """Test successful processing of a row."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        # Setup mocks
-        mock_parse.return_value = ["GRNW_000103851", "GRNW_000103852"]
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851,GRNW_000103852"}, "serial_numbers")
         pdf1 = source_folder / "GRNW_000103851.pdf"
         pdf2 = source_folder / "GRNW_000103852.pdf"
         pdf1.write_bytes(b"fake pdf")
@@ -39,259 +35,221 @@ class TestProcessRow:
         
         mock_find.side_effect = [pdf1, pdf2]
         mock_merge.return_value = True
+        mock_metrics.return_value = MagicMock()
         
-        result = process_row(0, "GRNW_000103851,GRNW_000103852", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is True
-        mock_parse.assert_called_once_with("GRNW_000103851,GRNW_000103852")
+        assert result.is_success()
         assert mock_find.call_count == 2
         mock_merge.assert_called_once()
     
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_no_filenames(self, mock_parse, tmp_path):
+    def test_process_row_no_filenames(self, tmp_path):
         """Test processing row with no filenames."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        mock_parse.return_value = []
+        row = Row.from_raw_data(0, {"serial_numbers": ""}, "serial_numbers")
         
-        result = process_row(0, "", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is False
+        assert result.is_skipped()
     
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_no_pdfs_found(self, mock_parse, mock_find, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_no_pdfs_found(self, mock_metrics, mock_find, tmp_path):
         """Test processing row when no PDFs are found."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        mock_parse.return_value = ["GRNW_000103851"]
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851"}, "serial_numbers")
         mock_find.return_value = None
+        mock_metrics.return_value = MagicMock()
         
-        result = process_row(0, "GRNW_000103851", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is False
+        assert result.is_skipped()
     
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_merge_fails(self, mock_parse, mock_find, mock_merge, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_merge_fails(self, mock_metrics, mock_find, mock_merge, tmp_path):
         """Test processing row when merge fails."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        mock_parse.return_value = ["GRNW_000103851"]
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851"}, "serial_numbers")
         pdf1 = source_folder / "GRNW_000103851.pdf"
         pdf1.write_bytes(b"fake pdf")
         mock_find.return_value = pdf1
         mock_merge.return_value = False
+        mock_metrics.return_value = MagicMock()
         
-        result = process_row(0, "GRNW_000103851", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is False
+        assert result.is_failed()
     
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_partial_pdfs_found(self, mock_parse, mock_find, mock_merge, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_partial_pdfs_found(self, mock_metrics, mock_find, mock_merge, tmp_path):
         """Test processing row when only some PDFs are found."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        mock_parse.return_value = ["GRNW_000103851", "GRNW_000103852"]
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851,GRNW_000103852"}, "serial_numbers")
         pdf1 = source_folder / "GRNW_000103851.pdf"
         pdf1.write_bytes(b"fake pdf")
-        mock_find.side_effect = [pdf1, None]  # Second PDF not found
+        mock_find.side_effect = [pdf1, None]
         mock_merge.return_value = True
+        mock_metrics.return_value = MagicMock()
         
-        result = process_row(0, "GRNW_000103851,GRNW_000103852", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is True  # Should still succeed if at least one PDF is found
+        assert result.is_success() or result.status == RowStatus.PARTIAL
         mock_merge.assert_called_once()
-
 
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    @patch('pdf_merger.core.merge_processor.validate_serial_number')
-    @patch('pdf_merger.core.merge_processor.logger')
-    def test_process_row_invalid_serial_numbers(self, mock_logger, mock_validate, mock_parse, mock_find, mock_merge, tmp_path):
-        """Test processing row with invalid serial numbers logs warnings but continues."""
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_invalid_serial_numbers(self, mock_metrics, mock_find, mock_merge, tmp_path):
+        """Test processing row with invalid serial numbers (Row filters them); valid ones still process."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        # Setup: some valid, some invalid serial numbers
-        mock_parse.return_value = ["GRNW_000103851", "INVALID_123", "grnw_000103852"]
-        mock_validate.side_effect = [True, False, True]  # Second one is invalid
-        
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851,INVALID_123,grnw_000103852"}, "serial_numbers")
         pdf1 = source_folder / "GRNW_000103851.pdf"
         pdf2 = source_folder / "grnw_000103852.pdf"
         pdf1.write_bytes(b"fake pdf")
         pdf2.write_bytes(b"fake pdf")
         
-        mock_find.side_effect = [pdf1, None, pdf2]
+        mock_find.side_effect = [pdf1, pdf2]
         mock_merge.return_value = True
+        mock_metrics.return_value = MagicMock()
         
-        result = process_row(0, "GRNW_000103851,INVALID_123,grnw_000103852", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        # Should still succeed
-        assert result is True
-        
-        # Should log warnings about invalid serial numbers
-        assert mock_logger.warning.called
-        warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
-        assert any("Invalid serial number format" in str(call) for call in warning_calls)
+        assert result.is_success()
+        assert mock_find.call_count == 2
 
 
 class TestProcessRowWithExcel:
-    """Test cases for process_row function with Excel file support."""
+    """Test cases for process_row_with_models with Excel file support."""
     
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
-    @patch('pdf_merger.core.row_pipeline.convert_excel_to_pdf')
+    @patch('pdf_merger.core.row_pipeline._convert_excel_files_to_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_with_excel_file(self, mock_parse, mock_find, mock_convert, mock_merge, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_with_excel_file(self, mock_metrics, mock_find, mock_convert, mock_merge, tmp_path):
         """Test processing row with Excel file that gets converted to PDF."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        # Setup mocks
-        mock_parse.return_value = ["GRNW_000103851"]
         excel_file = source_folder / "GRNW_000103851.xlsx"
         excel_file.write_bytes(b"fake excel")
-        
-        # Create temporary PDF path
         temp_pdf = tmp_path / "temp_grnw_000103851.pdf"
         temp_pdf.write_bytes(b"fake pdf")
         
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851"}, "serial_numbers")
         mock_find.return_value = excel_file
-        mock_convert.return_value = True
+        mock_convert.return_value = ([temp_pdf], [temp_pdf])
         mock_merge.return_value = True
+        mock_metrics.return_value = MagicMock()
         
-        # Mock tempfile to return our temp PDF
-        with patch('pdf_merger.core.row_pipeline.tempfile.NamedTemporaryFile') as mock_temp:
-            mock_temp_file = MagicMock()
-            mock_temp_file.name = str(temp_pdf)
-            mock_temp_file.close = MagicMock()
-            mock_temp.return_value = mock_temp_file
-            
-            result = process_row(0, "GRNW_000103851", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is True
+        assert result.is_success()
         mock_convert.assert_called_once()
         mock_merge.assert_called_once()
     
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
-    @patch('pdf_merger.core.row_pipeline.convert_excel_to_pdf')
+    @patch('pdf_merger.core.row_pipeline._convert_excel_files_to_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_mixed_pdf_and_excel(self, mock_parse, mock_find, mock_convert, mock_merge, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_mixed_pdf_and_excel(self, mock_metrics, mock_find, mock_convert, mock_merge, tmp_path):
         """Test processing row with both PDF and Excel files."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        # Setup mocks
-        mock_parse.return_value = ["GRNW_000103851", "GRNW_000103852"]
         pdf_file = source_folder / "GRNW_000103851.pdf"
         pdf_file.write_bytes(b"fake pdf")
         excel_file = source_folder / "GRNW_000103852.xlsx"
         excel_file.write_bytes(b"fake excel")
-        
         temp_pdf = tmp_path / "temp_grnw_000103852.pdf"
         temp_pdf.write_bytes(b"fake pdf")
         
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851,GRNW_000103852"}, "serial_numbers")
         mock_find.side_effect = [pdf_file, excel_file]
-        mock_convert.return_value = True
+        mock_convert.return_value = ([pdf_file, temp_pdf], [temp_pdf])
         mock_merge.return_value = True
+        mock_metrics.return_value = MagicMock()
         
-        with patch('pdf_merger.core.row_pipeline.tempfile.NamedTemporaryFile') as mock_temp:
-            mock_temp_file = MagicMock()
-            mock_temp_file.name = str(temp_pdf)
-            mock_temp_file.close = MagicMock()
-            mock_temp.return_value = mock_temp_file
-            
-            result = process_row(0, "GRNW_000103851,GRNW_000103852", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is True
-        assert mock_convert.call_count == 1  # Only Excel file should be converted
+        assert result.is_success()
+        assert mock_convert.call_count == 1
         mock_merge.assert_called_once()
     
-    @patch('pdf_merger.core.row_pipeline.convert_excel_to_pdf')
+    @patch('pdf_merger.core.row_pipeline._convert_excel_files_to_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    def test_process_row_excel_conversion_fails(self, mock_parse, mock_find, mock_convert, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_excel_conversion_fails(self, mock_metrics, mock_find, mock_convert, tmp_path):
         """Test processing row when Excel conversion fails."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        mock_parse.return_value = ["GRNW_000103851"]
         excel_file = source_folder / "GRNW_000103851.xlsx"
         excel_file.write_bytes(b"fake excel")
         
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851"}, "serial_numbers")
         mock_find.return_value = excel_file
-        mock_convert.return_value = False  # Conversion fails
+        mock_convert.return_value = ([], [])  # No PDFs produced - conversion failed
+        mock_metrics.return_value = MagicMock()
         
-        with patch('pdf_merger.core.row_pipeline.tempfile.NamedTemporaryFile') as mock_temp:
-            mock_temp_file = MagicMock()
-            mock_temp_file.name = str(tmp_path / "temp.pdf")
-            mock_temp_file.close = MagicMock()
-            mock_temp.return_value = mock_temp_file
-            
-            result = process_row(0, "GRNW_000103851", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is False
+        assert result.is_failed()
     
     @patch('pdf_merger.core.row_pipeline.merge_pdfs')
-    @patch('pdf_merger.core.row_pipeline.convert_excel_to_pdf')
+    @patch('pdf_merger.core.row_pipeline._convert_excel_files_to_pdfs')
     @patch('pdf_merger.core.row_pipeline.find_source_file')
-    @patch('pdf_merger.core.merge_processor.split_serial_numbers')
-    @patch('pdf_merger.core.merge_processor.logger')
-    def test_process_row_cleans_up_temp_files(self, mock_logger, mock_parse, mock_find, mock_convert, mock_merge, tmp_path):
+    @patch('pdf_merger.core.merge_processor.get_metrics_collector')
+    def test_process_row_cleans_up_temp_files(self, mock_metrics, mock_find, mock_convert, mock_merge, tmp_path):
         """Test that temporary PDF files are cleaned up after merging."""
         source_folder = tmp_path / "source"
         output_folder = tmp_path / "output"
         source_folder.mkdir()
         output_folder.mkdir()
         
-        mock_parse.return_value = ["GRNW_000103851"]
         excel_file = source_folder / "GRNW_000103851.xlsx"
         excel_file.write_bytes(b"fake excel")
-        
         temp_pdf = tmp_path / "temp_grnw_000103851.pdf"
         temp_pdf.write_bytes(b"fake pdf")
         
+        row = Row.from_raw_data(0, {"serial_numbers": "GRNW_000103851"}, "serial_numbers")
         mock_find.return_value = excel_file
-        mock_convert.return_value = True
+        mock_convert.return_value = ([temp_pdf], [temp_pdf])
         mock_merge.return_value = True
+        mock_metrics.return_value = MagicMock()
         
-        with patch('pdf_merger.core.row_pipeline.tempfile.NamedTemporaryFile') as mock_temp:
-            mock_temp_file = MagicMock()
-            mock_temp_file.name = str(temp_pdf)
-            mock_temp_file.close = MagicMock()
-            mock_temp.return_value = mock_temp_file
-            
-            result = process_row(0, "GRNW_000103851", source_folder, output_folder)
+        result = process_row_with_models(row, source_folder, output_folder, fail_on_ambiguous=False)
         
-        assert result is True
-        # Verify temp file cleanup was attempted (via unlink)
-        # The actual cleanup happens in the finally block
+        assert result.is_success()
 
 
 class TestProcessRowWithModels:

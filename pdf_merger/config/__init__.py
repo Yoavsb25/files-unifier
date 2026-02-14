@@ -3,7 +3,7 @@ Configuration module.
 Handles application configuration management.
 """
 
-# Re-export for backward compatibility
+# Public API of the config package
 from .config_manager import (
     AppConfig,
     get_config_path,

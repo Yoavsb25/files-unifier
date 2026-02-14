@@ -10,6 +10,16 @@ The following have been removed from the codebase:
 - **`process_file`** — Use `load_job_from_file` (from `pdf_merger.core.job_loader`) then `process_job` (from `pdf_merger.core.merge_processor`).
 - **`ProcessingResult`** and **`as_processing_result`** — The pipeline uses only `MergeResult`; use `MergeResult` from `pdf_merger.models` everywhere.
 
+## Legacy removal (completed)
+
+The following legacy/deprecated items have been removed (as of 2.0):
+
+- **`find_pdf_file`** — Use `find_source_file` from `pdf_merger.operations.pdf_merger`.
+- **`process_row`** (bool-returning) — Use `process_row_with_models(row, ...)` with `Row` and `RowResult` from `pdf_merger.core.merge_processor`.
+- **`pdf_merger.core.serial_number_parser`** re-export — Import from `pdf_merger.utils.serial_number_parser` only.
+- **Theme aliases** (`CARD_BG`, `BG_DARK`, `LOG_BG`, `GREEN_SUCCESS`, `RED_ERROR`, etc.) — Use the primary names: `CARD_BACKGROUND`, `APP_BACKGROUND`, `LOG_BACKGROUND`, `SUCCESS_GREEN`, `ERROR_RED`, etc., from `pdf_merger.ui.theme`.
+- **`Footer.update_status`** — Removed (no-op); footer shows version only.
+
 ## Migration example
 
 **Preferred entry point:**

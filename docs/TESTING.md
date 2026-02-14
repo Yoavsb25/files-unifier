@@ -299,7 +299,8 @@ def test_process_file_complete_workflow(tmp_path):
     # ... setup code ...
     
     # Execute
-    result = process_file(csv_file, pdf_folder, output_folder)
+    from pdf_merger import run_merge_job
+    result = run_merge_job(csv_file, pdf_folder, output_folder)
     
     # Verify
     assert result.successful_merges == 1
@@ -412,9 +413,10 @@ def test_validate_serial_number_valid():
     assert result is True
 
 # Acceptable - Related assertions
-def test_process_result_attributes():
-    """Test ProcessingResult has all required attributes."""
-    result = ProcessingResult(total_rows=5, successful_merges=4)
+def test_merge_result_attributes():
+    """Test MergeResult has all required attributes."""
+    from pdf_merger.models import MergeResult
+    result = MergeResult(total_rows=5, successful_merges=4)
     assert result.total_rows == 5
     assert result.successful_merges == 4
     assert result.failed_rows == []

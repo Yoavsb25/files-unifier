@@ -181,7 +181,6 @@ files_unifeder/
 │   │   ├── row_pipeline.py       # One-row pipeline: find, convert Excel, merge, cleanup
 │   │   ├── constants.py          # Shared constants (composed from domain constant modules)
 │   │   ├── csv_excel_reader.py   # CSV/Excel file reading
-│   │   ├── serial_number_parser.py  # Re-export from utils (backward compatibility)
 │   │   ├── result_reporter.py   # Result formatting
 │   │   ├── result_view.py       # Unified ResultView for formatters (built from MergeResult)
 │   │   └── enums.py             # Domain/operations enums (UI display enums in ui/display_enums.py)
@@ -286,7 +285,6 @@ flowchart TD
 - **`merge_processor.py`**: Job execution and row-level logic
   - `process_job()`: Process `MergeJob` using domain models (recommended)
   - `process_row_with_models()`: Process single row using `Row` model
-  - `process_row()`: Legacy bool-returning API (testing/backward compatibility only)
   - Returns `MergeResult` with detailed per-row results
 
 - **`result_reporter.py`**: Result formatting for display (summary and detailed reports)
@@ -331,7 +329,7 @@ flowchart TD
   - Unified interface for all file types
   - Returns iterable of row data (dicts)
 
-#### 6. Serial Number Parser (`pdf_merger/core/serial_number_parser.py`)
+#### 6. Serial Number Parser (`pdf_merger/utils/serial_number_parser.py`)
 
 - **Responsibility**: Parsing serial numbers from strings
 - **Features**:
@@ -345,7 +343,6 @@ flowchart TD
 - **PDF merge backend**: An optional `PDFMergeBackend` protocol is defined in this module (`merge(pdf_paths, output_path) -> bool`). The row pipeline (`core/row_pipeline.py`) accepts an optional `pdf_merge_backend` argument; when provided, it is used instead of the default `merge_pdfs()` so tests can inject a mock or future code can plug in an alternate implementation.
 - **Features**:
   - `find_source_file()`: Uses formal matching rules with ambiguity detection
-  - `find_pdf_file()`: Case-insensitive PDF finding (backward compatibility)
   - `merge_pdfs()`: Merging multiple PDFs with automatic streaming for large files
   - Lazy loading of PDF libraries (pypdf)
   - Suppresses noisy PDF read warnings (Apple-annotated PDFs)

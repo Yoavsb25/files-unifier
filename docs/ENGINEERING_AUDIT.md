@@ -25,7 +25,7 @@ The codebase is **well-structured and maintainable**, with clear layering, docum
 ### Justification
 
 - **Layering is explicit:** UI → application (main, license) → core (orchestrator, processor, job_loader, row_pipeline) → operations (PDF/Excel) and matching. Domain models live in `models/` and are used by core and UI; they do not import from core or operations (`models/defaults.py` and `Row` use `utils` only). This matches the “dependency direction” goal in ARCHITECTURE.md.
-- **Single job-loading path:** `load_job_from_file()` in `job_loader.py` is the only place that reads CSV/Excel and builds a `MergeJob` with rows. Both `run_merge_job` and the legacy `process_file` path use it, avoiding duplicate row-loading logic.
+- **Single job-loading path:** `load_job_from_file()` in `job_loader.py` is the only place that reads CSV/Excel and builds a `MergeJob` with rows. `run_merge_job` uses it; legacy `run_merge`/`process_file` have been removed as of 2.0 (see DEPRECATION.md).
 - **Operations are isolated:** `operations/` (pdf_merger, streaming_pdf_merger, excel_to_pdf_converter) does not depend on core; core and row_pipeline depend on operations. The optional `PDFMergeBackend` protocol in `pdf_merger.py` allows injecting a mock in tests without changing the default behavior.
 - **Config precedence is implemented correctly:** `load_config()` applies defaults → project preset → user config → env in order so that env overrides user over preset over defaults. Schema validation is centralized in `config_schema.validate_config()`.
 
@@ -68,7 +68,7 @@ The codebase is **well-structured and maintainable**, with clear layering, docum
   - **Factory methods on domain types:** `RowResult.skipped()`, `RowResult.failed()`, `RowResult.success()`, `MergeJob.create()` give consistent construction and avoid ad-hoc dicts.  
   - **Single source of truth for merge state:** `MergeHandler` uses `_state` (`idle`/`running`) and exposes read-only `is_processing`; `_set_idle()` is called only from the worker’s `finally`, so transitions are explicit and safe.
 - **Abstraction level is consistent:** Core talks in terms of `Row`, `MergeJob`, `MergeResult`, `RowResult`; the row pipeline talks in `RowPipelineResult` and path lists. No leaky abstractions (e.g. CSV column names) in the processor.
-- **API clarity:** Public API is documented in `pdf_merger/__init__.py` and ARCHITECTURE.md. Primary entry point is `run_merge_job`; legacy `run_merge`/`process_file` are deprecated with a timeline (DEPRECATION.md). No `ProcessingResult` or `as_processing_result` in the current codebase—migration appears complete.
+- **API clarity:** Public API is documented in `pdf_merger/__init__.py` and ARCHITECTURE.md. Primary entry point is `run_merge_job`; legacy `run_merge`/`process_file` and `ProcessingResult`/`as_processing_result` have been removed as of 2.0 (see DEPRECATION.md).
 
 **Concrete examples:**
 
@@ -108,7 +108,7 @@ The codebase is **well-structured and maintainable**, with clear layering, docum
 - **Structure:** Core is split into orchestrator, processor, job_loader, row_pipeline, result_reporter, result_view, constants, types. UI is split into app, handlers, components, theme, license_ui, app_helpers. Long methods have been partially decomposed (e.g. `_apply_merge_result_to_ui`, `_process_single_row_and_report`, `_record_job_failure`).
 - **Testability:** Pure helpers like `get_run_block_reasons` and `can_run_merge` are in `app_helpers.py` and are unit-tested. Merge state lives in `MergeHandler`, so UI tests can assert on “can run” without running the real merge. Row pipeline accepts optional `pdf_merge_backend`; processor accepts optional `metrics_collector`. Tests use mocks (e.g. `patch('pdf_merger.core.row_pipeline.merge_pdfs')`) and temp dirs appropriately.
 - **Documentation:** ARCHITECTURE.md is thorough (layers, data flow, public API, conventions, quality bar). DEPRECATION.md and CODE_IMPROVEMENTS.md give clear migration and improvement notes. Docstrings on public functions and key classes describe args, returns, and behavior. Module-level comments explain responsibility (e.g. “Orchestrator: UI-facing API and job construction”).
-- **Technical debt:** Documented in CODE_IMPROVEMENTS.md (e.g. `PDFProcessingError` unused, broad `except Exception`, `format_result_detailed` not used in UI for a “detailed report” action—actually the UI has “View detailed log” and `_show_detailed_report` uses `format_result_detailed`). Legacy `run_merge`/`process_file` are deprecated with a removal plan. Duplicate constants have been consolidated (e.g. CSV/encoding in `utils/csv_constants.py`; serial number format in `utils/serial_number_parser`).
+- **Technical debt:** Documented in CODE_IMPROVEMENTS.md (e.g. `PDFProcessingError` unused, broad `except Exception`, `format_result_detailed` not used in UI for a “detailed report” action—actually the UI has “View detailed log” and `_show_detailed_report` uses `format_result_detailed`). Legacy `run_merge`/`process_file` have been removed as of 2.0. Duplicate constants have been consolidated (e.g. CSV/encoding in `utils/csv_constants.py`; serial number format in `utils/serial_number_parser`).
 
 **Concrete examples:**
 

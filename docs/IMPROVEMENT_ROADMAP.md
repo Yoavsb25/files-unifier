@@ -47,7 +47,7 @@ This roadmap is derived from the [Codebase Engineering Audit](.cursor/plans/code
 
 #### 9/10 Standard
 
-- **API surface:** One primary path (`run_merge_job` / `process_job` / `MergeResult`); legacy entry points explicitly deprecated with timeline and single adapter (`as_processing_result`).
+- **API surface:** One primary path (`run_merge_job` / `process_job` / `MergeResult`); legacy entry points and `as_processing_result` were removed as of 2.0.
 - **Config validation:** Plain functions or a single validated builder; no “namespace class” with only static methods.
 - **Merge state:** Single source of truth for “is a merge running”; UI only reads state; transitions (idle → running → idle) are explicit and hard to misuse.
 - **Testability:** PDF merge can be tested via an injectable abstraction (optional; default remains current lazy loading).

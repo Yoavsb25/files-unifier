@@ -5,12 +5,12 @@ Unit tests for pdf_merger module.
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
-from pdf_merger.operations.pdf_merger import find_pdf_file, find_source_file, merge_pdfs, _get_pdf_libraries
+from pdf_merger.operations.pdf_merger import find_source_file, merge_pdfs, _get_pdf_libraries
 from pdf_merger.core.constants import Constants
 
 
-class TestFindPdfFile:
-    """Test cases for find_pdf_file function."""
+class TestFindSourceFilePdfOnly:
+    """Test cases for find_source_file with PDF-only (legacy find_pdf_file scenarios)."""
     
     def test_find_pdf_with_extension(self, tmp_path):
         """Test finding PDF file when filename includes .pdf extension."""
@@ -19,7 +19,7 @@ class TestFindPdfFile:
         pdf_file = folder / "GRNW_000103851.pdf"
         pdf_file.write_bytes(b"fake pdf content")
         
-        result = find_pdf_file(folder, "GRNW_000103851.pdf")
+        result = find_source_file(folder, "GRNW_000103851.pdf", fail_on_ambiguous=False)
         
         assert result == pdf_file
     
@@ -30,7 +30,7 @@ class TestFindPdfFile:
         pdf_file = folder / "GRNW_000103851.pdf"
         pdf_file.write_bytes(b"fake pdf content")
         
-        result = find_pdf_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         # On case-insensitive filesystems, the returned path might be lowercase
         assert result is not None
@@ -44,7 +44,7 @@ class TestFindPdfFile:
         pdf_file = folder / "grnw_000103851.pdf"
         pdf_file.write_bytes(b"fake pdf content")
         
-        result = find_pdf_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result == pdf_file
     
@@ -53,7 +53,7 @@ class TestFindPdfFile:
         folder = tmp_path / "pdfs"
         folder.mkdir()
         
-        result = find_pdf_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result is None
     
@@ -66,7 +66,7 @@ class TestFindPdfFile:
         other_file = folder / "GRNW_000103852.pdf"
         other_file.write_bytes(b"fake pdf content")
         
-        result = find_pdf_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         # On case-insensitive filesystems, the returned path might be lowercase
         assert result is not None
@@ -80,7 +80,7 @@ class TestFindPdfFile:
         pdf_file = folder / "GRNW_000103851.PDF"  # Uppercase extension
         pdf_file.write_bytes(b"fake pdf content")
         
-        result = find_pdf_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         # On case-insensitive filesystems, the returned path might be lowercase
         assert result is not None
@@ -96,7 +96,7 @@ class TestFindPdfFile:
         pdf_file.write_bytes(b"fake pdf content")
         
         # Search with lowercase
-        result = find_pdf_file(folder, "testfile")
+        result = find_source_file(folder, "testfile", fail_on_ambiguous=False)
         
         assert result is not None
         assert result.name.lower() == pdf_file.name.lower()
@@ -109,7 +109,7 @@ class TestFindPdfFile:
         pdf_file.write_bytes(b"fake pdf content")
         
         # Search with .pdf extension
-        result = find_pdf_file(folder, "grnw_000103851.pdf")
+        result = find_source_file(folder, "grnw_000103851.pdf", fail_on_ambiguous=False)
         
         assert result is not None
         assert result.name.lower() == pdf_file.name.lower()
@@ -123,7 +123,7 @@ class TestFindPdfFile:
         pdf_file.write_bytes(b"fake pdf content")
         
         # Search with lowercase - should match via glob
-        result = find_pdf_file(folder, "testfile")
+        result = find_source_file(folder, "testfile", fail_on_ambiguous=False)
         
         assert result is not None
         # Should match via the glob loop (line 70-71)
@@ -138,7 +138,7 @@ class TestFindPdfFile:
         pdf_file.write_bytes(b"fake pdf content")
         
         # Search without extension - should match via stem check
-        result = find_pdf_file(folder, "grnw_000103851")
+        result = find_source_file(folder, "grnw_000103851", fail_on_ambiguous=False)
         
         assert result is not None
         # Should match via the stem check (line 73-74)
@@ -462,7 +462,7 @@ class TestFindSourceFile:
         pdf_file = folder / "GRNW_000103851.pdf"
         pdf_file.write_bytes(b"fake pdf content")
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result == pdf_file
     
@@ -473,7 +473,7 @@ class TestFindSourceFile:
         excel_file = folder / "GRNW_000103851.xlsx"
         excel_file.write_bytes(b"fake excel content")
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result == excel_file
     
@@ -484,7 +484,7 @@ class TestFindSourceFile:
         excel_file = folder / "GRNW_000103851.xls"
         excel_file.write_bytes(b"fake excel content")
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result == excel_file
     
@@ -497,7 +497,7 @@ class TestFindSourceFile:
         excel_file = folder / "GRNW_000103851.xlsx"
         excel_file.write_bytes(b"fake excel content")
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         # Should find one of them (implementation may vary, but should find a file)
         assert result is not None
@@ -511,7 +511,7 @@ class TestFindSourceFile:
         excel_file = folder / "GRNW_000103851.xlsx"
         excel_file.write_bytes(b"fake excel content")
         
-        result = find_source_file(folder, "GRNW_000103851.xlsx")
+        result = find_source_file(folder, "GRNW_000103851.xlsx", fail_on_ambiguous=False)
         
         assert result == excel_file
     
@@ -522,7 +522,7 @@ class TestFindSourceFile:
         excel_file = folder / "grnw_000103851.xlsx"
         excel_file.write_bytes(b"fake excel content")
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result == excel_file
     
@@ -531,7 +531,7 @@ class TestFindSourceFile:
         folder = tmp_path / "source"
         folder.mkdir()
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result is None
     
@@ -542,6 +542,6 @@ class TestFindSourceFile:
         text_file = folder / "GRNW_000103851.txt"
         text_file.write_text("some text")
         
-        result = find_source_file(folder, "GRNW_000103851")
+        result = find_source_file(folder, "GRNW_000103851", fail_on_ambiguous=False)
         
         assert result is None

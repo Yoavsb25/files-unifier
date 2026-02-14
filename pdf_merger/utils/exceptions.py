@@ -26,7 +26,7 @@ class PDFMergerError(Exception):
         Args:
             message: Error message describing what went wrong
         """
-        self.message = message  # Keep for backward compatibility; same as args[0].
+        self.message = message  # Same as args[0]; kept for compatibility.
         super().__init__(self.message)
 
 

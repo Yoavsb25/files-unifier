@@ -17,7 +17,7 @@ from .display_enums import LicenseColor
 
 from .theme import SUCCESS_GREEN, ERROR_RED, WARNING_YELLOW
 
-# Constants for backward compatibility and convenience
+# Convenience constants mapping LicenseColor to theme hex
 GREEN_COLOR = LicenseColor.GREEN.value
 RED_COLOR = LicenseColor.RED.value
 ORANGE_COLOR = LicenseColor.ORANGE.value

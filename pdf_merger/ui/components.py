@@ -8,21 +8,19 @@ from typing import Any, Callable, Optional, Union
 from .. import APP_VERSION, APP_NAME
 from .display_enums import StatusColor
 from .theme import (
-    CARD_BG,
+    CARD_BACKGROUND,
     CARD_BORDER,
     CORNER_RADIUS,
     CARD_PADDING,
     INPUT_RADIUS,
     INPUT_BACKGROUND,
-    INPUT_CONTAINER_BG,
     PRIMARY_BLUE,
     FONT_LABEL_SIZE,
     FONT_SECTION_SIZE,
     FONT_HELPER_SIZE,
     FONT_MONO_SIZE,
     FONT_SUMMARY_NUMBER,
-    INPUT_BG,
-    LOG_BG,
+    LOG_BACKGROUND,
     LABEL_INPUT_SPACING,
     METRIC_CARD_BG,
     METRIC_CARD_PADDING,
@@ -31,10 +29,9 @@ from .theme import (
     STEP_SYMBOLS,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
-    GREEN_SUCCESS,
-    RED_ERROR,
-    YELLOW_WARNING,
-    BLUE_INFO,
+    SUCCESS_GREEN,
+    ERROR_RED,
+    WARNING_YELLOW,
 )
 
 
@@ -95,7 +92,7 @@ class SetupCard(ctk.CTkFrame):
     ):
         super().__init__(
             parent,
-            fg_color=CARD_BG,
+            fg_color=CARD_BACKGROUND,
             corner_radius=CORNER_RADIUS,
             border_width=1,
             border_color=CARD_BORDER,
@@ -173,7 +170,7 @@ class SetupCard(ctk.CTkFrame):
             self,
             text="",
             font=ctk.CTkFont(size=FONT_HELPER_SIZE),
-            text_color=RED_ERROR,
+            text_color=ERROR_RED,
         )
         self.error_label.pack(anchor="w", padx=CARD_PADDING, pady=(0, CARD_PADDING))
 
@@ -201,7 +198,7 @@ class SetupCard(ctk.CTkFrame):
     def set_error(self, message: str):
         """Show inline error state."""
         self._error_message = message
-        self.path_entry.configure(border_color=RED_ERROR, border_width=2)
+        self.path_entry.configure(border_color=ERROR_RED, border_width=2)
         self.error_label.configure(text=message)
         self.error_label.pack(anchor="w", padx=CARD_PADDING, pady=(0, CARD_PADDING))
 
@@ -228,7 +225,7 @@ class LicenseFrame(ctk.CTkFrame):
         # Pill-style badge container
         badge_frame = ctk.CTkFrame(
             self,
-            fg_color=CARD_BG,
+            fg_color=CARD_BACKGROUND,
             corner_radius=20,
             height=36,
         )
@@ -276,7 +273,7 @@ class LogArea(ctk.CTkFrame):
             text="Detailed Log  ▶",
             font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
             fg_color="transparent",
-            hover_color=CARD_BG,
+            hover_color=CARD_BACKGROUND,
             anchor="w",
             command=self._toggle,
             cursor="hand2",
@@ -286,7 +283,7 @@ class LogArea(ctk.CTkFrame):
         # Content frame (initially hidden - collapsed by default)
         self.content_frame = ctk.CTkFrame(
             self,
-            fg_color=LOG_BG,
+            fg_color=LOG_BACKGROUND,
             corner_radius=CORNER_RADIUS,
             border_width=1,
             border_color=CARD_BORDER,
@@ -297,15 +294,15 @@ class LogArea(ctk.CTkFrame):
             font=ctk.CTkFont(size=FONT_MONO_SIZE),
             wrap="word",
             height=300,
-            fg_color=LOG_BG,
+            fg_color=LOG_BACKGROUND,
         )
         self.log_text.pack(fill="both", expand=True, padx=8, pady=8)
 
         # Configure tags for colored output (theme semantic colors)
-        self.log_text.tag_config(self.TAG_ERROR, foreground=RED_ERROR)
-        self.log_text.tag_config(self.TAG_SUCCESS, foreground=GREEN_SUCCESS)
+        self.log_text.tag_config(self.TAG_ERROR, foreground=ERROR_RED)
+        self.log_text.tag_config(self.TAG_SUCCESS, foreground=SUCCESS_GREEN)
         self.log_text.tag_config(self.TAG_INFO, foreground=TEXT_SECONDARY)
-        self.log_text.tag_config(self.TAG_WARNING, foreground=YELLOW_WARNING)
+        self.log_text.tag_config(self.TAG_WARNING, foreground=WARNING_YELLOW)
 
     def is_expanded(self) -> bool:
         """Return True if the detailed log area is expanded (visible)."""
@@ -381,7 +378,7 @@ class ResultsFrame(ctk.CTkFrame):
         # Single results card container
         results_card = ctk.CTkFrame(
             self,
-            fg_color=CARD_BG,
+            fg_color=CARD_BACKGROUND,
             corner_radius=CORNER_RADIUS,
             border_width=1,
             border_color=CARD_BORDER,
@@ -417,15 +414,15 @@ class ResultsFrame(ctk.CTkFrame):
         self.rows_card.pack(side="left", fill="x", expand=True, padx=(0, SUMMARY_CARD_SPACING))
 
         # PDFs Created (SUCCESS_GREEN)
-        self.pdfs_card = self._make_summary_card(cards_frame, "0", "PDFs Created", GREEN_SUCCESS)
+        self.pdfs_card = self._make_summary_card(cards_frame, "0", "PDFs Created", SUCCESS_GREEN)
         self.pdfs_card.pack(side="left", fill="x", expand=True, padx=(0, SUMMARY_CARD_SPACING))
 
         # Skipped (WARNING_YELLOW)
-        self.skipped_card = self._make_summary_card(cards_frame, "0", "Skipped", YELLOW_WARNING)
+        self.skipped_card = self._make_summary_card(cards_frame, "0", "Skipped", WARNING_YELLOW)
         self.skipped_card.pack(side="left", fill="x", expand=True, padx=(0, SUMMARY_CARD_SPACING))
 
         # Failed (ERROR_RED)
-        self.failed_card = self._make_summary_card(cards_frame, "0", "Failed", RED_ERROR)
+        self.failed_card = self._make_summary_card(cards_frame, "0", "Failed", ERROR_RED)
         self.failed_card.pack(side="left", fill="x", expand=True)
 
         # Action buttons
@@ -436,7 +433,7 @@ class ResultsFrame(ctk.CTkFrame):
             buttons_frame,
             text="View Detailed Log",
             command=self._on_toggle_log_clicked,
-            fg_color=INPUT_CONTAINER_BG,
+            fg_color=INPUT_BACKGROUND,
             hover_color=CARD_BORDER,
             corner_radius=CORNER_RADIUS,
             border_width=1,
@@ -450,7 +447,7 @@ class ResultsFrame(ctk.CTkFrame):
             buttons_frame,
             text="Show Detailed Report",
             command=self._on_show_detailed_report_clicked,
-            fg_color=INPUT_CONTAINER_BG,
+            fg_color=INPUT_BACKGROUND,
             hover_color=CARD_BORDER,
             corner_radius=CORNER_RADIUS,
             border_width=1,
@@ -464,7 +461,7 @@ class ResultsFrame(ctk.CTkFrame):
             buttons_frame,
             text="Open Output Folder",
             command=self._on_open_output_clicked,
-            fg_color=INPUT_CONTAINER_BG,
+            fg_color=INPUT_BACKGROUND,
             hover_color=CARD_BORDER,
             corner_radius=CORNER_RADIUS,
             border_width=1,
@@ -560,7 +557,3 @@ class Footer(ctk.CTkFrame):
             anchor="w",
         )
         version_label.pack(side="left", padx=10, pady=5)
-
-    def update_status(self, text: str, color: Union[str, StatusColor] = StatusColor.WHITE):
-        """No-op for backward compatibility - status removed per spec."""
-        pass

@@ -1,6 +1,6 @@
 """
 Constants for PDF Merger.
-Composes domain-specific constant classes; import Constants from here for backward compatibility.
+Composes domain-specific constant classes; import Constants from here.
 """
 
 from .file_constants import FileConstants
