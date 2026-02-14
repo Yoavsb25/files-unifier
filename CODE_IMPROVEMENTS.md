@@ -17,7 +17,7 @@ This file collects suggestions for improving the codebase. They are non-blocking
   `ProcessingResult` is deprecated in favor of `MergeResult`, but the pipeline still returns/uses it internally (`merge_processor.process_job` builds `ProcessingResult`; `result_reporter` and `result_view` accept both). A full migration would have `process_job` return only `MergeResult` and remove `ProcessingResult` and `as_processing_result` from the public API (per `DEPRECATION.md`).
 
 - **`format_result_detailed`**  
-  Exported from `pdf_merger.core` and well tested, but not used by the UI. Consider adding a “Show detailed report” (or “View detailed log”) action that displays `format_result_detailed(result)` in a dialog or expandable section after a merge.
+  Addressed: the UI uses it in the "View detailed log" action (`_show_detailed_report`), which opens a dialog showing `format_result_detailed(result)` after a merge.
 
 ---
 

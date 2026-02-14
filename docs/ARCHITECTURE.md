@@ -713,6 +713,18 @@ Merge runs **one job at a time**. There is no job queue, no cancellation of an i
 - **Single worker thread**: The merge operation runs in a single background thread (`MergeHandler._merge_worker`). UI updates from that thread are scheduled on the main thread via `root.after()`.
 - **Future extension**: To support cancellation or multiple jobs, introduce a job token or a small job queue and have the worker check the token or dequeue the next job; document the extension point here.
 
+### Error handling
+
+Which exceptions are raised by which layer, and how the UI handles them:
+
+- **Operations** (`pdf_merger.operations.pdf_merger`, `streaming_pdf_merger`): On PDF read or merge failure, raise `PDFProcessingError` (message, path, operation). The row pipeline catches it and returns a failed `RowPipelineResult` with the error message.
+- **Validators** (`pdf_merger.utils.validators`): Raise `PDFMergerError` subclasses (`PDFMergerFileNotFoundError`, `MissingColumnError`, `InvalidFileFormatError`, `ValidationError`).
+- **Matching** (`pdf_merger.matching.rules`): Raise `ValueError` on ambiguous match when behavior is `FAIL_FAST`.
+- **Job loader** (`pdf_merger.core.job_loader`): Re-raises `OSError`, `InvalidFileFormatError`, and `MissingColumnError` so callers can distinguish load failure from an empty file. On any other exception, logs "Unknown error during load" and returns an empty job.
+- **Merge worker** (`pdf_merger.ui.handlers.MergeHandler._merge_worker`): Catches `PDFMergerError` and `ValueError` explicitly and calls `on_error` with the message; then catches `Exception` and calls `on_error` for unexpected errors. Does not catch `BaseException` (so `KeyboardInterrupt` and `SystemExit` propagate). Always calls `_set_idle()` in `finally`.
+
+See `pdf_merger.utils.exceptions` for the full exception hierarchy.
+
 ### Excel to PDF Conversion
 
 The Excel converter uses a two-step process:

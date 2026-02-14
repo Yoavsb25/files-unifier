@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple, TYPE_CHECKING
 
 from ..operations.pdf_merger import find_source_file, merge_pdfs
 from ..utils.logging_utils import get_logger
+from ..utils.exceptions import PDFProcessingError
 from .constants import Constants
 
 if TYPE_CHECKING:
@@ -131,7 +132,18 @@ def run_row_pipeline(
         if pdf_merge_backend is not None:
             success = pdf_merge_backend.merge(pdf_paths, output_path)
         else:
-            success = merge_pdfs(pdf_paths, output_path)
+            try:
+                success = merge_pdfs(pdf_paths, output_path)
+            except PDFProcessingError as e:
+                if not quiet:
+                    logger.error(f"  ✗ PDF processing failed: {e}")
+                return RowPipelineResult(
+                    success=False,
+                    output_path=None,
+                    source_files=source_files,
+                    missing=missing,
+                    error_message=str(e),
+                )
         if not quiet:
             if success:
                 logger.info(f"  ✓ Successfully created {output_filename}")

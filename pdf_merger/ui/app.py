@@ -2,6 +2,7 @@
 CustomTkinter GUI application for PDF Merger.
 """
 
+import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Any, Callable, Optional
 
 import customtkinter as ctk
 
-from ..core import format_failed_rows_display, format_result_detailed
+from ..core import format_failed_rows_display
 from ..core.constants import Constants
 from ..core.types import PROGRESS_LOADING, PROGRESS_PROCESSING
 
@@ -23,7 +24,10 @@ from .components import SetupCard, LicenseFrame, LogArea, ResultsFrame, Footer, 
 from .license_ui import update_license_display
 from .handlers import FileSelectionHandler, MergeHandler
 from .app_helpers import get_run_block_reasons, can_run_merge
+from .config_ui import apply_config_to_ui
+from .dialogs import show_detailed_report_dialog
 from .theme import (
+    COLUMN_ENTRY_WIDTH,
     CORNER_RADIUS,
     SECTION_SPACING,
     CARD_SPACING,
@@ -49,7 +53,7 @@ from .theme import (
     MESSAGE_PROCESSING_COMPLETE,
 )
 # Setup logging
-setup_logger("pdf_merger", level=20)
+setup_logger("pdf_merger", level=logging.INFO)
 logger = get_logger("pdf_merger.ui.app")
 
 # Set CustomTkinter appearance - dark theme
@@ -160,7 +164,7 @@ class PDFMergerApp(ctk.CTk):
             column_frame,
             placeholder_text=Constants.EXAMPLE_SERIAL_COLUMN_PLACEHOLDER,
             font=ctk.CTkFont(family="Courier New", size=FONT_MONO_SIZE),
-            width=220,
+            width=COLUMN_ENTRY_WIDTH,
             height=40,
             fg_color=INPUT_BACKGROUND,
             border_width=1,
@@ -244,31 +248,9 @@ class PDFMergerApp(ctk.CTk):
         )
         self._update_ui_state()
     
-    def _apply_path_config(
-        self,
-        path_str: Optional[str],
-        path_attr: str,
-        selector: Any,
-        validator: Callable[[Path], None],
-        log_label: str,
-    ) -> None:
-        """Apply one path from config: validate, set path attribute and selector, log. Swallows exceptions and logs warning."""
-        if not path_str:
-            return
-        try:
-            path = Path(path_str)
-            validator(path)
-            setattr(self, path_attr, path)
-            selector.set_path(str(path))
-            logger.info(f"Loaded {log_label} from config: {path}")
-        except (OSError, ValueError, PDFMergerError) as e:
-            logger.warning(f"Could not load {log_label} from config: {e}")
-
     def _load_config_into_ui(self):
         """Load configuration values into UI fields if available."""
         from ..utils.validators import validate_file, validate_folder
-
-        self.column_entry.insert(0, self.config.required_column)
 
         def validate_input(p: Path) -> None:
             validate_file(p, required_column=self.config.required_column)
@@ -279,16 +261,19 @@ class PDFMergerApp(ctk.CTk):
         def validate_output(p: Path) -> None:
             p.mkdir(parents=True, exist_ok=True)
 
-        self._apply_path_config(
-            self.config.input_file, "input_file_path", self.input_file_selector, validate_input, "input file"
+        apply_config_to_ui(
+            self.config,
+            column_entry=self.column_entry,
+            path_applyments=[
+                (self.config.input_file, "input_file_path", self.input_file_selector, validate_input, "input file"),
+                (self.config.pdf_dir, "pdf_dir_path", self.pdf_dir_selector, validate_source, "source directory"),
+                (self.config.output_dir, "output_dir_path", self.output_dir_selector, validate_output, "output directory"),
+            ],
+            set_path_attr=lambda attr, p: setattr(self, attr, p),
+            log_info=logger.info,
+            log_warning=logger.warning,
+            on_update_state=self._update_ui_state,
         )
-        self._apply_path_config(
-            self.config.pdf_dir, "pdf_dir_path", self.pdf_dir_selector, validate_source, "source directory"
-        )
-        self._apply_path_config(
-            self.config.output_dir, "output_dir_path", self.output_dir_selector, validate_output, "output directory"
-        )
-        self._update_ui_state()
     
     def _has_validation_errors(self) -> bool:
         """Return True if any setup card has a validation error."""
@@ -341,19 +326,31 @@ class PDFMergerApp(ctk.CTk):
             selector.set_error(message)
         self._update_ui_state()
 
+    def _on_path_selected(
+        self,
+        path: Path,
+        path_attr: str,
+        selector: Any,
+        config_override: dict,
+        log_message: str,
+    ) -> None:
+        """Apply a selected path to app state, selector, config, and UI."""
+        setattr(self, path_attr, path)
+        selector.set_path(str(path))
+        selector.clear_error()
+        self.config = self.config.merge(type(self.config)(**config_override))
+        save_config(self.config)
+        self._log_info(log_message)
+        self._update_ui_state()
+
     def _select_input_file(self):
         """Open file dialog to select input CSV/Excel file."""
-        path = self.file_handler.select_input_file(
-            required_column=self._get_column(),
-        )
+        path = self.file_handler.select_input_file(required_column=self._get_column())
         if path:
-            self.input_file_path = path
-            self.input_file_selector.set_path(str(path))
-            self.input_file_selector.clear_error()
-            self.config = self.config.merge(type(self.config)(input_file=str(path)))
-            save_config(self.config)
-            self._log_info(f"Selected input file: {path.name}")
-            self._update_ui_state()
+            self._on_path_selected(
+                path, "input_file_path", self.input_file_selector,
+                {"input_file": str(path)}, f"Selected input file: {path.name}",
+            )
 
     def _select_pdf_directory(self):
         """Open directory dialog to select source directory."""
@@ -363,13 +360,10 @@ class PDFMergerApp(ctk.CTk):
             folder_type="Source",
         )
         if path:
-            self.pdf_dir_path = path
-            self.pdf_dir_selector.set_path(str(path))
-            self.pdf_dir_selector.clear_error()
-            self.config = self.config.merge(type(self.config)(pdf_dir=str(path)))
-            save_config(self.config)
-            self._log_info(f"Selected source directory: {path}")
-            self._update_ui_state()
+            self._on_path_selected(
+                path, "pdf_dir_path", self.pdf_dir_selector,
+                {"pdf_dir": str(path)}, f"Selected source directory: {path}",
+            )
 
     def _open_output_folder(self, path: str):
         """Open the output folder in the system file manager. Uses OS-specific command (open/explorer/xdg-open)."""
@@ -397,13 +391,10 @@ class PDFMergerApp(ctk.CTk):
             validate=False,
         )
         if path:
-            self.output_dir_path = path
-            self.output_dir_selector.set_path(str(path))
-            self.output_dir_selector.clear_error()
-            self.config = self.config.merge(type(self.config)(output_dir=str(path)))
-            save_config(self.config)
-            self._log_info(f"Selected output directory: {path}")
-            self._update_ui_state()
+            self._on_path_selected(
+                path, "output_dir_path", self.output_dir_selector,
+                {"output_dir": str(path)}, f"Selected output directory: {path}",
+            )
     
     def _log(self, message: str):
         """Add plain message to log area."""
@@ -533,20 +524,10 @@ class PDFMergerApp(ctk.CTk):
         self.results_frame.show(before=self.log_area)
 
     def _show_detailed_report(self) -> None:
-        """Open a dialog with the detailed processing report (format_result_detailed)."""
+        """Open a dialog with the detailed processing report."""
         if self._last_merge_result is None:
             return
-        report_text = format_result_detailed(self._last_merge_result)
-        dialog = ctk.CTkToplevel(self)
-        dialog.title("Detailed Processing Report")
-        dialog.geometry("640x480")
-        dialog.minsize(400, 300)
-        text = ctk.CTkTextbox(dialog, font=ctk.CTkFont(family="Courier New", size=12), wrap="word")
-        text.pack(fill="both", expand=True, padx=10, pady=10)
-        text.insert("1.0", report_text)
-        text.configure(state="disabled")
-        close_btn = ctk.CTkButton(dialog, text="Close", command=dialog.destroy)
-        close_btn.pack(pady=(0, 10))
+        show_detailed_report_dialog(self, self._last_merge_result)
 
     def _on_merge_complete(self, result: MergeResult):
         """Handle merge completion: reset UI state, apply result to UI, then update run button state."""

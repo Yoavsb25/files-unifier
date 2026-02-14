@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Optional, Protocol, runtime_checkable
 
 from ..utils.logging_utils import get_logger
+from ..utils.exceptions import PDFProcessingError
 from ..core.constants import Constants
 
 logger = get_logger("pdf_merger.operations.pdf_merger")
@@ -203,16 +204,19 @@ def merge_pdfs(
                         writer.add_page(page)
             except Exception as e:
                 logger.error(f"Error reading PDF {pdf_path.name}: {e}")
-                return False
+                raise PDFProcessingError(str(e), pdf_path=pdf_path, operation="reading") from e
         
         # Write the merged PDF
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
+        try:
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+        except Exception as e:
+            logger.error(f"Error writing merged PDF to {output_path.name}: {e}")
+            raise PDFProcessingError(str(e), pdf_path=output_path, operation="writing") from e
         
         return True
     except ImportError as e:
         logger.error(str(e))
         return False
-    except Exception as e:
-        logger.error(f"Error merging PDFs to {output_path.name}: {e}")
-        return False
+    except PDFProcessingError:
+        raise

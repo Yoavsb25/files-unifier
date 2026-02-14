@@ -10,6 +10,7 @@ from .csv_excel_reader import read_data_file
 from .types import ProgressCallback, PROGRESS_LOADING
 from ..models import MergeJob, MergeResult, Row
 from ..utils.logging_utils import get_logger
+from ..utils.exceptions import InvalidFileFormatError, MissingColumnError
 
 logger = get_logger("pdf_merger.core.job_loader")
 
@@ -51,8 +52,10 @@ def load_job_from_file(
         for row_index, row_data in enumerate(read_data_file(input_file), start=0):
             row = Row.from_raw_data(row_index, row_data, required_column)
             job.add_row(row)
+    except (OSError, InvalidFileFormatError, MissingColumnError):
+        raise
     except Exception as e:
-        logger.error(f"Error reading file: {e}")
+        logger.error(f"Unknown error during load: %s", e)
         return job  # empty rows
     total_rows = job.get_total_rows()
     if on_progress:

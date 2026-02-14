@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from ..utils.logging_utils import get_logger
+from ..utils.exceptions import PDFProcessingError
 from .pdf_merger import suppress_stderr
 from ..core.constants import Constants
 
@@ -89,7 +90,7 @@ def merge_pdfs_streaming(
                     total_pages += len(reader.pages)
             except Exception as e:
                 logger.error(f"Error reading PDF {pdf_path.name}: {e}")
-                return False
+                raise PDFProcessingError(str(e), pdf_path=pdf_path, operation="reading") from e
         
         logger.info(f"Merging {len(pdf_paths)} PDF(s) with {total_pages} total pages using streaming mode")
         
@@ -112,11 +113,15 @@ def merge_pdfs_streaming(
                     
             except Exception as e:
                 logger.error(f"Error reading PDF {pdf_path.name}: {e}")
-                return False
+                raise PDFProcessingError(str(e), pdf_path=pdf_path, operation="reading") from e
         
         # Write the merged PDF
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
+        try:
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+        except Exception as e:
+            logger.error(f"Error writing merged PDF to {output_path.name}: {e}")
+            raise PDFProcessingError(str(e), pdf_path=output_path, operation="writing") from e
         
         logger.info(f"Successfully merged {processed_pages} pages into {output_path.name}")
         return True
@@ -124,9 +129,8 @@ def merge_pdfs_streaming(
     except ImportError as e:
         logger.error(str(e))
         return False
-    except Exception as e:
-        logger.error(f"Error merging PDFs to {output_path.name}: {e}")
-        return False
+    except PDFProcessingError:
+        raise
 
 
 def get_pdf_size_mb(pdf_path: Path) -> float:

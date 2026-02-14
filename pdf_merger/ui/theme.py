@@ -62,6 +62,15 @@ VIEW_DETAILED_LOG = "View Detailed Log"
 HIDE_DETAILED_LOG = "Hide Detailed Log"
 MESSAGE_PROCESSING_COMPLETE = "Processing Complete"
 
+# Column entry (serial numbers field)
+COLUMN_ENTRY_WIDTH = 220
+
+# Detailed report dialog
+DETAILED_REPORT_DIALOG_GEOMETRY = "640x480"
+DETAILED_REPORT_DIALOG_MIN_SIZE = (400, 300)
+DETAILED_REPORT_DIALOG_TITLE = "Detailed Processing Report"
+DETAILED_REPORT_CLOSE_BUTTON_TEXT = "Close"
+
 # Typography
 FONT_TITLE_SIZE = 28
 FONT_SECTION_SIZE = 18

@@ -3,6 +3,8 @@ Custom exceptions for PDF Merger.
 Provides specific exception types for different error conditions.
 Use a consistent message pattern (e.g. "What failed: reason" or "Context: detail")
 so logs and UI show uniform, parseable messages.
+
+See docs/ARCHITECTURE.md "Error handling" for where each type is raised and how the UI maps them.
 """
 
 from pathlib import Path
