@@ -9,14 +9,29 @@ import customtkinter as ctk
 from ..licensing import LicenseManager, LicenseStatus
 from ..core.enums import LicenseColor, WarningLevel
 
+from .theme import SUCCESS_GREEN, ERROR_RED, WARNING_YELLOW
+
 # Constants for backward compatibility and convenience
 GREEN_COLOR = LicenseColor.GREEN.value
 RED_COLOR = LicenseColor.RED.value
 ORANGE_COLOR = LicenseColor.ORANGE.value
 YELLOW_COLOR = LicenseColor.YELLOW.value
 
-VALID_LICENSE = "✓ License valid"
-EXPIRED_LICENSE = "⚠ License expired - Merge functionality disabled"
+
+def _theme_color(color: str) -> str:
+    """Map license color name to theme hex for consistent UI palette."""
+    if color == GREEN_COLOR or color == LicenseColor.GREEN.value:
+        return SUCCESS_GREEN
+    if color == RED_COLOR or color == LicenseColor.RED.value:
+        return ERROR_RED
+    if color == ORANGE_COLOR or color == LicenseColor.ORANGE.value:
+        return ERROR_RED
+    if color == YELLOW_COLOR or color == LicenseColor.YELLOW.value:
+        return WARNING_YELLOW
+    return color
+
+VALID_LICENSE = "Licensed · Expires {expires}"
+EXPIRED_LICENSE = "Expired"
 
 def match_color_to_display_text(
     color: str,
@@ -39,24 +54,23 @@ def match_color_to_display_text(
         Formatted display text for the license status
     """
     if color == GREEN_COLOR or color == LicenseColor.GREEN.value:
-        return f"✓ Licensed to: {company_name} (Expires: {expires})"
+        return f"✓ Licensed · Expires {expires}"
     
     if color == ORANGE_COLOR or color == LicenseColor.ORANGE.value:
-        return EXPIRED_LICENSE
+        return f"✗ {EXPIRED_LICENSE}"
     
     if color == YELLOW_COLOR or color == LicenseColor.YELLOW.value:
         if warning_msg:
-            return f"✓ Licensed to: {company_name} - {warning_msg}"
-        return f"✓ Licensed to: {company_name} (Expires: {expires})"
+            return f"✓ Licensed · Expires {expires} - {warning_msg}"
+        return f"✓ Licensed · Expires {expires}"
     
     if color == RED_COLOR or color == LicenseColor.RED.value:
-        # RED can represent critical warnings OR errors
-        # Priority: warning_msg (critical warning) > error_msg (actual error)
+        # RED: expired or error state - spec requires red for expired
         if warning_msg:
-            return f"✓ Licensed to: {company_name} - {warning_msg}"
+            return f"✗ {EXPIRED_LICENSE}"
         if error_msg:
             return f"✗ {error_msg}"
-        return "Unknown license status"
+        return "✗ Unknown license status"
     
     return "Unknown license status"
 
@@ -98,9 +112,9 @@ def update_license_display(license_manager: LicenseManager, license_label) -> bo
         if not info:
             # No license info available - show simple valid message
             license_label.configure(
-                text=VALID_LICENSE,
-                text_color=GREEN_COLOR,
-                font=ctk.CTkFont(size=18, weight="bold")
+                text="✓ Licensed · Expires Unknown",
+                text_color=_theme_color(GREEN_COLOR),
+                font=ctk.CTkFont(size=12)
             )
         else:
             warning_msg = license_manager.get_expiry_warning_message()
@@ -124,21 +138,21 @@ def update_license_display(license_manager: LicenseManager, license_label) -> bo
 
             license_label.configure(
                 text=display_text,
-                text_color=text_color,
-                font=ctk.CTkFont(size=18, weight="bold")
+                text_color=_theme_color(text_color),
+                font=ctk.CTkFont(size=12)
             )
     elif status == LicenseStatus.EXPIRED:
         license_label.configure(
-            text=EXPIRED_LICENSE,
-            text_color=ORANGE_COLOR,
-            font=ctk.CTkFont(size=18, weight="bold")
+            text=f"✗ {EXPIRED_LICENSE}",
+            text_color=_theme_color(RED_COLOR),
+            font=ctk.CTkFont(size=12)
         )
     else:
         error_msg = license_manager.get_license_error_message(status)
         license_label.configure(
             text=f"✗ {error_msg}",
-            text_color=RED_COLOR,
-            font=ctk.CTkFont(size=18, weight="bold")
+            text_color=_theme_color(RED_COLOR),
+            font=ctk.CTkFont(size=12)
         )
 
     return license_valid

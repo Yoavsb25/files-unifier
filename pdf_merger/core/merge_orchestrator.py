@@ -15,7 +15,7 @@ from ..utils.logging_utils import get_logger
 logger = get_logger("core.merge_orchestrator")
 
 # Module-level constants
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
+DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
 
 
 def run_merge(
@@ -74,7 +74,8 @@ def run_merge_job(
     output_dir: Path,
     required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN,
     job_id: Optional[str] = None,
-    fail_on_ambiguous: bool = True
+    fail_on_ambiguous: bool = True,
+    on_progress: Optional[Callable[[str, int, int, str], None]] = None,
 ) -> MergeResult:
     """
     Run the merge operation using domain models.
@@ -104,6 +105,8 @@ def run_merge_job(
     )
     
     # Load rows from file
+    if on_progress:
+        on_progress("loading", 0, 0, "Reading input file...")
     try:
         for row_index, row_data in enumerate(read_data_file(input_file), start=0):
             row = Row.from_raw_data(row_index, row_data, required_column)
@@ -115,9 +118,12 @@ def run_merge_job(
             successful_merges=0,
             job_id=job_id
         )
-    
+    total_rows = job.get_total_rows()
+    if on_progress:
+        on_progress("loading", total_rows, total_rows, f"Loaded {total_rows} rows")
+
     # Process job
-    result = process_job(job, fail_on_ambiguous=fail_on_ambiguous)
+    result = process_job(job, fail_on_ambiguous=fail_on_ambiguous, on_progress=on_progress)
     
     logger.info(f"Merge job {job_id or 'default'} completed")
     logger.info(f"  Total rows: {result.total_rows}")

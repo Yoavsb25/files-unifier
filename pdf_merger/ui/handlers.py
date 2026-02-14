@@ -9,8 +9,11 @@ from typing import Callable, Optional
 
 from ..utils.validators import validate_file, validate_folder
 from ..utils.exceptions import PDFMergerError
-from ..core import run_merge, format_result_summary
-from ..core.merge_processor import ProcessingResult
+from ..core.constants import Constants
+from ..core import run_merge_job, format_result_summary
+
+DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
+from ..models import MergeResult
 from ..utils.logging_utils import get_logger
 
 logger = get_logger("ui.handlers")
@@ -18,14 +21,27 @@ logger = get_logger("ui.handlers")
 
 class FileSelectionHandler:
     """Handler for file and directory selection."""
-    
+
+    FIELD_INPUT = "input_file"
+    FIELD_SOURCE = "source_dir"
+    FIELD_OUTPUT = "output_dir"
+
     def __init__(
         self,
         on_file_selected: Optional[Callable[[Path], None]] = None,
-        on_error: Optional[Callable[[str], None]] = None
+        on_error: Optional[Callable[[str], None]] = None,
+        on_validation_error: Optional[Callable[[str, str], None]] = None,
     ):
         self.on_file_selected = on_file_selected
         self.on_error = on_error
+        self.on_validation_error = on_validation_error
+    
+    def _handle_error(self, message: str, field: str):
+        """Dispatch error to validation or generic handler."""
+        if self.on_validation_error:
+            self.on_validation_error(field, message)
+        if self.on_error:
+            self.on_error(message)
     
     def select_input_file(
         self,
@@ -39,9 +55,7 @@ class FileSelectionHandler:
         Returns:
             Selected path if valid, None otherwise
         """
-        from ..core.constants import Constants
-
-        column = required_column or Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
+        column = required_column or DEFAULT_SERIAL_NUMBERS_COLUMN
         file_path = filedialog.askopenfilename(
             title="Select CSV or Excel File",
             filetypes=[
@@ -60,8 +74,7 @@ class FileSelectionHandler:
                     self.on_file_selected(path)
                 return path
             except PDFMergerError as e:
-                if self.on_error:
-                    self.on_error(f"Invalid file: {e}")
+                self._handle_error(str(e), self.FIELD_INPUT)
                 return None
         return None
     
@@ -87,8 +100,8 @@ class FileSelectionHandler:
                     self.on_file_selected(path)
                 return path
             except (PDFMergerError, Exception) as e:
-                if self.on_error:
-                    self.on_error(f"Invalid directory: {e}")
+                field = self.FIELD_OUTPUT if not validate else self.FIELD_SOURCE
+                self._handle_error(str(e), field)
                 return None
         return None
 
@@ -99,7 +112,7 @@ class MergeHandler:
     def __init__(
         self,
         on_start: Optional[Callable[[], None]] = None,
-        on_complete: Optional[Callable[[ProcessingResult], None]] = None,
+        on_complete: Optional[Callable[[MergeResult], None]] = None,
         on_error: Optional[Callable[[str], None]] = None,
         on_progress: Optional[Callable[[str, int, int, str], None]] = None,
     ):
@@ -147,11 +160,11 @@ class MergeHandler:
     ):
         """Worker thread for merge operation."""
         try:
-            result = run_merge(
+            result = run_merge_job(
                 input_file=input_file,
                 pdf_dir=pdf_dir,
                 output_dir=output_dir,
-                required_column=required_column,
+                required_column=required_column or DEFAULT_SERIAL_NUMBERS_COLUMN,
                 on_progress=self.on_progress,
             )
 
@@ -166,6 +179,6 @@ class MergeHandler:
             # Reset processing state - callbacks will handle UI updates
             self.is_processing = False
     
-    def format_result(self, result: ProcessingResult) -> str:
+    def format_result(self, result: MergeResult) -> str:
         """Format merge result as a summary string."""
         return format_result_summary(result)

@@ -20,9 +20,9 @@ class Constants:
     # Source file extensions (files that can be merged - PDFs and Excel files)
     SOURCE_FILE_EXTENSIONS = PDF_FILE_EXTENSIONS | EXCEL_FILE_EXTENSIONS  # type: ignore
     
-    # Default Column Names
-    DEFAULT_SERIAL_NUMBERS_COLUMN = 'serial_numbers'
-    GOLDFARB_SERIAL_NUMBER_COLUMN = 'Document ID'
+    # Default Column Names (PRD/spec uses serial_numbers)
+    DEFAULT_SERIAL_NUMBERS_COLUMN = 'serial_numbers'  # Default for validation and config
+    GOLDFARB_SERIAL_NUMBER_COLUMN = 'Document ID'  # Alternative for Goldfarb-specific files
     
     # CSV Configuration
     DEFAULT_CSV_DELIMITER = ','

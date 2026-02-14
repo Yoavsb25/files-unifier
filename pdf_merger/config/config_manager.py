@@ -20,7 +20,7 @@ from ..utils.logging_utils import get_logger
 from .config_schema import ConfigSchema
 
 logger = get_logger("config_manager")
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
+DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
 # Environment variable names
 ENV_INPUT_FILE = 'PDF_MERGER_INPUT_FILE'
 ENV_SOURCE_DIR = 'PDF_MERGER_SOURCE_DIR'

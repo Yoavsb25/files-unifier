@@ -81,9 +81,9 @@ def main():
     
     if license_status == LicenseStatus.VALID:
         logger.info("License validated successfully")
-        # Launch GUI
+        # Launch GUI with pre-validated license manager (avoids duplicate validation)
         try:
-            run_gui()
+            run_gui(license_manager=license_manager)
         except Exception as e:
             logger.error(f"Error launching GUI: {e}")
             error_msg = f"An error occurred while starting the application:\n\n{str(e)}\n\nPlease contact support for assistance."
