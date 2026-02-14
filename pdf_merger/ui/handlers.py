@@ -193,6 +193,16 @@ class MergeHandler:
 
             if self.on_complete:
                 self.on_complete(result)
+        except PDFMergerError as e:
+            error_msg = str(e)
+            logger.exception("Merge operation failed")
+            if self.on_error:
+                self.on_error(error_msg)
+        except ValueError as e:
+            error_msg = str(e)
+            logger.exception("Merge operation failed")
+            if self.on_error:
+                self.on_error(error_msg)
         except Exception as e:
             error_msg = str(e)
             logger.exception("Merge operation failed")

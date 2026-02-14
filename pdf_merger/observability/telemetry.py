@@ -34,10 +34,12 @@ class TelemetryService:
     def __init__(self, enabled: bool = False, endpoint: Optional[str] = None):
         """
         Initialize telemetry service.
-        
+
         Args:
             enabled: Whether telemetry is enabled (default: False, opt-in)
-            endpoint: Optional telemetry endpoint URL (for future use)
+            endpoint: Reserved for a future backend. Currently unused; events are
+                stored in memory only. When a backend is implemented, record_event
+                may POST to this URL when enabled.
         """
         self.enabled = enabled
         self.endpoint = endpoint

@@ -365,10 +365,17 @@ class LogArea(ctk.CTkFrame):
 class ResultsFrame(ctk.CTkFrame):
     """Results section - single card container, flat styling, accurate labels."""
 
-    def __init__(self, parent, on_open_output: Optional[Callable] = None, on_toggle_log: Optional[Callable] = None):
+    def __init__(
+        self,
+        parent,
+        on_open_output: Optional[Callable] = None,
+        on_toggle_log: Optional[Callable] = None,
+        on_show_detailed_report: Optional[Callable[[], None]] = None,
+    ):
         super().__init__(parent, fg_color="transparent")
         self.on_open_output = on_open_output
         self.on_toggle_log = on_toggle_log
+        self.on_show_detailed_report = on_show_detailed_report
         self._output_dir: Optional[str] = None
 
         # Single results card container
@@ -438,6 +445,20 @@ class ResultsFrame(ctk.CTkFrame):
             cursor="hand2",
         )
         self.view_log_btn.pack(side="left", padx=(0, 8))
+
+        self.show_detailed_report_btn = ctk.CTkButton(
+            buttons_frame,
+            text="Show Detailed Report",
+            command=self._on_show_detailed_report_clicked,
+            fg_color=INPUT_CONTAINER_BG,
+            hover_color=CARD_BORDER,
+            corner_radius=CORNER_RADIUS,
+            border_width=1,
+            border_color=CARD_BORDER,
+            width=160,
+            cursor="hand2",
+        )
+        self.show_detailed_report_btn.pack(side="left", padx=(0, 8))
 
         self.open_folder_btn = ctk.CTkButton(
             buttons_frame,
@@ -509,6 +530,10 @@ class ResultsFrame(ctk.CTkFrame):
     def _on_toggle_log_clicked(self):
         if self.on_toggle_log:
             self.on_toggle_log()
+
+    def _on_show_detailed_report_clicked(self):
+        if self.on_show_detailed_report:
+            self.on_show_detailed_report()
 
     def show(self, before=None):
         """Show the results section. If before is set, pack before that widget."""

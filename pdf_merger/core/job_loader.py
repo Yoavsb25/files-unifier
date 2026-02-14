@@ -25,7 +25,7 @@ def load_job_from_file(
     """
     Load input file and build a MergeJob with rows. Single implementation for orchestrator and process_file.
 
-    On read error, returns an empty MergeJob (caller can return empty MergeResult or ProcessingResult).
+    On read error, returns an empty MergeJob (caller can return empty MergeResult).
 
     Args:
         input_file: Path to CSV or Excel file

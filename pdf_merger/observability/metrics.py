@@ -39,13 +39,16 @@ class Metric:
 class MetricsCollector:
     """
     Collects and stores application metrics.
-    
+
     Metrics collected:
     - Processing time per row
     - File sizes processed
     - Memory usage (if available)
     - Success/failure rates
     - Match ambiguity counts
+
+    Export: Use get_summary() for a dict snapshot, or export_json() for a JSON
+    string (e.g. for logging or writing to a file on shutdown or on demand).
     """
     
     def __init__(self, enabled: bool = True):
@@ -143,17 +146,28 @@ class MetricsCollector:
     
     def get_summary(self) -> Dict:
         """
-        Get summary of all metrics.
-        
+        Get summary of all metrics (snapshot of counters and timer stats).
+
         Returns:
-            Dictionary with metric summaries
+            Dictionary with metric summaries (counters, timers, total_metrics).
         """
         return {
             'counters': dict(self.counters),
             'timers': {name: self.get_timer_stats(name) for name in self.timers},
             'total_metrics': len(self.metrics)
         }
-    
+
+    def export_json(self) -> str:
+        """
+        Export current metrics as a JSON string for debugging or persistence.
+
+        Returns:
+            JSON string with counters, timers, and total_metrics. Safe to log or
+            write to a file on shutdown or on demand.
+        """
+        import json
+        return json.dumps(self.get_summary(), indent=2)
+
     def clear(self) -> None:
         """Clear all collected metrics."""
         self.metrics.clear()

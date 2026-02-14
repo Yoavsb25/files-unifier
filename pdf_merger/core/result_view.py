@@ -1,24 +1,22 @@
 """
 Result view abstraction for formatting.
-Provides a unified view over MergeResult (and legacy ProcessingResult via conversion).
-Formatters use ResultView so they do not branch on result type.
+Provides a unified view over MergeResult for formatters.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional
 
 from .constants import Constants
 
 if TYPE_CHECKING:
-    from .result_types import ProcessingResult
     from ..models import MergeResult, RowResult
 
 
 @dataclass
 class ResultView:
-    """Unified view of processing result for formatting. Built from MergeResult (or legacy ProcessingResult)."""
+    """Unified view of processing result for formatting. Built from MergeResult."""
     total_rows: int
     successful_merges: int
     failed_rows: List[int]
@@ -28,13 +26,8 @@ class ResultView:
     total_processing_time: Optional[float] = None
 
 
-def as_result_view(result: Union[ProcessingResult, MergeResult]) -> ResultView:
-    """Build a ResultView from MergeResult or legacy ProcessingResult (converted to MergeResult internally)."""
-    from .result_types import ProcessingResult
-    from ..models import MergeResult
-
-    if isinstance(result, ProcessingResult):
-        result = MergeResult.from_processing_result(result)
+def as_result_view(result: "MergeResult") -> ResultView:
+    """Build a ResultView from MergeResult."""
     return _view_from_merge_result(result)
 
 

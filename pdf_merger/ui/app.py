@@ -9,18 +9,20 @@ from typing import Any, Callable, Optional
 
 import customtkinter as ctk
 
-from ..core import format_failed_rows_display
+from ..core import format_failed_rows_display, format_result_detailed
 from ..core.constants import Constants
 from ..core.types import PROGRESS_LOADING, PROGRESS_PROCESSING
 
 from .. import APP_VERSION
 from ..licensing import LicenseManager
+from ..utils.exceptions import PDFMergerError
 from ..utils.logging_utils import get_logger, setup_logger
 from ..models import MergeResult
 from ..config.config_manager import load_config, save_config, resolve_required_column
 from .components import SetupCard, LicenseFrame, LogArea, ResultsFrame, Footer, bind_focus_highlight
 from .license_ui import update_license_display
 from .handlers import FileSelectionHandler, MergeHandler
+from .app_helpers import get_run_block_reasons, can_run_merge
 from .theme import (
     CORNER_RADIUS,
     SECTION_SPACING,
@@ -156,7 +158,7 @@ class PDFMergerApp(ctk.CTk):
         ).pack(anchor="w", side="left", padx=(0, 8))
         self.column_entry = ctk.CTkEntry(
             column_frame,
-            placeholder_text="e.g. serial_numbers or Document ID",
+            placeholder_text=Constants.EXAMPLE_SERIAL_COLUMN_PLACEHOLDER,
             font=ctk.CTkFont(family="Courier New", size=FONT_MONO_SIZE),
             width=220,
             height=40,
@@ -174,7 +176,7 @@ class PDFMergerApp(ctk.CTk):
             main_frame,
             step_number=1,
             title="Instructions File",
-            helper_text="Must include a serial_numbers column (or Document ID)",
+            helper_text=Constants.EXAMPLE_SERIAL_COLUMN_HELPER,
             on_select=self._select_input_file,
             extra_row=self._column_frame,
         )
@@ -226,7 +228,9 @@ class PDFMergerApp(ctk.CTk):
             main_frame,
             on_open_output=self._open_output_folder,
             on_toggle_log=self._toggle_detailed_log,
+            on_show_detailed_report=self._show_detailed_report,
         )
+        self._last_merge_result: Optional[MergeResult] = None
         self.log_area = LogArea(main_frame)
         self.log_area.pack(fill="both", expand=True, pady=(0, SECTION_SPACING))
         self.footer = Footer(main_frame)
@@ -257,7 +261,7 @@ class PDFMergerApp(ctk.CTk):
             setattr(self, path_attr, path)
             selector.set_path(str(path))
             logger.info(f"Loaded {log_label} from config: {path}")
-        except Exception as e:
+        except (OSError, ValueError, PDFMergerError) as e:
             logger.warning(f"Could not load {log_label} from config: {e}")
 
     def _load_config_into_ui(self):
@@ -296,24 +300,25 @@ class PDFMergerApp(ctk.CTk):
 
     def _get_run_block_reasons(self) -> list:
         """Return list of reasons Run Merge is disabled (empty if allowed). Use for tooltips/debugging."""
-        reasons = []
-        if not self.license_valid:
-            reasons.append("License invalid")
-        if self.input_file_path is None:
-            reasons.append("Select input file")
-        if self.pdf_dir_path is None:
-            reasons.append("Select source directory")
-        if self.output_dir_path is None:
-            reasons.append("Select output directory")
-        if self._has_validation_errors():
-            reasons.append("Fix validation errors")
-        if self.merge_handler.is_processing:
-            reasons.append("Merge in progress")
-        return reasons
+        return get_run_block_reasons(
+            self.license_valid,
+            self.input_file_path,
+            self.pdf_dir_path,
+            self.output_dir_path,
+            self._has_validation_errors(),
+            self.merge_handler.is_processing,
+        )
 
     def _can_run_merge(self) -> bool:
         """True if Run Merge is allowed: valid license, all paths set, no validation errors, not already processing."""
-        return len(self._get_run_block_reasons()) == 0
+        return can_run_merge(
+            self.license_valid,
+            self.input_file_path,
+            self.pdf_dir_path,
+            self.output_dir_path,
+            self._has_validation_errors(),
+            self.merge_handler.is_processing,
+        )
 
     def _update_ui_state(self):
         """Update UI state based on license, selection, and validation."""
@@ -504,6 +509,7 @@ class PDFMergerApp(ctk.CTk):
 
     def _apply_merge_result_to_ui(self, result: MergeResult) -> None:
         """Update results frame and log area from a MergeResult (enables tests of result-to-UI mapping)."""
+        self._last_merge_result = result
         self._log("")
         self._log_info(MESSAGE_PROCESSING_COMPLETE)
         self._log_info(f"Rows analyzed: {result.total_rows}")
@@ -525,6 +531,22 @@ class PDFMergerApp(ctk.CTk):
             output_dir=str(self.output_dir_path) if self.output_dir_path else None,
         )
         self.results_frame.show(before=self.log_area)
+
+    def _show_detailed_report(self) -> None:
+        """Open a dialog with the detailed processing report (format_result_detailed)."""
+        if self._last_merge_result is None:
+            return
+        report_text = format_result_detailed(self._last_merge_result)
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Detailed Processing Report")
+        dialog.geometry("640x480")
+        dialog.minsize(400, 300)
+        text = ctk.CTkTextbox(dialog, font=ctk.CTkFont(family="Courier New", size=12), wrap="word")
+        text.pack(fill="both", expand=True, padx=10, pady=10)
+        text.insert("1.0", report_text)
+        text.configure(state="disabled")
+        close_btn = ctk.CTkButton(dialog, text="Close", command=dialog.destroy)
+        close_btn.pack(pady=(0, 10))
 
     def _on_merge_complete(self, result: MergeResult):
         """Handle merge completion: reset UI state, apply result to UI, then update run button state."""

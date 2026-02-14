@@ -107,8 +107,7 @@ class RowResult:
 @dataclass
 class MergeResult:
     """
-    Preferred result type for run_merge_job; includes per-row details and timing.
-    Use ProcessingResult (core.result_types) only for legacy run_merge compatibility.
+    Result type for run_merge_job; includes per-row details and timing.
 
     Attributes:
         total_rows: Total number of rows processed
@@ -126,28 +125,7 @@ class MergeResult:
     row_results: List[RowResult] = field(default_factory=list)
     job_id: Optional[str] = None
     total_processing_time: Optional[float] = None
-    
-    @classmethod
-    def from_processing_result(cls, result, job_id: Optional[str] = None) -> 'MergeResult':
-        """
-        Create MergeResult from legacy ProcessingResult for backward compatibility.
-        
-        Args:
-            result: ProcessingResult instance
-            job_id: Optional job identifier
-            
-        Returns:
-            MergeResult instance
-        """
-        return cls(
-            total_rows=result.total_rows,
-            successful_merges=result.successful_merges,
-            failed_rows=result.failed_rows,
-            skipped_rows=[],
-            row_results=[],
-            job_id=job_id
-        )
-    
+
     def add_row_result(self, row_result: RowResult) -> None:
         """
         Add a row result to the merge result.

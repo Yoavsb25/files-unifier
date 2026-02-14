@@ -239,6 +239,19 @@ class TestMetricsCollector:
         assert summary['counters']['counter2'] == 3
         assert 'timer1' in summary['timers']
         assert summary['total_metrics'] == 5
+
+    def test_export_json(self):
+        """Test exporting metrics as JSON string for debugging or persistence."""
+        import json
+        collector = MetricsCollector(enabled=True)
+        collector.record_counter("test_counter", value=2)
+        collector.record_timer("test_timer", duration=1.5)
+        out = collector.export_json()
+        assert isinstance(out, str)
+        parsed = json.loads(out)
+        assert parsed["counters"]["test_counter"] == 2
+        assert "test_timer" in parsed["timers"]
+        assert parsed["total_metrics"] == 2
     
     def test_clear(self):
         """Test clearing all metrics."""

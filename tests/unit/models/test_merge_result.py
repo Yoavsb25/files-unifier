@@ -9,7 +9,6 @@ from pdf_merger.models.merge_result import (
     RowStatus,
     MergeResult
 )
-from pdf_merger.core.result_types import ProcessingResult
 
 
 class TestRowResult:
@@ -162,27 +161,7 @@ class TestMergeResult:
         )
         
         assert result.job_id == "job-123"
-    
-    def test_merge_result_from_processing_result(self):
-        """Test creating MergeResult from ProcessingResult."""
-        processing_result = ProcessingResult(
-            total_rows=10,
-            successful_merges=8,
-            failed_rows=[2, 5]
-        )
-        
-        merge_result = MergeResult.from_processing_result(
-            processing_result,
-            job_id="job-123"
-        )
-        
-        assert merge_result.total_rows == 10
-        assert merge_result.successful_merges == 8
-        assert merge_result.failed_rows == [2, 5]
-        assert merge_result.skipped_rows == []
-        assert merge_result.job_id == "job-123"
-        assert len(merge_result.row_results) == 0
-    
+
     def test_add_row_result_success(self):
         """Test adding a successful row result."""
         result = MergeResult(total_rows=1, successful_merges=0)

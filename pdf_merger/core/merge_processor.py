@@ -13,7 +13,6 @@ from typing import List, Optional, TYPE_CHECKING
 
 from .types import ProgressCallback, PROGRESS_LOADING, PROGRESS_PROCESSING
 from .row_pipeline import run_row_pipeline, RowPipelineResult
-from .job_loader import load_job_from_file
 from ..utils.logging_utils import get_logger
 from ..utils.exceptions import PDFMergerError
 from .constants import Constants
@@ -25,7 +24,6 @@ from .serial_number_parser import (
     normalize_serial_number
 )
 from ..observability import get_metrics_collector
-from .result_types import ProcessingResult
 
 if TYPE_CHECKING:
     from ..observability import MetricsRecorder
@@ -335,49 +333,3 @@ def process_job(
     except Exception as e:
         _record_job_failure(result, current_row_index, start_time, e, "UnexpectedError", metrics)
         return result
-
-
-def process_file(
-    file_path: Path,
-    source_folder: Path,
-    output_folder: Path,
-    required_column: str = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN,
-    on_progress: Optional[ProgressCallback] = None,
-) -> ProcessingResult:
-    """
-    Process an entire data file and merge PDFs and Excel files for each row.
-
-    **Deprecated.** Use :func:`process_job` with a :class:`MergeJob` (e.g. from
-    :func:`load_job_from_file`) for new code. Will be removed in version 2.0. See DEPRECATION.md.
-
-    Args:
-        file_path: Path to the CSV or Excel file
-        source_folder: Folder containing the PDF and Excel files
-        output_folder: Folder where merged PDFs will be saved
-        required_column: Name of the column containing serial numbers
-        on_progress: Optional callback (step, current, total, message) for progress updates
-
-    Returns:
-        ProcessingResult with statistics about the processing
-    """
-    import warnings
-
-    warnings.warn(
-        "process_file is deprecated; use load_job_from_file and process_job instead. Will be removed in 2.0.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    job = load_job_from_file(
-        input_file=file_path,
-        source_folder=source_folder,
-        output_folder=output_folder,
-        required_column=required_column,
-        on_progress=on_progress,
-    )
-    merge_result = process_job(job, on_progress=on_progress)
-    # Legacy API: callers expect ProcessingResult
-    return ProcessingResult(
-        total_rows=merge_result.total_rows,
-        successful_merges=merge_result.successful_merges,
-        failed_rows=merge_result.failed_rows
-    )

@@ -6,69 +6,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from pdf_merger.core.constants import Constants
-from pdf_merger.core.merge_orchestrator import run_merge, run_merge_job
+from pdf_merger.core.merge_orchestrator import run_merge_job
 from pdf_merger.models import MergeResult
-
-
-class TestRunMerge:
-    """Test cases for run_merge function. Legacy entry point; delegates to run_merge_job and returns MergeResult."""
-    
-    @patch('pdf_merger.core.merge_orchestrator.run_merge_job')
-    def test_run_merge_success(self, mock_run_merge_job, tmp_path):
-        """Test successful merge operation (run_merge delegates to run_merge_job)."""
-        input_file = tmp_path / "input.csv"
-        pdf_dir = tmp_path / "pdfs"
-        output_dir = tmp_path / "output"
-        
-        expected_result = MergeResult(
-            total_rows=5,
-            successful_merges=4,
-            failed_rows=[3]
-        )
-        mock_run_merge_job.return_value = expected_result
-        
-        result = run_merge(input_file, pdf_dir, output_dir)
-        
-        assert result == expected_result
-        mock_run_merge_job.assert_called_once()
-        call_kwargs = mock_run_merge_job.call_args[1]
-        assert call_kwargs["input_file"] == input_file
-        assert call_kwargs["pdf_dir"] == pdf_dir
-        assert call_kwargs["output_dir"] == output_dir
-        assert call_kwargs["required_column"] == Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
-    
-    @patch('pdf_merger.core.merge_orchestrator.run_merge_job')
-    def test_run_merge_with_custom_column(self, mock_run_merge_job, tmp_path):
-        """Test merge operation with custom required column."""
-        input_file = tmp_path / "input.csv"
-        pdf_dir = tmp_path / "pdfs"
-        output_dir = tmp_path / "output"
-        
-        expected_result = MergeResult(total_rows=2, successful_merges=2, failed_rows=[])
-        mock_run_merge_job.return_value = expected_result
-        
-        result = run_merge(input_file, pdf_dir, output_dir, required_column="custom_column")
-        
-        assert result == expected_result
-        mock_run_merge_job.assert_called_once_with(
-            input_file=input_file,
-            pdf_dir=pdf_dir,
-            output_dir=output_dir,
-            required_column="custom_column",
-            on_progress=None,
-        )
-    
-    @patch('pdf_merger.core.merge_orchestrator.run_merge_job')
-    def test_run_merge_exception(self, mock_run_merge_job, tmp_path):
-        """Test merge operation when run_merge_job raises."""
-        input_file = tmp_path / "input.csv"
-        pdf_dir = tmp_path / "pdfs"
-        output_dir = tmp_path / "output"
-        
-        mock_run_merge_job.side_effect = ValueError("Processing error")
-        
-        with pytest.raises(ValueError, match="Processing error"):
-            run_merge(input_file, pdf_dir, output_dir)
 
 
 class TestRunMergeJob:

@@ -1,14 +1,13 @@
 """
 Result reporter module.
 Format processing results for UI display.
-Supports both legacy ProcessingResult and new MergeResult via ResultView abstraction.
+Uses ResultView built from MergeResult.
 """
 
-from typing import List, Union
-from .result_types import ProcessingResult
+from typing import List
 from ..models import MergeResult, RowStatus
 from .constants import Constants
-from .result_view import ResultView, as_result_view
+from .result_view import as_result_view
 from ..utils.logging_utils import get_logger
 
 logger = get_logger("pdf_merger.core.result_reporter")
@@ -38,13 +37,13 @@ def format_failed_rows_display(
     return failed_str
 
 
-def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
+def format_result_summary(result: MergeResult) -> str:
     """
     Format a brief summary of the processing result.
-    
+
     Args:
-        result: ProcessingResult or MergeResult object
-        
+        result: MergeResult object
+
     Returns:
         Formatted summary string
     """
@@ -65,13 +64,13 @@ def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
     return "\n".join(lines)
 
 
-def format_result_detailed(result: Union[ProcessingResult, MergeResult]) -> str:
+def format_result_detailed(result: MergeResult) -> str:
     """
     Format a detailed report of the processing result.
-    
+
     Args:
-        result: ProcessingResult or MergeResult object
-        
+        result: MergeResult object
+
     Returns:
         Formatted detailed report string
     """

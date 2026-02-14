@@ -75,7 +75,7 @@ def _cleanup_temp_files(temp_pdf_files: List[Path], quiet: bool = False) -> None
                 temp_pdf.unlink()
                 if not quiet:
                     logger.debug(f"  Cleaned up temporary file: {temp_pdf.name}")
-        except Exception as e:
+        except OSError as e:
             if not quiet:
                 logger.warning(f"  Failed to clean up temporary file {temp_pdf.name}: {e}")
 

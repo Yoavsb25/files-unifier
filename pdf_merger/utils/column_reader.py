@@ -8,13 +8,11 @@ from typing import List
 import csv
 
 from .exceptions import InvalidFileFormatError
+from .csv_constants import UTF_8_ENCODING, CSV_SAMPLE_SIZE, DEFAULT_CSV_DELIMITER
 
 # Extensions for data files (single source for column_reader; must match core.file_constants for consistency)
 CSV_EXTENSIONS = (".csv",)
 EXCEL_EXTENSIONS = (".xlsx", ".xls")
-UTF_8_ENCODING = "utf-8"
-CSV_SAMPLE_SIZE = 1024
-DEFAULT_CSV_DELIMITER = ","
 
 
 def _detect_file_type(file_path: Path) -> str:

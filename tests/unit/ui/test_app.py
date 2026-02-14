@@ -607,6 +607,27 @@ class TestPDFMergerApp:
         )
         app.results_frame.show.assert_called_once_with(before=app.log_area)
 
+    @patch('pdf_merger.ui.app.ctk.CTkToplevel')
+    @patch('pdf_merger.ui.app.format_result_detailed')
+    def test_show_detailed_report_opens_dialog_with_report(self, mock_format_detailed, mock_toplevel):
+        """Test that Show detailed report calls format_result_detailed and opens a dialog."""
+        mock_format_detailed.return_value = "Detailed report text"
+        mock_dialog = MagicMock()
+        mock_toplevel.return_value = mock_dialog
+
+        app = self._create_mock_app()
+        app._last_merge_result = MergeResult(
+            total_rows=3,
+            successful_merges=2,
+            failed_rows=[1],
+            skipped_rows=[],
+        )
+
+        app._show_detailed_report()
+
+        mock_format_detailed.assert_called_once_with(app._last_merge_result)
+        mock_toplevel.assert_called_once_with(app)
+
 
 class TestRunGui:
     """Test cases for run_gui function."""

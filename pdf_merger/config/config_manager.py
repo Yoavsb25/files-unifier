@@ -193,7 +193,7 @@ def load_project_preset(start_path: Optional[Path] = None) -> Optional[AppConfig
         config = AppConfig.from_dict(validated_data)
         logger.info(f"Loaded project preset from {preset_path}")
         return config
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError) as e:
         logger.warning(f"Error loading project preset from {preset_path}: {e}")
         return None
 
@@ -219,7 +219,7 @@ def load_user_config() -> AppConfig:
         config = AppConfig.from_dict(validated_data)
         logger.info(f"Loaded user config from {config_path}")
         return config
-    except Exception as e:
+    except (OSError, json.JSONDecodeError, ValueError) as e:
         logger.warning(f"Error loading user config from {config_path}: {e}, using defaults")
         return AppConfig()
 
@@ -301,12 +301,12 @@ def save_config(config: AppConfig) -> bool:
     try:
         # Ensure parent directory exists
         config_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config.to_dict(), f, indent=2, ensure_ascii=False)
-        
+
         logger.info(f"Saved config to {config_path}")
         return True
-    except Exception as e:
+    except (OSError, ValueError) as e:
         logger.error(f"Error saving config to {config_path}: {e}")
         return False

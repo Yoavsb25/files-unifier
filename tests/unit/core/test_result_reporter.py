@@ -5,7 +5,6 @@ Unit tests for result_reporter module.
 import pytest
 from pathlib import Path
 from pdf_merger.core.result_reporter import format_result_summary, format_result_detailed
-from pdf_merger.core.result_types import ProcessingResult
 from pdf_merger.models import MergeResult, RowResult, RowStatus
 
 
@@ -14,7 +13,7 @@ class TestFormatResultSummary:
     
     def test_format_result_summary_success(self):
         """Test formatting summary with successful results."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=10,
             successful_merges=10,
             failed_rows=[]
@@ -30,7 +29,7 @@ class TestFormatResultSummary:
     
     def test_format_result_summary_with_failures(self):
         """Test formatting summary with failed rows."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=10,
             successful_merges=7,
             failed_rows=[2, 5, 8]
@@ -45,7 +44,7 @@ class TestFormatResultSummary:
     
     def test_format_result_summary_long_failed_list(self):
         """Test formatting summary with many failed rows (truncation)."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=100,
             successful_merges=50,
             failed_rows=list(range(1, 51))  # 50 failed rows
@@ -61,7 +60,7 @@ class TestFormatResultSummary:
     
     def test_format_result_summary_empty(self):
         """Test formatting summary with empty result."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=0,
             successful_merges=0,
             failed_rows=[]
@@ -95,7 +94,7 @@ class TestFormatResultDetailed:
     
     def test_format_result_detailed_success(self):
         """Test formatting detailed report with successful results."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=10,
             successful_merges=10,
             failed_rows=[]
@@ -112,7 +111,7 @@ class TestFormatResultDetailed:
     
     def test_format_result_detailed_with_failures(self):
         """Test formatting detailed report with failed rows."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=10,
             successful_merges=7,
             failed_rows=[2, 5, 8]
@@ -131,7 +130,7 @@ class TestFormatResultDetailed:
     
     def test_format_result_detailed_empty(self):
         """Test formatting detailed report with empty result."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=0,
             successful_merges=0,
             failed_rows=[]
@@ -146,7 +145,7 @@ class TestFormatResultDetailed:
     
     def test_format_result_detailed_partial_success(self):
         """Test formatting detailed report with partial success."""
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=5,
             successful_merges=3,
             failed_rows=[1, 4]

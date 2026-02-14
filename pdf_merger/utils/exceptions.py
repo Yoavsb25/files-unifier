@@ -109,10 +109,11 @@ class MissingColumnError(PDFMergerError):
 class PDFProcessingError(PDFMergerError):
     """
     Raised when PDF operations fail (reading, merging, writing).
-    
-    This exception is raised when there are issues with PDF operations
-    such as reading a PDF file, merging multiple PDFs, or writing the
-    merged output.
+
+    Reserved for use in PDF operations (e.g. pdf_merger.operations.pdf_merger,
+    streaming_pdf_merger) when a PDF-specific failure occurs. Currently not
+    raised in production; callers may catch it for fine-grained handling once
+    operations are updated to use this type instead of generic Exception.
     """
     
     def __init__(self, message: str, pdf_path: Optional[Path] = None, operation: Optional[str] = None):
