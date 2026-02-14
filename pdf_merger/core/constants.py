@@ -22,6 +22,7 @@ class Constants:
     
     # Default Column Names
     DEFAULT_SERIAL_NUMBERS_COLUMN = 'serial_numbers'
+    GOLDFARB_SERIAL_NUMBER_COLUMN = 'Document ID'
     
     # CSV Configuration
     DEFAULT_CSV_DELIMITER = ','
