@@ -19,7 +19,7 @@ from ..core.constants import Constants
 from ..utils.logging_utils import get_logger
 from .config_schema import ConfigSchema
 
-logger = get_logger("config_manager")
+logger = get_logger("pdf_merger.config.config_manager")
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN # type: ignore
 # Environment variable names
 ENV_INPUT_FILE = 'PDF_MERGER_INPUT_FILE'
@@ -38,9 +38,9 @@ class AppConfig:
     pdf_dir: Optional[str] = None
     output_dir: Optional[str] = None
     required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN
-    # Observability settings
+    # Observability settings (intentional defaults: metrics on for diagnostics, telemetry off for privacy)
     metrics_enabled: bool = True
-    telemetry_enabled: bool = False  # Opt-in by default
+    telemetry_enabled: bool = False
     crash_reporting_enabled: bool = False  # Opt-in by default
     # Matching behavior
     fail_on_ambiguous_matches: bool = True  # Fail fast by default for production

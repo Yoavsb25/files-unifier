@@ -1,4 +1,5 @@
 """
-PDF operations module.
-Handles PDF merging and Excel to PDF conversion.
+Operations module.
+File-format operations: PDF merge, streaming PDF, Excel-to-PDF conversion.
+(Workflow and data orchestration live in core/.)
 """

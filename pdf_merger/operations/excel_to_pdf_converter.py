@@ -10,7 +10,7 @@ from ..utils.logging_utils import get_logger
 from ..core.constants import Constants
 from ..core.enums import PageOrientation, PageSize
 
-logger = get_logger("excel_to_pdf_converter")
+logger = get_logger("pdf_merger.operations.excel_to_pdf_converter")
 
 # Module-level constants
 EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS

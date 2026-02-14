@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("observability.metrics")
+logger = get_logger("pdf_merger.observability.metrics")
 
 
 @dataclass

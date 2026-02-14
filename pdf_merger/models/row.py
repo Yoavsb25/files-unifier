@@ -1,6 +1,9 @@
 """
 Row data model.
-Represents a single row from the input data file.
+Represents a single row from the input data file. Row intentionally lives in
+models (not core) as the domain model for one data row and encapsulates
+parsing/validation (via validators and serial_number_parser) so that core
+orchestration works with a clean Row type.
 """
 
 from dataclasses import dataclass
@@ -14,7 +17,7 @@ from ..core.serial_number_parser import (
     normalize_serial_number
 )
 
-logger = get_logger("models.row")
+logger = get_logger("pdf_merger.models.row")
 
 
 @dataclass

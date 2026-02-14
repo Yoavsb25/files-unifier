@@ -11,7 +11,7 @@ from .row import Row
 from ..utils.logging_utils import get_logger
 from ..core.constants import Constants
 
-logger = get_logger("models.merge_job")
+logger = get_logger("pdf_merger.models.merge_job")
 
 # Module-level constants
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN

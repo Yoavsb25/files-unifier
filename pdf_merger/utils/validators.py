@@ -13,7 +13,7 @@ from .exceptions import MissingColumnError, FileNotFoundError, ValidationError, 
 from ..core.constants import Constants
 from ..core.csv_excel_reader import get_file_columns
 
-logger = get_logger("validators")
+logger = get_logger("pdf_merger.utils.validators")
 
 # Module-level constants
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN

@@ -1,6 +1,7 @@
 """
 Core logic module.
-Decoupled business logic for UI consumption.
+Workflow and data: merge orchestration, serial number parsing, CSV/Excel reading,
+result reporting. (File-format operations live in operations/.)
 """
 
 from .merge_orchestrator import run_merge, run_merge_job

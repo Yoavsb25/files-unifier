@@ -12,7 +12,7 @@ from ..core.enums import RowStatus
 from ..core.constants import Constants
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("models.merge_result")
+logger = get_logger("pdf_merger.models.merge_result")
 
 # Module-level constants
 PERCENTAGE_MULTIPLIER = Constants.PERCENTAGE_MULTIPLIER

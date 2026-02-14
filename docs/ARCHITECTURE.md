@@ -250,6 +250,7 @@ files_unifeder/
   3. Initialize observability (metrics, telemetry, crash reporting - opt-in)
   4. Check license status with expiry warnings
   5. Launch GUI if license valid
+- **License manager injection**: main.py validates the license once and passes the `LicenseManager` instance into `run_gui(..., license_manager=...)` so the GUI does not re-validate; this pattern avoids double validation and is documented in the [UI Module](#8-ui-module-pdf_mergerui) section.
   6. Handle license errors gracefully with actionable messages
 
 ```mermaid
@@ -332,7 +333,7 @@ flowchart TD
 
 #### 7. PDF Operations (`pdf_merger/operations/pdf_merger.py`)
 
-- **Responsibility**: PDF file operations with streaming support
+- **Responsibility**: PDF file operations with streaming support. File finding uses [matching rules](pdf_merger/matching/rules.py); see the [Matching Rules](#matching-rules) section.
 - **Features**:
   - `find_source_file()`: Uses formal matching rules with ambiguity detection
   - `find_pdf_file()`: Case-insensitive PDF finding (backward compatibility)
@@ -396,6 +397,7 @@ flowchart TD
 
 - **Responsibility**: GUI application with configuration integration
 - **Technology**: CustomTkinter
+- **License manager injection**: `run_gui()` (in app.py) accepts an optional `license_manager` argument; main.py validates the license once and passes the manager in so the GUI does not re-validate.
 - **Features**:
   - File/folder selection dialogs
   - Real-time progress logging
@@ -1012,6 +1014,9 @@ graph LR
 
 ### Observability
 
+Observability features (metrics, telemetry, crash reporting) are **opt-in** and
+**initialized at startup from config** (see main.py: load_config then observability
+init). The flow is documented here for contributors.
 The application includes opt-in observability features:
 
 #### Observability Architecture

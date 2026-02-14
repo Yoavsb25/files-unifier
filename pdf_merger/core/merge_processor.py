@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from .types import ProgressCallback
+from .types import ProgressCallback, PROGRESS_LOADING, PROGRESS_PROCESSING
 
 from ..operations.pdf_merger import find_source_file, merge_pdfs
 from ..operations.excel_to_pdf_converter import convert_excel_to_pdf
@@ -27,7 +27,7 @@ from .serial_number_parser import (
 from ..observability import get_metrics_collector
 from ..matching import MatchBehavior
 
-logger = get_logger("merge_processor")
+logger = get_logger("pdf_merger.core.merge_processor")
 
 # Module-level constants
 EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS
@@ -358,6 +358,11 @@ def process_job(
         job_id=job.job_id,
     )
 
+    if total_rows == 0:
+        logger.info("Job has no rows to process; returning empty result")
+        result.total_processing_time = 0.0
+        return result
+
     start_time = time.time()
     metrics = get_metrics_collector()
     metrics.record_counter("jobs_started")
@@ -370,7 +375,7 @@ def process_job(
             # Single row start message (avoids duplicate with process_row_with_models log)
             if on_progress:
                 serials = ", ".join(row.serial_numbers) if row.serial_numbers else "no serial numbers"
-                on_progress("processing", row_num, total_rows, f"Processing Row {row_num}... ({serials})")
+                on_progress(PROGRESS_PROCESSING, row_num, total_rows, f"Processing Row {row_num}... ({serials})")
 
             row_result = process_row_with_models(
                 row,
@@ -401,7 +406,7 @@ def process_job(
                     status = "Failed"
                     msg = f"Row {row_num} → Found {pdf_count} PDFs, {excel_count} Excel → {status}"
 
-                on_progress("processing", row_num, total_rows, msg)
+                on_progress(PROGRESS_PROCESSING, row_num, total_rows, msg)
 
                 # Group error details per row (single summary instead of one line per file)
                 missing = row_result.files_missing or []
@@ -410,9 +415,9 @@ def process_job(
                         detail = f"  • {len(missing)} files not found ({', '.join(missing)})"
                     else:
                         detail = f"  • {len(missing)} files not found"
-                    on_progress("processing", row_num, total_rows, detail)
+                    on_progress(PROGRESS_PROCESSING, row_num, total_rows, detail)
                 elif row_result.is_skipped() and not row_result.files_found:
-                    on_progress("processing", row_num, total_rows, "  • No valid files to merge")
+                    on_progress(PROGRESS_PROCESSING, row_num, total_rows, "  • No valid files to merge")
         
         result.total_processing_time = time.time() - start_time
         metrics.record_timer("job_processing_time", result.total_processing_time)
@@ -464,7 +469,7 @@ def process_file(
         ProcessingResult with statistics about the processing
     """
     if on_progress:
-        on_progress("loading", 0, 0, "Reading input file...")
+        on_progress(PROGRESS_LOADING, 0, 0, "Reading input file...")
 
     # Use domain models internally but return legacy result
     job = MergeJob.create(
@@ -485,12 +490,11 @@ def process_file(
 
     total_rows = job.get_total_rows()
     if on_progress:
-        on_progress("loading", total_rows, total_rows, f"Loaded {total_rows} rows")
+        on_progress(PROGRESS_LOADING, total_rows, total_rows, f"Loaded {total_rows} rows")
 
     # Process job
     merge_result = process_job(job, on_progress=on_progress)
-    
-    # Convert to legacy result
+    # Legacy API: callers expect ProcessingResult
     return ProcessingResult(
         total_rows=merge_result.total_rows,
         successful_merges=merge_result.successful_merges,

@@ -13,7 +13,7 @@ from .license_signer import get_embedded_public_key, verify_license_signature
 from ..core.enums import LicenseStatus, WarningLevel
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("licensing.manager")
+logger = get_logger("pdf_merger.licensing.license_manager")
 
 
 class LicenseManager:

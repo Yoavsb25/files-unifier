@@ -11,7 +11,7 @@ from datetime import datetime
 
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("observability.crash_reporting")
+logger = get_logger("pdf_merger.observability.crash_reporting")
 
 
 class CrashReporter:

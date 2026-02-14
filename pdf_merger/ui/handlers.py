@@ -17,7 +17,7 @@ DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
 from ..models import MergeResult
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("ui.handlers")
+logger = get_logger("pdf_merger.ui.handlers")
 
 
 class FileSelectionHandler:
@@ -108,7 +108,13 @@ class FileSelectionHandler:
 
 
 class MergeHandler:
-    """Handler for merge operations."""
+    """Handler for merge operations.
+
+    The public flag is_processing must be reset in both success and error paths
+    (in finally and in completion callbacks) so the UI correctly reflects
+    "processing" state; it is set True when a merge starts and False when the
+    worker thread finishes (success or exception).
+    """
 
     def __init__(
         self,
@@ -185,4 +191,5 @@ class MergeHandler:
     
     def format_result(self, result: MergeResult) -> str:
         """Format merge result as a summary string."""
-        return format_result_summary(result)
+        summary_text = format_result_summary(result)
+        return summary_text

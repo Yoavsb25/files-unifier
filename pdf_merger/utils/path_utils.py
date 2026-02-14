@@ -11,7 +11,7 @@ from typing import Optional
 
 from .logging_utils import get_logger
 
-logger = get_logger("utils.path_utils")
+logger = get_logger("pdf_merger.utils.path_utils")
 
 # Windows long path prefix
 WINDOWS_LONG_PATH_PREFIX = "\\\\?\\"

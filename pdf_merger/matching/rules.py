@@ -12,7 +12,7 @@ from ..core.constants import Constants
 from ..core.enums import MatchConfidence, MatchBehavior
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("matching.rules")
+logger = get_logger("pdf_merger.matching.rules")
 
 # Module-level constants
 SOURCE_FILE_EXTENSIONS = Constants.SOURCE_FILE_EXTENSIONS

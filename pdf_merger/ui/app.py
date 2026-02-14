@@ -10,6 +10,7 @@ from typing import Optional
 import customtkinter as ctk
 
 from ..core.constants import Constants
+from ..core.types import PROGRESS_LOADING, PROGRESS_PROCESSING
 
 from .. import APP_VERSION
 from ..licensing import LicenseManager
@@ -36,7 +37,7 @@ from .theme import (
 )
 # Setup logging
 setup_logger("pdf_merger", level=20)
-logger = get_logger("ui.app")
+logger = get_logger("pdf_merger.ui.app")
 
 # Set CustomTkinter appearance - dark theme
 ctk.set_appearance_mode("dark")
@@ -419,19 +420,26 @@ class PDFMergerApp(ctk.CTk):
         self, step: str, current: int, total: int, message: str
     ):
         """Handle progress update from merge operation."""
-        if step == "loading":
+        if step == PROGRESS_LOADING:
             self._log_info(message)
-        elif step == "processing":
-            if "Success" in message:
-                self._log_success(message)
-            elif "Skipped" in message:
-                self._log_warning(message)
-            elif "Failed" in message:
-                self._log_error(message)
-            elif message.strip().startswith("•"):
-                self._log_warning(message)
-            else:
-                self._log_info(message)
+            return
+        if step != PROGRESS_PROCESSING:
+            self._log_info(message)
+            return
+        # Map keywords to log method for processing step
+        log_by_keyword = [
+            ("Success", self._log_success),
+            ("Skipped", self._log_warning),
+            ("Failed", self._log_error),
+        ]
+        for keyword, log_fn in log_by_keyword:
+            if keyword in message:
+                log_fn(message)
+                return
+        if message.strip().startswith("•"):
+            self._log_warning(message)
+        else:
+            self._log_info(message)
 
     def _show_error(self, message: str):
         """Show error message."""

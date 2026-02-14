@@ -15,7 +15,7 @@ from .theme import (
     INPUT_RADIUS,
     INPUT_BACKGROUND,
     INPUT_CONTAINER_BG,
-    FOCUS_BLUE,
+    PRIMARY_BLUE,
     FONT_LABEL_SIZE,
     FONT_SECTION_SIZE,
     FONT_HELPER_SIZE,
@@ -125,7 +125,7 @@ class SetupCard(ctk.CTkFrame):
             border_color=CARD_BORDER,
         )
         self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        self.path_entry.bind("<FocusIn>", lambda e: self.path_entry.configure(border_color=FOCUS_BLUE))
+        self.path_entry.bind("<FocusIn>", lambda e: self.path_entry.configure(border_color=PRIMARY_BLUE))
         self.path_entry.bind("<FocusOut>", lambda e: self._on_entry_focus_out())
 
         # Secondary-style browse button, height matches input

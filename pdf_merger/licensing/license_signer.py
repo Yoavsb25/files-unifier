@@ -15,7 +15,7 @@ from cryptography.hazmat.backends import default_backend
 from .license_model import License
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("licensing.signer")
+logger = get_logger("pdf_merger.licensing.license_signer")
 
 
 def generate_key_pair() -> tuple[rsa.RSAPrivateKey, rsa.RSAPublicKey]:

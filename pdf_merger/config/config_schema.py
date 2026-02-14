@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from ..core.constants import Constants
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("config_schema")
+logger = get_logger("pdf_merger.config.config_schema")
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
 
 

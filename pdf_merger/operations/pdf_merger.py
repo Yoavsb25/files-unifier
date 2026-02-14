@@ -12,7 +12,7 @@ from typing import List, Optional
 from ..utils.logging_utils import get_logger
 from ..core.constants import Constants
 
-logger = get_logger("pdf_merger")
+logger = get_logger("pdf_merger.operations.pdf_merger")
 
 # Module-level constants
 PDF_FILE_EXTENSION = Constants.PDF_FILE_EXTENSION

@@ -10,7 +10,7 @@ from ..models import MergeResult, RowStatus
 from .constants import Constants
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("core.result_reporter")
+logger = get_logger("pdf_merger.core.result_reporter")
 
 # Module-level constants
 MAX_DISPLAY_STRING_LENGTH = Constants.MAX_DISPLAY_STRING_LENGTH

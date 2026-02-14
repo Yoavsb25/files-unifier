@@ -2,6 +2,13 @@
 
 This document describes how to configure PDF Batch Merger using various configuration methods.
 
+## Canonical Keys and Environment Names
+
+- **Source directory**: The canonical config key is `pdf_dir` (used in config files and AppConfig). The environment variable is `PDF_MERGER_SOURCE_DIR`. Config files may also use `source_dir` as an alias for `pdf_dir`.
+- **Input file**: `input_file` / `PDF_MERGER_INPUT_FILE`
+- **Output directory**: `output_dir` / `PDF_MERGER_OUTPUT_DIR`
+- **Column name**: `required_column` / `PDF_MERGER_COLUMN`
+
 ## Configuration Precedence
 
 Configuration values are resolved in the following order (highest to lowest priority):

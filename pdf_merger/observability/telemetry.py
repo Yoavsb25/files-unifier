@@ -12,7 +12,7 @@ from pathlib import Path
 from ..utils.logging_utils import get_logger
 from .. import APP_VERSION
 
-logger = get_logger("observability.telemetry")
+logger = get_logger("pdf_merger.observability.telemetry")
 
 
 @dataclass

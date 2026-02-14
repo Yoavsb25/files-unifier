@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Optional
 
 from .merge_processor import process_file, process_job, ProcessingResult
-from .types import ProgressCallback
+from .types import ProgressCallback, PROGRESS_LOADING
 from ..models import MergeJob, MergeResult, Row
 from .csv_excel_reader import read_data_file
 from .constants import Constants
 from ..utils.logging_utils import get_logger
 
-logger = get_logger("core.merge_orchestrator")
+logger = get_logger("pdf_merger.core.merge_orchestrator")
 
 
 def run_merge(
@@ -107,7 +107,7 @@ def run_merge_job(
     
     # Load rows from file
     if on_progress:
-        on_progress("loading", 0, 0, "Reading input file...")
+        on_progress(PROGRESS_LOADING, 0, 0, "Reading input file...")
     try:
         for row_index, row_data in enumerate(read_data_file(input_file), start=0):
             row = Row.from_raw_data(row_index, row_data, required_column)
@@ -121,7 +121,7 @@ def run_merge_job(
         )
     total_rows = job.get_total_rows()
     if on_progress:
-        on_progress("loading", total_rows, total_rows, f"Loaded {total_rows} rows")
+        on_progress(PROGRESS_LOADING, total_rows, total_rows, f"Loaded {total_rows} rows")
 
     # Process job
     result = process_job(job, fail_on_ambiguous=fail_on_ambiguous, on_progress=on_progress)
