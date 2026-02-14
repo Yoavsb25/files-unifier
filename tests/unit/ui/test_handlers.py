@@ -13,7 +13,7 @@ sys.modules['tkinter'] = MagicMock()
 sys.modules['tkinter.filedialog'] = MagicMock()
 
 from pdf_merger.ui.handlers import FileSelectionHandler, MergeHandler
-from pdf_merger.core.merge_processor import ProcessingResult
+from pdf_merger.models import MergeResult
 from pdf_merger.utils.exceptions import PDFMergerError
 
 
@@ -207,8 +207,8 @@ class TestMergeHandler:
         # Should not start another merge
         assert handler.is_processing is True
     
-    @patch('pdf_merger.ui.handlers.run_merge')
-    def test_run_merge_success(self, mock_run_merge, tmp_path):
+    @patch('pdf_merger.ui.handlers.run_merge_job')
+    def test_run_merge_success(self, mock_run_merge_job, tmp_path):
         """Test running merge operation successfully."""
         on_start = MagicMock()
         on_complete = MagicMock()
@@ -218,12 +218,13 @@ class TestMergeHandler:
             on_complete=on_complete
         )
         
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=5,
             successful_merges=5,
-            failed_rows=[]
+            failed_rows=[],
+            skipped_rows=[],
         )
-        mock_run_merge.return_value = result
+        mock_run_merge_job.return_value = result
         
         input_file = tmp_path / "input.csv"
         pdf_dir = tmp_path / "pdfs"
@@ -238,16 +239,16 @@ class TestMergeHandler:
         assert handler.is_processing is False
         on_start.assert_called_once()
         on_complete.assert_called_once_with(result)
-        mock_run_merge.assert_called_once()
-        call_kwargs = mock_run_merge.call_args[1]
+        mock_run_merge_job.assert_called_once()
+        call_kwargs = mock_run_merge_job.call_args[1]
         assert call_kwargs["input_file"] == input_file
         assert call_kwargs["pdf_dir"] == pdf_dir
         assert call_kwargs["output_dir"] == output_dir
         assert "required_column" in call_kwargs
         assert "on_progress" in call_kwargs
     
-    @patch('pdf_merger.ui.handlers.run_merge')
-    def test_run_merge_error(self, mock_run_merge, tmp_path):
+    @patch('pdf_merger.ui.handlers.run_merge_job')
+    def test_run_merge_error(self, mock_run_merge_job, tmp_path):
         """Test running merge operation with error."""
         on_start = MagicMock()
         on_error = MagicMock()
@@ -257,7 +258,7 @@ class TestMergeHandler:
             on_error=on_error
         )
         
-        mock_run_merge.side_effect = ValueError("Processing error")
+        mock_run_merge_job.side_effect = ValueError("Processing error")
         
         input_file = tmp_path / "input.csv"
         pdf_dir = tmp_path / "pdfs"
@@ -277,10 +278,11 @@ class TestMergeHandler:
         """Test formatting merge result."""
         handler = MergeHandler()
         
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=5,
             successful_merges=3,
-            failed_rows=[2, 4]
+            failed_rows=[2, 4],
+            skipped_rows=[],
         )
         
         with patch('pdf_merger.ui.handlers.format_result_summary') as mock_format:

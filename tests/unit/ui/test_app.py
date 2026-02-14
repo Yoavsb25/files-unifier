@@ -70,6 +70,18 @@ class MockCTkEntry:
     def get(self):
         return ""
 
+class MockCTkProgressBar:
+    def __init__(self, *args, **kwargs):
+        pass
+    def pack(self, *args, **kwargs):
+        pass
+    def pack_forget(self, *args, **kwargs):
+        pass
+    def start(self, *args, **kwargs):
+        pass
+    def stop(self, *args, **kwargs):
+        pass
+
 class MockCTkFont:
     def __init__(self, *args, **kwargs):
         pass
@@ -92,6 +104,7 @@ mock_ctk.CTkLabel = MockCTkLabel
 mock_ctk.CTkButton = MockCTkButton
 mock_ctk.CTkTextbox = MockCTkTextbox
 mock_ctk.CTkEntry = MockCTkEntry
+mock_ctk.CTkProgressBar = MockCTkProgressBar
 mock_ctk.CTkFont = MockCTkFont
 mock_ctk.set_appearance_mode = MagicMock()
 mock_ctk.set_default_color_theme = MagicMock()
@@ -99,9 +112,8 @@ sys.modules['customtkinter'] = mock_ctk
 
 from pdf_merger.ui.app import PDFMergerApp, run_gui
 from pdf_merger.ui.components import LogHandler
-from pdf_merger.core.enums import StatusColor
 from pdf_merger.licensing import LicenseStatus
-from pdf_merger.core.merge_processor import ProcessingResult
+from pdf_merger.models import MergeResult
 
 
 class TestPDFMergerApp:
@@ -126,13 +138,19 @@ class TestPDFMergerApp:
         app.license_frame.license_label = MagicMock()
         app.log_area = MagicMock()
         app.log_area.log_text = MagicMock()
+        app.log_area._expanded = False
+        app.log_area.winfo_ismapped = MagicMock(return_value=False)
         app.footer = MagicMock()
-        app.footer.status_label = MagicMock()
-        
-        # Mock file selectors
+        app.results_frame = MagicMock()
+        app.progress_bar = MagicMock()
+
+        # Mock file selectors (SetupCards with has_error)
         app.input_file_selector = MagicMock()
+        app.input_file_selector.has_error = MagicMock(return_value=False)
         app.pdf_dir_selector = MagicMock()
+        app.pdf_dir_selector.has_error = MagicMock(return_value=False)
         app.output_dir_selector = MagicMock()
+        app.output_dir_selector.has_error = MagicMock(return_value=False)
 
         # Mock column entry
         app.column_entry = MagicMock()
@@ -282,8 +300,7 @@ class TestPDFMergerApp:
         app._show_error("Error message")
 
         app._log_error.assert_called_once_with("Error message")
-        app.footer.update_status.assert_called_once_with("Error", StatusColor.RED)
-    
+
     def test_run_merge_success(self, tmp_path):
         """Test running merge operation successfully."""
         app = self._create_mock_app()
@@ -345,13 +362,9 @@ class TestPDFMergerApp:
         app._on_merge_start()
 
         app.run_button.configure.assert_called_with(
-            state="disabled", text="Processing..."
-        )
-        app.footer.update_status.assert_called_with(
-            "Processing...", StatusColor.BLUE
+            state="disabled", text="Processing…"
         )
         app.log_area.clear.assert_called_once()
-        assert app._log.call_count >= 2  # Separator lines
         assert app._log_info.call_count >= 4  # Start message and paths
     
     def test_on_merge_complete_success(self):
@@ -362,21 +375,27 @@ class TestPDFMergerApp:
         app._log_info = MagicMock()
         app._log_success = MagicMock()
         app._log_error = MagicMock()
+        app._log_warning = MagicMock()
         app._update_ui_state = MagicMock()
 
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=5,
             successful_merges=5,
             failed_rows=[],
+            skipped_rows=[],
         )
 
         app._on_merge_complete(result)
 
         assert app.merge_handler.is_processing is False
         app.run_button.configure.assert_called_with(state="normal", text="Run Merge")
-        app.footer.update_status.assert_called_with("Success", StatusColor.GREEN)
-        app._log_success.assert_called()
-    
+        app.results_frame.update_results.assert_called_once()
+        call_kw = app.results_frame.update_results.call_args[1]
+        assert call_kw["rows_analyzed"] == 5
+        assert call_kw["pdfs_created"] == 5
+        assert call_kw["skipped"] == 0
+        assert call_kw["failed"] == 0
+
     def test_on_merge_error(self):
         """Test merge error handler."""
         app = self._create_mock_app()
@@ -388,9 +407,8 @@ class TestPDFMergerApp:
 
         assert app.merge_handler.is_processing is False
         app.run_button.configure.assert_called_with(state="normal", text="Run Merge")
-        app.footer.update_status.assert_called_with("Error", StatusColor.RED)
         app._log_error.assert_called_once_with("Error message")
-    
+
     def test_update_ui_state_all_selected(self):
         """Test updating UI state when all paths are selected."""
         app = self._create_mock_app()
@@ -596,42 +614,55 @@ class TestPDFMergerApp:
         assert app.license_valid is False
     
     def test_on_merge_complete_partial_success(self):
-        """Test merge completion with partial success."""
+        """Test merge completion with partial success (4 created, 1 failed)."""
         app = self._create_mock_app()
         app.merge_handler.is_processing = True
-        app.merge_handler.format_result = MagicMock(return_value="Summary text")
         app._log = MagicMock()
+        app._log_info = MagicMock()
+        app._log_error = MagicMock()
+        app._log_warning = MagicMock()
         app._update_ui_state = MagicMock()
         
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=5,
-            successful_merges=3,
-            failed_rows=[2, 4]
+            successful_merges=4,
+            failed_rows=[2],
+            skipped_rows=[],
         )
         
         app._on_merge_complete(result)
         
         assert app.merge_handler.is_processing is False
-        app.footer.update_status.assert_called_with("Partial success", StatusColor.ORANGE)
+        app.results_frame.update_results.assert_called_once()
+        call_kw = app.results_frame.update_results.call_args[1]
+        assert call_kw["rows_analyzed"] == 5
+        assert call_kw["pdfs_created"] == 4
+        assert call_kw["failed"] == 1
     
     def test_on_merge_complete_failed(self):
         """Test merge completion with all failures."""
         app = self._create_mock_app()
         app.merge_handler.is_processing = True
-        app.merge_handler.format_result = MagicMock(return_value="Summary text")
         app._log = MagicMock()
+        app._log_info = MagicMock()
+        app._log_error = MagicMock()
+        app._log_warning = MagicMock()
         app._update_ui_state = MagicMock()
         
-        result = ProcessingResult(
+        result = MergeResult(
             total_rows=5,
             successful_merges=0,
-            failed_rows=[1, 2, 3, 4, 5]
+            failed_rows=[1, 2, 3, 4, 5],
+            skipped_rows=[],
         )
         
         app._on_merge_complete(result)
         
         assert app.merge_handler.is_processing is False
-        app.footer.update_status.assert_called_with("Failed", StatusColor.RED)
+        app.results_frame.update_results.assert_called_once()
+        call_kw = app.results_frame.update_results.call_args[1]
+        assert call_kw["pdfs_created"] == 0
+        assert call_kw["failed"] == 5
 
 
 class TestRunGui:

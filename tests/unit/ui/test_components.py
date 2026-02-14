@@ -30,11 +30,19 @@ class MockCTkFrame:
         pass
     def pack(self, *args, **kwargs):
         pass
+    def pack_forget(self, *args, **kwargs):
+        pass
+    def winfo_ismapped(self):
+        return False
 
 class MockCTkLabel:
     def __init__(self, *args, **kwargs):
         pass
     def pack(self, *args, **kwargs):
+        pass
+    def place(self, *args, **kwargs):
+        pass
+    def pack_forget(self, *args, **kwargs):
         pass
     def configure(self, *args, **kwargs):
         pass
@@ -45,6 +53,22 @@ class MockCTkButton:
     def __init__(self, *args, **kwargs):
         pass
     def pack(self, *args, **kwargs):
+        pass
+
+class MockCTkEntry:
+    def __init__(self, *args, **kwargs):
+        self._text = ""
+    def pack(self, *args, **kwargs):
+        pass
+    def delete(self, *args, **kwargs):
+        pass
+    def insert(self, index, text, *args):
+        self._text = text
+    def get(self):
+        return self._text
+    def configure(self, *args, **kwargs):
+        pass
+    def place(self, *args, **kwargs):
         pass
 
 class MockCTkTextbox:
@@ -75,6 +99,7 @@ mock_ctk.CTk = MockCTk
 mock_ctk.CTkFrame = MockCTkFrame
 mock_ctk.CTkLabel = MockCTkLabel
 mock_ctk.CTkButton = MockCTkButton
+mock_ctk.CTkEntry = MockCTkEntry
 mock_ctk.CTkTextbox = MockCTkTextbox
 mock_ctk.CTkFont = MockCTkFont
 mock_ctk.set_appearance_mode = MagicMock()
@@ -82,7 +107,7 @@ mock_ctk.set_default_color_theme = MagicMock()
 sys.modules['customtkinter'] = mock_ctk
 
 from pdf_merger.ui.components import (
-    LogHandler, FileSelector, LicenseFrame, LogArea, Footer
+    LogHandler, SetupCard, LicenseFrame, LogArea, Footer
 )
 
 
@@ -134,49 +159,52 @@ class TestLogHandler:
         mock_widget.insert.assert_not_called()
 
 
-class TestFileSelector:
-    """Test cases for FileSelector component."""
-    
-    def test_file_selector_initialization(self):
-        """Test FileSelector initialization."""
+class TestSetupCard:
+    """Test cases for SetupCard component."""
+
+    def test_setup_card_initialization(self):
+        """Test SetupCard initialization."""
         mock_parent = MagicMock()
-        selector = FileSelector(mock_parent, "Test Label", "Browse...")
-        
+        selector = SetupCard(mock_parent, 1, "Title", "Helper text")
         assert selector.on_select is None
-        assert selector.path_label is not None
+        assert selector.path_entry is not None
         assert selector.browse_button is not None
-    
-    def test_file_selector_with_callback(self):
-        """Test FileSelector with callback."""
+
+    def test_setup_card_with_callback(self):
+        """Test SetupCard with callback."""
         mock_parent = MagicMock()
         callback = MagicMock()
-        selector = FileSelector(mock_parent, "Test Label", on_select=callback)
-        
+        selector = SetupCard(mock_parent, 1, "Title", "Helper", on_select=callback)
         selector._on_browse_clicked()
-        
         callback.assert_called_once()
-    
-    def test_file_selector_set_path(self):
-        """Test setting path in FileSelector."""
+
+    def test_setup_card_set_path(self):
+        """Test setting path in SetupCard."""
         mock_parent = MagicMock()
-        selector = FileSelector(mock_parent, "Test Label")
-        selector.path_label = MagicMock()
-        
+        selector = SetupCard(mock_parent, 1, "Title", "Helper")
+        selector.path_entry = MagicMock()
         selector.set_path("/test/path")
-        
-        selector.path_label.configure.assert_called_once_with(text="/test/path")
-    
-    def test_file_selector_get_path(self):
-        """Test getting path from FileSelector."""
+        selector.path_entry.delete.assert_called_once_with(0, "end")
+        selector.path_entry.insert.assert_called_once_with(0, "/test/path")
+
+    def test_setup_card_get_path(self):
+        """Test getting path from SetupCard."""
         mock_parent = MagicMock()
-        selector = FileSelector(mock_parent, "Test Label")
-        selector.path_label = MagicMock()
-        selector.path_label.cget.return_value = "/test/path"
-        
-        path = selector.get_path()
-        
-        assert path == "/test/path"
-        selector.path_label.cget.assert_called_once_with("text")
+        selector = SetupCard(mock_parent, 1, "Title", "Helper")
+        selector.path_entry = MagicMock()
+        selector.path_entry.get.return_value = "/test/path"
+        assert selector.get_path() == "/test/path"
+
+    def test_setup_card_set_error_and_clear_error(self):
+        """Test error state in SetupCard."""
+        mock_parent = MagicMock()
+        selector = SetupCard(mock_parent, 1, "Title", "Helper")
+        selector.path_entry = MagicMock()
+        selector.error_label = MagicMock()
+        selector.set_error("Invalid path")
+        selector.path_entry.configure.assert_called()
+        selector.clear_error()
+        selector.path_entry.configure.assert_called()
 
 
 class TestLicenseFrame:
@@ -246,7 +274,7 @@ class TestLogArea:
         args = log_area.log_text.insert.call_args[0]
         assert args[0] == "end"
         assert "Merged successfully" in args[1]
-        assert "✅" in args[1]
+        assert "✓" in args[1]
         assert args[2] == LogArea.TAG_SUCCESS
 
     def test_log_area_log_error(self):
@@ -260,7 +288,7 @@ class TestLogArea:
         log_area.log_text.insert.assert_called_once()
         args = log_area.log_text.insert.call_args[0]
         assert "Failed to merge" in args[1]
-        assert "❌" in args[1]
+        assert "✗" in args[1]
         assert args[2] == LogArea.TAG_ERROR
 
     def test_log_area_log_info(self):
@@ -274,7 +302,7 @@ class TestLogArea:
         log_area.log_text.insert.assert_called_once()
         args = log_area.log_text.insert.call_args[0]
         assert "Reading input file" in args[1]
-        assert "📋" in args[1]
+        assert "ⓘ" in args[1]
         assert args[2] == LogArea.TAG_INFO
 
 
@@ -286,17 +314,11 @@ class TestFooter:
         mock_parent = MagicMock()
         footer = Footer(mock_parent)
         
-        assert footer.status_label is not None
-    
-    def test_footer_update_status(self):
-        """Test updating footer status."""
+        assert footer is not None
+
+    def test_footer_update_status_no_op(self):
+        """Footer.update_status is a no-op for backward compatibility."""
         mock_parent = MagicMock()
         footer = Footer(mock_parent)
-        footer.status_label = MagicMock()
-        
         footer.update_status("Processing...", "blue")
-        
-        footer.status_label.configure.assert_called_once_with(
-            text="Processing...",
-            text_color="blue"
-        )
+        # No assertion - update_status does not configure any widget
