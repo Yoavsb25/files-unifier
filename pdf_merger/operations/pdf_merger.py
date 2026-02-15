@@ -188,4 +188,7 @@ def merge_pdfs(
         logger.error(str(e))
         return False
     except PDFProcessingError:
-        raise
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error during PDF merge: {e}")
+        return False

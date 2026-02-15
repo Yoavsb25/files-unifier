@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Optional
 
 
-def setup_logger(name: str = "pdf_merger", level: int = logging.INFO) -> logging.Logger:
+def setup_logger(
+    name: str = "pdf_merger",
+    level: int = logging.INFO,
+    enable_file_logging: bool = False,
+) -> logging.Logger:
     """
     Setup and return a logger instance.
     Logs to both console (if available) and a log file.
@@ -17,6 +21,7 @@ def setup_logger(name: str = "pdf_merger", level: int = logging.INFO) -> logging
     Args:
         name: Logger name (default: "pdf_merger")
         level: Logging level (default: logging.INFO)
+        enable_file_logging: Whether to also log to ~/.pdf_merger/logs/pdf_merger.log
 
     Returns:
         Configured logger instance
@@ -42,18 +47,19 @@ def setup_logger(name: str = "pdf_merger", level: int = logging.INFO) -> logging
     except Exception:
         pass  # Console not available (e.g., in PyInstaller build with console=False)
 
-    # Create file handler for log file
-    try:
-        log_dir = Path.home() / ".pdf_merger" / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "pdf_merger.log"
+    # Optional file handler for log file
+    if enable_file_logging:
+        try:
+            log_dir = Path.home() / ".pdf_merger" / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / "pdf_merger.log"
 
-        file_handler = logging.FileHandler(log_file, encoding="utf-8")
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    except Exception:
-        pass  # Could not create log file (e.g., permissions issue)
+            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            file_handler.setLevel(level)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+        except Exception:
+            pass  # Could not create log file (e.g., permissions issue)
 
     return logger
 

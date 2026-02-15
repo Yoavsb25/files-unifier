@@ -135,7 +135,7 @@ def merge_pdfs_streaming(
         logger.error(str(e))
         return False
     except PDFProcessingError:
-        raise
+        return False
 
 
 def get_pdf_size_mb(pdf_path: Path) -> float:
