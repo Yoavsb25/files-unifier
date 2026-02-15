@@ -9,23 +9,20 @@ Public API (prefer these for external use; internal modules may change):
 - PDFMergerError: Base exception for error handling
 """
 
-# Single source of version for releases; used by licensing and display
-__version__ = '1.0.0'
-APP_VERSION = __version__
-APP_NAME = 'PDF Batch Merger'  # Application name for UI display
-
 # Public API: high-level entry points and types only (internal refactors won't break callers)
+from .config.config_manager import AppConfig, load_config
 from .core.merge_orchestrator import run_merge_job
-from .config.config_manager import load_config, AppConfig
 from .models import MergeResult
 from .utils.exceptions import PDFMergerError
+from .version import APP_NAME, APP_VERSION, __version__
 
 __all__ = [
-    'APP_VERSION',
-    'APP_NAME',
-    'run_merge_job',
-    'load_config',
-    'AppConfig',
-    'MergeResult',
-    'PDFMergerError',
+    "__version__",
+    "APP_VERSION",
+    "APP_NAME",
+    "run_merge_job",
+    "load_config",
+    "AppConfig",
+    "MergeResult",
+    "PDFMergerError",
 ]

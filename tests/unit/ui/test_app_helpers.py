@@ -2,10 +2,9 @@
 Unit tests for app_helpers module.
 """
 
-import pytest
 from pathlib import Path
 
-from pdf_merger.ui.app_helpers import get_run_block_reasons, can_run_merge
+from pdf_merger.ui.app_helpers import can_run_merge, get_run_block_reasons
 
 
 class TestGetRunBlockReasons:
@@ -77,22 +76,28 @@ class TestCanRunMerge:
 
     def test_true_when_all_ready(self):
         """True when no block reasons."""
-        assert can_run_merge(
-            license_valid=True,
-            input_file_path=Path("/a.csv"),
-            pdf_dir_path=Path("/pdfs"),
-            output_dir_path=Path("/out"),
-            has_validation_errors=False,
-            is_processing=False,
-        ) is True
+        assert (
+            can_run_merge(
+                license_valid=True,
+                input_file_path=Path("/a.csv"),
+                pdf_dir_path=Path("/pdfs"),
+                output_dir_path=Path("/out"),
+                has_validation_errors=False,
+                is_processing=False,
+            )
+            is True
+        )
 
     def test_false_when_license_invalid(self):
         """False when license invalid."""
-        assert can_run_merge(
-            license_valid=False,
-            input_file_path=Path("/a.csv"),
-            pdf_dir_path=Path("/pdfs"),
-            output_dir_path=Path("/out"),
-            has_validation_errors=False,
-            is_processing=False,
-        ) is False
+        assert (
+            can_run_merge(
+                license_valid=False,
+                input_file_path=Path("/a.csv"),
+                pdf_dir_path=Path("/pdfs"),
+                output_dir_path=Path("/out"),
+                has_validation_errors=False,
+                is_processing=False,
+            )
+            is False
+        )

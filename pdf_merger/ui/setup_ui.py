@@ -3,22 +3,21 @@ Build header (title, license, column row) and setup cards for the main app.
 Extracted so app.py stays under ~350 lines and composition is clear.
 """
 
-import customtkinter as ctk
 from typing import Any, Callable, Tuple
 
+import customtkinter as ctk
+
 from ..core.constants import Constants
-from .components import SetupCard, LicenseFrame, bind_focus_highlight
+from .components import LicenseFrame, SetupCard, bind_focus_highlight
 from .theme import (
-    COLUMN_ENTRY_WIDTH,
-    CORNER_RADIUS,
-    SECTION_SPACING,
-    CARD_SPACING,
-    APP_BACKGROUND,
     CARD_BORDER,
-    FONT_TITLE_SIZE,
+    CARD_SPACING,
+    COLUMN_ENTRY_WIDTH,
     FONT_LABEL_SIZE,
     FONT_MONO_SIZE,
+    FONT_TITLE_SIZE,
     INPUT_BACKGROUND,
+    SECTION_SPACING,
 )
 
 

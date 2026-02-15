@@ -9,20 +9,15 @@ Log levels: user-visible milestones = info, per-row detail = debug.
 
 import time
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
-from .types import ProgressCallback, PROGRESS_LOADING, PROGRESS_PROCESSING
-from .row_pipeline import run_row_pipeline, RowPipelineResult
-from ..utils.logging_utils import get_logger
-from ..utils.exceptions import PDFMergerError
-from .constants import Constants
-from ..models import Row, MergeJob, MergeResult, RowResult, RowStatus
-from ..utils.serial_number_parser import (
-    split_serial_numbers,
-    deduplicate_serial_numbers,
-    normalize_serial_number
-)
+from ..models import MergeJob, MergeResult, Row, RowResult, RowStatus
 from ..observability import get_metrics_collector
+from ..utils.exceptions import PDFMergerError
+from ..utils.logging_utils import get_logger
+from .constants import Constants
+from .row_pipeline import RowPipelineResult, run_row_pipeline
+from .types import PROGRESS_PROCESSING, ProgressCallback
 
 if TYPE_CHECKING:
     from ..observability import MetricsRecorder
@@ -109,11 +104,13 @@ def process_row_with_models(
         return RowResult(
             row_index=row.row_index,
             status=RowStatus.SKIPPED,
-            error_message="No valid serial numbers found"
+            error_message="No valid serial numbers found",
         )
 
     if not quiet:
-        logger.info(f"Row {row.row_index + 1}: Processing serial numbers: {', '.join(row.serial_numbers)}")
+        logger.info(
+            f"Row {row.row_index + 1}: Processing serial numbers: {', '.join(row.serial_numbers)}"
+        )
 
     # 2. Run pipeline (find, convert Excel, merge, cleanup)
     try:
@@ -151,12 +148,20 @@ def process_row_with_models(
     return row_result
 
 
-def _progress_message_for_row_result(row_num: int, total_rows: int, row_result: RowResult) -> List[str]:
+def _progress_message_for_row_result(
+    row_num: int, total_rows: int, row_result: RowResult
+) -> List[str]:
     """Return progress message line(s) for a row result (status line plus optional detail)."""
     pdf_count = sum(1 for p in row_result.files_found if p.suffix.lower() == ".pdf")
-    excel_count = sum(1 for p in row_result.files_found if p.suffix.lower() in EXCEL_FILE_EXTENSIONS)
+    excel_count = sum(
+        1 for p in row_result.files_found if p.suffix.lower() in EXCEL_FILE_EXTENSIONS
+    )
     if row_result.is_skipped():
-        msg = f"Row {row_num} → No valid files found → Skipped" if row_result.files_missing else f"Row {row_num} → Skipped"
+        msg = (
+            f"Row {row_num} → No valid files found → Skipped"
+            if row_result.files_missing
+            else f"Row {row_num} → Skipped"
+        )
     elif row_result.is_success() or row_result.status == RowStatus.PARTIAL:
         msg = f"Row {row_num} → Found {pdf_count} PDFs, {excel_count} Excel → Success"
     else:
@@ -164,7 +169,11 @@ def _progress_message_for_row_result(row_num: int, total_rows: int, row_result: 
     lines = [msg]
     missing = row_result.files_missing or []
     if missing:
-        detail = f"  • {len(missing)} files not found ({', '.join(missing)})" if len(missing) <= MAX_MISSING_TO_LIST else f"  • {len(missing)} files not found"
+        detail = (
+            f"  • {len(missing)} files not found ({', '.join(missing)})"
+            if len(missing) <= MAX_MISSING_TO_LIST
+            else f"  • {len(missing)} files not found"
+        )
         lines.append(detail)
     elif row_result.is_skipped() and not row_result.files_found:
         lines.append("  • No valid files to merge")
@@ -199,7 +208,9 @@ def _process_single_row_and_report(
     row_num = row.row_index + 1
     if on_progress:
         serials = ", ".join(row.serial_numbers) if row.serial_numbers else "no serial numbers"
-        on_progress(PROGRESS_PROCESSING, row_num, total_rows, f"Processing Row {row_num}... ({serials})")
+        on_progress(
+            PROGRESS_PROCESSING, row_num, total_rows, f"Processing Row {row_num}... ({serials})"
+        )
 
     row_result = process_row_with_models(
         row,
@@ -272,17 +283,17 @@ def process_job(
         metrics.record_timer("job_processing_time", result.total_processing_time)
         metrics.record_counter("jobs_completed")
         metrics.record_gauge("job_success_rate", result.get_success_rate())
-        
+
         logger.info(f"Job {job.job_id or 'default'} completed: {result}")
         return result
-        
+
     except PDFMergerError as e:
         _record_job_failure(result, current_row_index, start_time, e, "PDFMergerError", metrics)
         return result
     except ValueError as e:
         _record_job_failure(result, current_row_index, start_time, e, "AmbiguousMatch", metrics)
         return result
-    # Intentional: any unexpected row-level failure; domain exceptions (above) are handled explicitly.
+    # Intentional: see ARCHITECTURE.md "Intentional broad catches". Reason: job must always return MergeResult.
     except Exception as e:
         _record_job_failure(result, current_row_index, start_time, e, "UnexpectedError", metrics)
         return result

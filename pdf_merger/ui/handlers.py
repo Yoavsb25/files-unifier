@@ -7,14 +7,13 @@ import tkinter.filedialog as filedialog
 from pathlib import Path
 from typing import Callable, Optional
 
-from ..utils.validators import validate_file, validate_folder
-from ..utils.exceptions import PDFMergerError
 from ..config.config_manager import resolve_required_column
-from ..core import run_merge_job, format_result_summary
+from ..core import format_result_summary, run_merge_job
 from ..core.types import ProgressCallback
-
 from ..models import MergeResult
+from ..utils.exceptions import PDFMergerError
 from ..utils.logging_utils import get_logger
+from ..utils.validators import validate_file, validate_folder
 
 logger = get_logger("pdf_merger.ui.handlers")
 
@@ -81,32 +80,36 @@ class FileSelectionHandler:
                 self._handle_error(str(e), self.FIELD_INPUT)
                 return None
         return None
-    
+
     def select_directory(
-        self,
-        title: str = "Select Directory",
-        validate: bool = True,
-        folder_type: str = "Source"
+        self, title: str = "Select Directory", validate: bool = True, folder_type: str = "Source"
     ) -> Optional[Path]:
-        """Open directory dialog to select a directory."""
+        """Open directory dialog to select a directory.
+
+        Catches PDFMergerError and OSError for user-facing messages; any other
+        exception is logged and a generic message is shown so the UI stays usable.
+        """
         dir_path = filedialog.askdirectory(title=title)
-        
+
         if dir_path:
             path = Path(dir_path)
+            field = self.FIELD_OUTPUT if not validate else self.FIELD_SOURCE
             try:
                 if validate:
                     validate_folder(path, folder_type)
                 else:
                     # For output directory, just ensure it can be created
                     path.mkdir(parents=True, exist_ok=True)
-                
                 if self.on_file_selected:
                     self.on_file_selected(path)
                 return path
-            except Exception as e:
-                # Validation and folder ops can raise PDFMergerError or others; handle all for UI.
-                field = self.FIELD_OUTPUT if not validate else self.FIELD_SOURCE
+            except (PDFMergerError, OSError) as e:
                 self._handle_error(str(e), field)
+                return None
+            except Exception:
+                logger.exception("Unexpected error in select_directory")
+                if self.on_error:
+                    self.on_error("An unexpected error occurred. Check the log for details.")
                 return None
         return None
 
@@ -204,7 +207,7 @@ class MergeHandler:
             logger.exception("Merge operation failed")
             if self.on_error:
                 self.on_error(error_msg)
-        # Intentional: catch any other runtime error so the UI always returns to idle (finally runs).
+        # Intentional: see ARCHITECTURE.md "Intentional broad catches". Reason: UI must return to idle; finally runs.
         except Exception as e:
             error_msg = str(e)
             logger.exception("Merge operation failed")
@@ -212,7 +215,7 @@ class MergeHandler:
                 self.on_error(error_msg)
         finally:
             self._set_idle()
-    
+
     def format_result(self, result: MergeResult) -> str:
         """Format merge result as a summary string."""
         summary_text = format_result_summary(result)

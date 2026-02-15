@@ -3,9 +3,8 @@ Shared fixtures for core unit tests.
 """
 
 import pytest
-from pathlib import Path
 
-from pdf_merger.models import Row, MergeJob
+from pdf_merger.models import MergeJob, Row
 
 
 @pytest.fixture

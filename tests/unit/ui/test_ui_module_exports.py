@@ -2,18 +2,21 @@
 Unit tests for UI module exports.
 """
 
-import pytest
+import importlib
 import sys
-from unittest.mock import MagicMock
-
-# Mock tkinter before importing UI module
-sys.modules['tkinter'] = MagicMock()
-sys.modules['tkinter.filedialog'] = MagicMock()
-sys.modules['customtkinter'] = MagicMock()
-
-from pdf_merger.ui import run_gui
+from unittest.mock import MagicMock, patch
 
 
 def test_ui_exports():
     """Test that UI module exports expected functions."""
-    assert callable(run_gui)
+    with patch.dict(
+        sys.modules,
+        {
+            "tkinter": MagicMock(),
+            "tkinter.filedialog": MagicMock(),
+            "customtkinter": MagicMock(),
+        },
+    ):
+        ui_module = importlib.import_module("pdf_merger.ui")
+        ui_module = importlib.reload(ui_module)
+        assert callable(ui_module.run_gui)

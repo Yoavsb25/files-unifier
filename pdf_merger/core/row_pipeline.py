@@ -6,11 +6,11 @@ Single responsibility for one-row processing; merge_processor orchestrates rows 
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from ..operations.pdf_merger import find_source_file, merge_pdfs
-from ..utils.logging_utils import get_logger
 from ..utils.exceptions import PDFProcessingError
+from ..utils.logging_utils import get_logger
 from .constants import Constants
 
 if TYPE_CHECKING:
@@ -28,6 +28,7 @@ OUTPUT_FILENAME_PATTERN = Constants.OUTPUT_FILENAME_PATTERN
 @dataclass
 class RowPipelineResult:
     """Result of the find/convert/merge pipeline for one row."""
+
     success: bool
     output_path: Optional[Path] = None
     source_files: List[Path] = field(default_factory=list)
@@ -47,9 +48,9 @@ def _convert_excel_files_to_pdfs(
             if not quiet:
                 logger.info(f"  Converting {source_path.name} to PDF...")
             temp_pdf = tempfile.NamedTemporaryFile(
-                suffix='.pdf',
+                suffix=".pdf",
                 delete=False,
-                dir=output_folder.parent if output_folder.parent.exists() else None
+                dir=output_folder.parent if output_folder.parent.exists() else None,
             )
             temp_pdf.close()
             temp_pdf_path = Path(temp_pdf.name)
@@ -99,7 +100,9 @@ def run_row_pipeline(
     source_files: List[Path] = []
     missing: List[str] = []
     for serial_number in serial_numbers:
-        source_path = find_source_file(source_folder, serial_number, fail_on_ambiguous=fail_on_ambiguous)
+        source_path = find_source_file(
+            source_folder, serial_number, fail_on_ambiguous=fail_on_ambiguous
+        )
         if source_path:
             source_files.append(source_path)
             if not quiet:
@@ -117,7 +120,9 @@ def run_row_pipeline(
         )
     temp_pdf_files: List[Path] = []
     try:
-        pdf_paths, temp_pdf_files = _convert_excel_files_to_pdfs(source_files, output_folder, quiet=quiet)
+        pdf_paths, temp_pdf_files = _convert_excel_files_to_pdfs(
+            source_files, output_folder, quiet=quiet
+        )
         if not pdf_paths:
             return RowPipelineResult(
                 success=False,

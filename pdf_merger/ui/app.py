@@ -1,49 +1,51 @@
 """
-CustomTkinter GUI application for PDF Merger.
+Main window: layout and wiring only.
+Path and config binding via PathController; merge lifecycle via merge_ui.
+Business logic in app_helpers, config_ui, setup_ui, handlers.
 """
 
 import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import customtkinter as ctk
 
+from ..config.config_manager import load_config, resolve_required_column, save_config
 from ..core import format_failed_rows_display
 from ..core.types import PROGRESS_LOADING, PROGRESS_PROCESSING
-
-from .. import APP_VERSION
 from ..licensing import LicenseManager
-from ..utils.exceptions import PDFMergerError
-from ..utils.logging_utils import get_logger, setup_logger
 from ..models import MergeResult
-from ..config.config_manager import load_config, save_config, resolve_required_column
-from .components import LogArea, ResultsFrame, Footer
-from .license_ui import update_license_display
-from .handlers import FileSelectionHandler, MergeHandler
-from .app_helpers import get_run_block_reasons, can_run_merge
+from ..utils.logging_utils import get_logger, setup_logger
+from ..version import APP_VERSION
+from .app_helpers import can_run_merge, get_run_block_reasons
+from .components import Footer, LogArea, ResultsFrame
 from .config_ui import load_config_into_ui
 from .dialogs import show_detailed_report_dialog
+from .handlers import FileSelectionHandler, MergeHandler
+from .license_ui import update_license_display
+from .merge_ui import MergeUIState, on_merge_complete, on_merge_error, on_merge_start
+from .path_controller import PathController
+from .setup_ui import build_header, build_setup_cards
 from .theme import (
-    CORNER_RADIUS,
-    SECTION_SPACING,
     APP_BACKGROUND,
     CARD_BACKGROUND,
-    PRIMARY_BLUE,
-    PRIMARY_BLUE_HOVER,
-    WINDOW_SIZE_DEFAULT,
-    WINDOW_MIN_SIZE,
-    PROGRESS_KEYWORD_SUCCESS,
-    PROGRESS_KEYWORD_SKIPPED,
-    PROGRESS_KEYWORD_FAILED,
-    RUN_MERGE_BUTTON_TEXT,
-    PROCESSING_BUTTON_TEXT,
-    VIEW_DETAILED_LOG,
+    CORNER_RADIUS,
     HIDE_DETAILED_LOG,
     MESSAGE_PROCESSING_COMPLETE,
+    PRIMARY_BLUE,
+    PRIMARY_BLUE_HOVER,
+    PROGRESS_KEYWORD_FAILED,
+    PROGRESS_KEYWORD_SKIPPED,
+    PROGRESS_KEYWORD_SUCCESS,
+    RUN_MERGE_BUTTON_TEXT,
+    SECTION_SPACING,
+    VIEW_DETAILED_LOG,
+    WINDOW_MIN_SIZE,
+    WINDOW_SIZE_DEFAULT,
 )
-from .setup_ui import build_header, build_setup_cards
+
 # Setup logging
 setup_logger("pdf_merger", level=logging.INFO)
 logger = get_logger("pdf_merger.ui.app")
@@ -60,50 +62,57 @@ class PDFMergerApp(ctk.CTk):
 
     def __init__(self, license_manager: Optional[LicenseManager] = None):
         super().__init__()
-        
+
         self.title(APP_NAME)
         self.geometry(WINDOW_SIZE_DEFAULT)
         self.minsize(*WINDOW_MIN_SIZE)
         self.configure(fg_color=APP_BACKGROUND)
-        
+
         # If license_manager is provided, the app does not re-validate at startup (main passes it in after validation).
         self.license_manager = license_manager or LicenseManager(app_version=APP_VERSION)
         self.license_valid = False
-        
+
         # Paths
         self.input_file_path: Optional[Path] = None
         self.pdf_dir_path: Optional[Path] = None
         self.output_dir_path: Optional[Path] = None
-        
+
         # Load configuration
         self.config = load_config(start_path=Path.cwd())
-        
-        # Initialize handlers
+
+        # Initialize handlers and path controller
         self._init_handlers()
-        
+        self._path_controller = PathController(
+            get_config=lambda: self.config,
+            set_config=self._set_config_and_path,
+            save_config_fn=save_config,
+            log_info_fn=self._log_info,
+            update_ui_state_fn=self._update_ui_state,
+        )
+
         # Build UI
         self._build_ui()
-        
+
         # Load config values into UI if available
         self._load_config_into_ui()
-        
+
         # Check license
         self._check_license()
-    
+
     def _init_handlers(self):
         """Initialize event handlers."""
         self.file_handler = FileSelectionHandler(
             on_error=self._show_error,
             on_validation_error=self._on_validation_error,
         )
-        
+
         self.merge_handler = MergeHandler(
             on_start=self._on_merge_start,
             on_complete=self._on_merge_complete,
             on_error=self._on_merge_error,
             on_progress=self._schedule_progress,
         )
-    
+
     def _build_ui(self):
         """Build the user interface."""
         main_frame = self._build_layout_frames()
@@ -138,16 +147,20 @@ class PDFMergerApp(ctk.CTk):
 
     def _build_header(self, main_frame):
         """Build title, license frame, and serial numbers column row."""
-        self.license_frame, self._column_frame, self.column_entry = build_header(main_frame, APP_NAME)
+        self.license_frame, self._column_frame, self.column_entry = build_header(
+            main_frame, APP_NAME
+        )
 
     def _build_setup_cards(self, main_frame):
         """Build the three setup cards (Instructions File, Source Directory, Output Directory)."""
-        self.input_file_selector, self.pdf_dir_selector, self.output_dir_selector = build_setup_cards(
-            main_frame,
-            self._column_frame,
-            on_select_input=self._select_input_file,
-            on_select_pdf_dir=self._select_pdf_directory,
-            on_select_output=self._select_output_directory,
+        self.input_file_selector, self.pdf_dir_selector, self.output_dir_selector = (
+            build_setup_cards(
+                main_frame,
+                self._column_frame,
+                on_select_input=self._select_input_file,
+                on_select_pdf_dir=self._select_pdf_directory,
+                on_select_output=self._select_output_directory,
+            )
         )
 
     def _build_run_section(self, main_frame):
@@ -187,15 +200,25 @@ class PDFMergerApp(ctk.CTk):
         self.log_area.pack(fill="both", expand=True, pady=(0, SECTION_SPACING))
         self.footer = Footer(main_frame)
         self.footer.pack(fill="x")
-    
+        self._merge_ui_state = MergeUIState(
+            run_button=self.run_button,
+            progress_bar=self.progress_bar,
+            results_frame=self.results_frame,
+            log_area=self.log_area,
+            apply_result_fn=self._apply_merge_result_to_ui,
+            update_ui_state_fn=self._update_ui_state,
+            log_info_fn=self._log_info,
+            log_error_fn=self._log_error,
+            log_plain_fn=self._log,
+        )
+
     def _check_license(self):
         """Check license status and update UI."""
         self.license_valid = update_license_display(
-            self.license_manager,
-            self.license_frame.license_label
+            self.license_manager, self.license_frame.license_label
         )
         self._update_ui_state()
-    
+
     def _load_config_into_ui(self):
         """Load configuration values into UI fields if available."""
         load_config_into_ui(
@@ -209,7 +232,7 @@ class PDFMergerApp(ctk.CTk):
             log_warning=logger.warning,
             on_update_state=self._update_ui_state,
         )
-    
+
     def _has_validation_errors(self) -> bool:
         """Return True if any setup card has a validation error."""
         return (
@@ -243,8 +266,7 @@ class PDFMergerApp(ctk.CTk):
     def _update_ui_state(self):
         """Update UI state based on license, selection, and validation."""
         self.run_button.configure(state="normal" if self._can_run_merge() else "disabled")
-    
-    
+
     def _get_column(self) -> str:
         """Get column name from entry, or default if empty. Uses resolve_required_column for consistent resolution."""
         return resolve_required_column(self.column_entry.get(), self.config.required_column)
@@ -261,6 +283,11 @@ class PDFMergerApp(ctk.CTk):
             selector.set_error(message)
         self._update_ui_state()
 
+    def _set_config_and_path(self, path_attr: str, path: Path, config: Any) -> None:
+        """Set path attribute and config on app (used by PathController)."""
+        setattr(self, path_attr, path)
+        self.config = config
+
     def _on_path_selected(
         self,
         path: Path,
@@ -269,22 +296,19 @@ class PDFMergerApp(ctk.CTk):
         config_override: dict,
         log_message: str,
     ) -> None:
-        """Apply a selected path to app state, selector, config, and UI."""
-        setattr(self, path_attr, path)
-        selector.set_path(str(path))
-        selector.clear_error()
-        self.config = self.config.merge(type(self.config)(**config_override))
-        save_config(self.config)
-        self._log_info(log_message)
-        self._update_ui_state()
+        """Delegate to PathController to apply path, config, and UI updates."""
+        self._path_controller.apply_path(path, path_attr, selector, config_override, log_message)
 
     def _select_input_file(self):
         """Open file dialog to select input CSV/Excel file."""
         path = self.file_handler.select_input_file(required_column=self._get_column())
         if path:
             self._on_path_selected(
-                path, "input_file_path", self.input_file_selector,
-                {"input_file": str(path)}, f"Selected input file: {path.name}",
+                path,
+                "input_file_path",
+                self.input_file_selector,
+                {"input_file": str(path)},
+                f"Selected input file: {path.name}",
             )
 
     def _select_pdf_directory(self):
@@ -296,8 +320,11 @@ class PDFMergerApp(ctk.CTk):
         )
         if path:
             self._on_path_selected(
-                path, "pdf_dir_path", self.pdf_dir_selector,
-                {"pdf_dir": str(path)}, f"Selected source directory: {path}",
+                path,
+                "pdf_dir_path",
+                self.pdf_dir_selector,
+                {"pdf_dir": str(path)},
+                f"Selected source directory: {path}",
             )
 
     def _open_output_folder(self, path: str):
@@ -327,10 +354,13 @@ class PDFMergerApp(ctk.CTk):
         )
         if path:
             self._on_path_selected(
-                path, "output_dir_path", self.output_dir_selector,
-                {"output_dir": str(path)}, f"Selected output directory: {path}",
+                path,
+                "output_dir_path",
+                self.output_dir_selector,
+                {"output_dir": str(path)},
+                f"Selected output directory: {path}",
             )
-    
+
     def _log(self, message: str):
         """Add plain message to log area."""
         self.log_area.log(message)
@@ -356,20 +386,14 @@ class PDFMergerApp(ctk.CTk):
         self.log_area.log_warning(message)
         logger.warning(message)
 
-    def _schedule_progress(
-        self, step: str, current: int, total: int, message: str
-    ):
+    def _schedule_progress(self, step: str, current: int, total: int, message: str):
         """Schedule progress update on main thread (called from worker)."""
         self.after(
             0,
-            lambda s=step, c=current, t=total, m=message: self._on_merge_progress(
-                s, c, t, m
-            ),
+            lambda s=step, c=current, t=total, m=message: self._on_merge_progress(s, c, t, m),
         )
 
-    def _on_merge_progress(
-        self, step: str, current: int, total: int, message: str
-    ):
+    def _on_merge_progress(self, step: str, current: int, total: int, message: str):
         """Handle progress update from merge operation."""
         if step == PROGRESS_LOADING:
             self._log_info(message)
@@ -401,11 +425,11 @@ class PDFMergerApp(ctk.CTk):
         if not self.license_valid:
             self._show_error("License is not valid. Cannot run merge operation.")
             return
-        
+
         if not all([self.input_file_path, self.pdf_dir_path, self.output_dir_path]):
             self._show_error("Please select all required files and directories.")
             return
-        
+
         self.merge_handler.run_merge(
             input_file=self.input_file_path,
             pdf_dir=self.pdf_dir_path,
@@ -413,25 +437,15 @@ class PDFMergerApp(ctk.CTk):
             required_column=self._get_column(),
             fail_on_ambiguous_matches=self.config.fail_on_ambiguous_matches,
         )
-    
+
     def _on_merge_start(self):
-        """Handle merge operation start."""
-        self.run_button.configure(state="disabled", text=PROCESSING_BUTTON_TEXT)
-        self.progress_bar.pack(fill="x", pady=(0, SECTION_SPACING), before=self.log_area)
-        self.progress_bar.start()
-        self.results_frame.hide()
-        self.log_area.clear()
-        self._log_info("Starting merge operation...")
-        self._log_info(f"Input file: {self.input_file_path}")
-        self._log_info(f"Source directory: {self.pdf_dir_path}")
-        self._log_info(f"Output directory: {self.output_dir_path}")
-        self._log("")
-    
-    def _reset_merge_ui_state(self) -> None:
-        """Reset Run Merge button and hide progress bar after merge completes or errors."""
-        self.run_button.configure(state="normal", text=RUN_MERGE_BUTTON_TEXT)
-        self.progress_bar.stop()
-        self.progress_bar.pack_forget()
+        """Delegate to merge_ui: disable button, show progress, log start."""
+        on_merge_start(
+            self._merge_ui_state,
+            self.input_file_path,
+            self.pdf_dir_path,
+            self.output_dir_path,
+        )
 
     def _apply_merge_result_to_ui(self, result: MergeResult) -> None:
         """Update results frame and log area from a MergeResult (enables tests of result-to-UI mapping)."""
@@ -465,17 +479,12 @@ class PDFMergerApp(ctk.CTk):
         show_detailed_report_dialog(self, self._last_merge_result)
 
     def _on_merge_complete(self, result: MergeResult):
-        """Handle merge completion: reset UI state, apply result to UI, then update run button state."""
-        self._reset_merge_ui_state()
-        self._apply_merge_result_to_ui(result)
-        self._update_ui_state()
-    
+        """Delegate to merge_ui: reset state, apply result, update UI."""
+        on_merge_complete(self._merge_ui_state, result)
+
     def _on_merge_error(self, error_message: str):
-        """Handle merge error: reset UI state, log error, then update run button state."""
-        self._reset_merge_ui_state()
-        self._log("")
-        self._log_error(error_message)
-        self._update_ui_state()
+        """Delegate to merge_ui: reset state, log error, update UI."""
+        on_merge_error(self._merge_ui_state, error_message)
 
 
 def run_gui(license_manager: Optional[LicenseManager] = None):

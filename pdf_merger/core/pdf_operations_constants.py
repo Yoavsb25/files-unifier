@@ -3,6 +3,7 @@
 
 class PdfOperationsConstants:
     """Streaming thresholds and PDF operation settings."""
+
     STREAMING_THRESHOLD_MB = 100.0
     STREAMING_CHUNK_SIZE = 10
     STREAMING_PROGRESS_INTERVAL = 50

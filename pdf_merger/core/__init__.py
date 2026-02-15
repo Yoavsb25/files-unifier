@@ -5,11 +5,15 @@ result reporting. (File-format operations live in operations/.)
 """
 
 from .merge_orchestrator import run_merge_job
-from .result_reporter import format_result_summary, format_result_detailed, format_failed_rows_display
+from .result_reporter import (
+    format_failed_rows_display,
+    format_result_detailed,
+    format_result_summary,
+)
 
 __all__ = [
-    'run_merge_job',
-    'format_result_summary',
-    'format_result_detailed',
-    'format_failed_rows_display',
+    "run_merge_job",
+    "format_result_summary",
+    "format_result_detailed",
+    "format_failed_rows_display",
 ]

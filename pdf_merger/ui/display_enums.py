@@ -5,6 +5,7 @@ from enum import Enum
 
 class LicenseColor(Enum):
     """License status colors for UI display."""
+
     GREEN = "green"
     RED = "red"
     ORANGE = "orange"
@@ -13,6 +14,7 @@ class LicenseColor(Enum):
 
 class StatusColor(Enum):
     """Status colors for UI components (footer, etc.)."""
+
     WHITE = "white"
     GREEN = "green"
     RED = "red"

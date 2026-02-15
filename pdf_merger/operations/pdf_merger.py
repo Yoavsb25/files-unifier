@@ -3,15 +3,15 @@ PDF merger module.
 Handles finding and merging PDF files.
 """
 
-import sys
 import os
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional, Protocol, runtime_checkable
 
-from ..utils.logging_utils import get_logger
-from ..utils.exceptions import PDFProcessingError
 from ..core.constants import Constants
+from ..utils.exceptions import PDFProcessingError
+from ..utils.logging_utils import get_logger
 
 logger = get_logger("pdf_merger.operations.pdf_merger")
 
@@ -40,7 +40,7 @@ _PdfReader = None
 @contextmanager
 def suppress_stderr():
     """Context manager to suppress stderr output."""
-    with open(os.devnull, 'w') as devnull:
+    with open(os.devnull, "w") as devnull:
         old_stderr = sys.stderr
         try:
             sys.stderr = devnull
@@ -55,53 +55,53 @@ def _get_pdf_libraries():
     Raises ImportError if neither pypdf nor PyPDF2 is available.
     """
     global _PdfWriter, _PdfReader
-    
+
     if _PdfWriter is None or _PdfReader is None:
         try:
-            from pypdf import PdfWriter, PdfReader
+            from pypdf import PdfReader, PdfWriter
+
             _PdfWriter = PdfWriter
             _PdfReader = PdfReader
         except ImportError:
             try:
-                from PyPDF2 import PdfWriter, PdfReader
+                from PyPDF2 import PdfReader, PdfWriter
+
                 _PdfWriter = PdfWriter
                 _PdfReader = PdfReader
             except ImportError:
                 raise ImportError(
                     "pypdf or PyPDF2 library is required. Install with: pip install pypdf"
                 )
-    
+
     return _PdfWriter, _PdfReader
 
 
 def find_source_file(
-    folder: Path,
-    filename: str,
-    fail_on_ambiguous: bool = False
+    folder: Path, filename: str, fail_on_ambiguous: bool = False
 ) -> Optional[Path]:
     """
     Find a source file (PDF or Excel) matching the filename in the given folder.
     Uses formal matching rules with ambiguity detection.
-    
+
     Args:
         folder: Path to the folder containing source files
         filename: Filename (with or without extension) to search for
         fail_on_ambiguous: If True, raises ValueError on ambiguous matches (default: False)
-        
+
     Returns:
         Path to the source file if found, None otherwise
-        
+
     Raises:
         ValueError: If fail_on_ambiguous is True and multiple matches are found
     """
-    from ..matching import find_best_match, MatchBehavior
-    
+    from ..matching import MatchBehavior, find_best_match
+
     behavior = MatchBehavior.FAIL_FAST if fail_on_ambiguous else MatchBehavior.WARN_FIRST
-    
+
     try:
         match_result = find_best_match(folder, filename, behavior=behavior)
         return match_result.file_path
-    except ValueError as e:
+    except ValueError:
         # Re-raise ValueError from matching rules
         raise
 
@@ -110,52 +110,58 @@ def merge_pdfs(
     pdf_paths: List[Path],
     output_path: Path,
     use_streaming: Optional[bool] = None,
-    streaming_threshold_mb: float = STREAMING_THRESHOLD_MB
+    streaming_threshold_mb: float = STREAMING_THRESHOLD_MB,
 ) -> bool:
     """
     Merge multiple PDF files into a single PDF.
-    
+
     Automatically uses streaming mode for large files to conserve memory.
-    
+
     Args:
         pdf_paths: List of paths to PDF files to merge
         output_path: Path where the merged PDF will be saved
         use_streaming: Force streaming mode (None = auto-detect based on file size)
         streaming_threshold_mb: Memory threshold in MB for auto-enabling streaming (default: 100 MB)
-        
+
     Returns:
         True if successful, False otherwise
-        
+
     Raises:
         ImportError: If pypdf or PyPDF2 is not installed
     """
     if not pdf_paths:
         logger.warning(f"No PDF files to merge for {output_path.name}")
         return False
-    
+
     # Auto-detect streaming mode if not specified
     if use_streaming is None:
         try:
             from .streaming_pdf_merger import should_use_streaming
+
             use_streaming = should_use_streaming(pdf_paths, streaming_threshold_mb)
             if use_streaming:
-                logger.info(f"Using streaming mode for large PDF merge (estimated size > {streaming_threshold_mb} MB)")
+                logger.info(
+                    f"Using streaming mode for large PDF merge (estimated size > {streaming_threshold_mb} MB)"
+                )
         except ImportError:
             use_streaming = False
-    
+
     # Use streaming mode for large files
     if use_streaming:
         try:
             from .streaming_pdf_merger import merge_pdfs_streaming
+
             return merge_pdfs_streaming(pdf_paths, output_path)
         except ImportError:
-            logger.warning("Streaming mode requested but not available, falling back to standard mode")
-    
+            logger.warning(
+                "Streaming mode requested but not available, falling back to standard mode"
+            )
+
     # Standard mode (load all pages into memory)
     try:
         PdfWriter, PdfReader = _get_pdf_libraries()
         writer = PdfWriter()
-        
+
         for pdf_path in pdf_paths:
             try:
                 # Suppress stderr during PDF reading to avoid noisy PdfReadError messages
@@ -168,15 +174,15 @@ def merge_pdfs(
             except Exception as e:
                 logger.error(f"Error reading PDF {pdf_path.name}: {e}")
                 raise PDFProcessingError(str(e), pdf_path=pdf_path, operation="reading") from e
-        
+
         # Write the merged PDF
         try:
-            with open(output_path, 'wb') as output_file:
+            with open(output_path, "wb") as output_file:
                 writer.write(output_file)
         except Exception as e:
             logger.error(f"Error writing merged PDF to {output_path.name}: {e}")
             raise PDFProcessingError(str(e), pdf_path=output_path, operation="writing") from e
-        
+
         return True
     except ImportError as e:
         logger.error(str(e))

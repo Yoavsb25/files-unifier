@@ -3,6 +3,7 @@
 
 class UiConstants:
     """Display string length, percentages, progress display, and example labels."""
+
     MAX_DISPLAY_STRING_LENGTH = 100
     PERCENTAGE_MULTIPLIER = 100.0
     MAX_MISSING_TO_LIST = 3

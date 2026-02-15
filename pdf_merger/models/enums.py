@@ -9,6 +9,7 @@ from enum import Enum
 
 class MatchConfidence(Enum):
     """Confidence level of a match."""
+
     EXACT = "exact"
     STEM = "stem"
     LOW = "low"
@@ -16,6 +17,7 @@ class MatchConfidence(Enum):
 
 class MatchBehavior(Enum):
     """Behavior when multiple matches are found."""
+
     FAIL_FAST = "fail_fast"
     WARN_FIRST = "warn_first"
     LOG_ALL = "log_all"
@@ -23,6 +25,7 @@ class MatchBehavior(Enum):
 
 class RowStatus(Enum):
     """Status of a row processing operation."""
+
     SUCCESS = "success"
     FAILED = "failed"
     SKIPPED = "skipped"

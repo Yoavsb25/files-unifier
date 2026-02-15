@@ -3,9 +3,17 @@ Domain models package.
 Contains data models for the PDF merger application.
 """
 
-from .row import Row
+from .enums import MatchBehavior, MatchConfidence, RowStatus
 from .merge_job import MergeJob
 from .merge_result import MergeResult, RowResult
-from .enums import RowStatus, MatchConfidence, MatchBehavior
+from .row import Row
 
-__all__ = ['Row', 'MergeJob', 'MergeResult', 'RowResult', 'RowStatus', 'MatchConfidence', 'MatchBehavior']
+__all__ = [
+    "Row",
+    "MergeJob",
+    "MergeResult",
+    "RowResult",
+    "RowStatus",
+    "MatchConfidence",
+    "MatchBehavior",
+]

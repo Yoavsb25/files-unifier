@@ -9,10 +9,10 @@ import customtkinter as ctk
 
 from ..models import MergeResult
 from .theme import (
+    DETAILED_REPORT_CLOSE_BUTTON_TEXT,
     DETAILED_REPORT_DIALOG_GEOMETRY,
     DETAILED_REPORT_DIALOG_MIN_SIZE,
     DETAILED_REPORT_DIALOG_TITLE,
-    DETAILED_REPORT_CLOSE_BUTTON_TEXT,
 )
 
 
@@ -31,6 +31,7 @@ def show_detailed_report_dialog(
     """
     if format_fn is None:
         from ..core import format_result_detailed
+
         format_fn = format_result_detailed
     report_text = format_fn(result)
     dialog = ctk.CTkToplevel(parent)
@@ -41,5 +42,7 @@ def show_detailed_report_dialog(
     text.pack(fill="both", expand=True, padx=10, pady=10)
     text.insert("1.0", report_text)
     text.configure(state="disabled")
-    close_btn = ctk.CTkButton(dialog, text=DETAILED_REPORT_CLOSE_BUTTON_TEXT, command=dialog.destroy)
+    close_btn = ctk.CTkButton(
+        dialog, text=DETAILED_REPORT_CLOSE_BUTTON_TEXT, command=dialog.destroy
+    )
     close_btn.pack(pady=(0, 10))

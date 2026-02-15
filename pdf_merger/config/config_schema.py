@@ -5,7 +5,7 @@ All AppConfig fields are validated here; invalid values are coerced to defaults 
 """
 
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from ..models.defaults import DEFAULT_SERIAL_NUMBERS_COLUMN
 from ..utils.logging_utils import get_logger
@@ -130,7 +130,9 @@ def _validate_boolean(value: Any, key: str, default: bool) -> bool:
             return True
         if lower in ("false", "0", "no", "off"):
             return False
-    logger.warning(f"Invalid {key} in config: expected boolean, got {type(value).__name__}; using default {default}")
+    logger.warning(
+        f"Invalid {key} in config: expected boolean, got {type(value).__name__}; using default {default}"
+    )
     return default
 
 

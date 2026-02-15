@@ -38,7 +38,13 @@ def load_config_into_ui(
     path_applyments: List[Tuple[Optional[str], str, Any, Callable[[Path], None], str]] = [
         (config.input_file, "input_file_path", input_selector, validate_input, "input file"),
         (config.pdf_dir, "pdf_dir_path", pdf_dir_selector, validate_source, "source directory"),
-        (config.output_dir, "output_dir_path", output_selector, validate_output, "output directory"),
+        (
+            config.output_dir,
+            "output_dir_path",
+            output_selector,
+            validate_output,
+            "output directory",
+        ),
     ]
     apply_config_to_ui(
         config,

@@ -675,6 +675,7 @@ Import from the package root: `from pdf_merger import run_merge_job, load_config
 - **Pipeline/result messages**: Canonical error messages for the row pipeline and result mapping live in `pdf_merger.core.pipeline_constants` (e.g. `NO_SOURCE_FILES`, `NO_PDF_AVAILABLE`, `MERGE_FAILED`). Use these constants instead of string literals when setting or comparing error messages.
 - **Tests**: UI unit tests live under `tests/unit/ui/`. Tkinter and CustomTkinter are mocked in `conftest.py` so no display is required. Component tests are in `test_components.py`.
 - **API**: Use `run_merge_job`, `process_job`/`process_row_with_models`, and `MergeResult`. Legacy entry points and result types have been removed (see `docs/DEPRECATION.md`).
+- **Models logging**: Models do not log by default; `row.py` may log at warning level for validation. No unused loggers in model modules.
 
 ### Quality bar (Target 9/10)
 
@@ -694,6 +695,18 @@ See `docs/IMPROVEMENT_ROADMAP.md` for the full improvement plan and phased execu
 
 - **Config** and **utils** do not import from `core`; they use `pdf_merger.models.defaults` for the default serial numbers column, and utils provides its own column reading (`utils.column_reader`) and serial-number constants (`utils.serial_number_parser`) so validators remain independent of core.
 - **Licensing** (`pdf_merger.licensing`) and **matching** (`pdf_merger.matching`) are allowed to depend on `core` for enums and constants (e.g. `LicenseStatus`, `WarningLevel`, `MatchConfidence`, `MatchBehavior`). This is intentional until a shared "domain enums" or "app constants" package exists that core, config, licensing, and matching can all depend on. When introducing such a package, consider moving these shared enums there.
+
+### Dependency overview
+
+When adding new cross-package imports, update this section.
+
+- **models** (`pdf_merger.models`): May import **utils** only. No imports from `core` or `operations`.
+- **core** (`pdf_merger.core`): May import **models**, **operations**, **utils**.
+- **operations** (`pdf_merger.operations`): May import **core** (constants only, e.g. `core.constants`) and **utils**.
+- **UI** (`pdf_merger.ui`): May import **core**, **config**, **models**, **utils**.
+- **config** (`pdf_merger.config`): May import **models**, **utils**.
+
+**Constants duplication:** The default serial numbers column lives in `pdf_merger.models.defaults` (`DEFAULT_SERIAL_NUMBERS_COLUMN`) and is mirrored in `pdf_merger.core.csv_serial_constants` so that core does not import from models. The sync is guarded by `tests/unit/core/test_constants_sync.py`; keep both in sync when changing the default.
 
 ---
 
@@ -719,7 +732,18 @@ Which exceptions are raised by which layer, and how the UI handles them:
 
 See `pdf_merger.utils.exceptions` for the full exception hierarchy. `JobLoadError` is raised by the job loader on unexpected read failures and is caught by the orchestrator to produce a failed `MergeResult`.
 
-**Intentional broad catches:** The following intentionally catch `Exception` (but never `BaseException`, so `KeyboardInterrupt` and `SystemExit` propagate): (1) `main.show_error_dialog` — last-resort UI fallback when messagebox fails; (2) `merge_processor.process_job` — final catch for any unexpected row-level failure after domain exceptions; (3) `ui.handlers.MergeHandler._merge_worker` — so the UI always returns to idle; (4) observability crash reporter when installing hooks. Each is documented at the call site.
+#### Intentional broad catches
+
+The following intentionally catch `Exception` (but never `BaseException`, so `KeyboardInterrupt` and `SystemExit` propagate). Any new broad catch must be added to this list and have an inline comment at the call site with rationale.
+
+| File | Function | Reason |
+|------|----------|--------|
+| `main.py` | `show_error_dialog` | Last-resort UI fallback when messagebox fails; fallback to stderr. |
+| `pdf_merger/core/merge_processor.py` | `process_job` | Final fallback so job always returns a MergeResult; domain exceptions handled above. |
+| `pdf_merger/ui/handlers.py` | `MergeHandler._merge_worker` | UI must always return to idle; `_set_idle()` in `finally`. |
+| `pdf_merger/observability/crash_reporting.py` | `report_exception` | When saving crash report to file; failure must not propagate so app can continue. |
+
+Each call site has an inline comment: "Intentional: see ARCHITECTURE.md 'Intentional broad catches'. Reason: …"
 
 ### Excel to PDF Conversion
 
@@ -1086,6 +1110,7 @@ graph LR
 Observability features (metrics, telemetry, crash reporting) are **opt-in** and
 **initialized at startup from config** (see main.py: load_config then observability
 init). The flow is documented here for contributors.
+Metrics are collected in-memory. When metrics are enabled, a snapshot is written to `~/.pdf_merger/metrics.json` on shutdown (main.py). Export is best-effort and non-blocking; failures are logged. Telemetry events are not sent to a remote endpoint; the TelemetryService `endpoint` parameter is reserved for future use.
 The application includes opt-in observability features:
 
 #### Observability Architecture

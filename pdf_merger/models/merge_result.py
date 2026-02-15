@@ -7,18 +7,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-from .enums import RowStatus
 from .defaults import PERCENTAGE_MULTIPLIER
-from ..utils.logging_utils import get_logger
-
-logger = get_logger("pdf_merger.models.merge_result")
+from .enums import RowStatus
 
 
 @dataclass
 class RowResult:
     """
     Result of processing a single row.
-    
+
     Attributes:
         row_index: Zero-based row index
         status: Processing status
@@ -28,6 +25,7 @@ class RowResult:
         error_message: Error message if processing failed
         processing_time: Processing time in seconds (optional)
     """
+
     row_index: int
     status: RowStatus
     output_file: Optional[Path] = None
@@ -35,15 +33,15 @@ class RowResult:
     files_missing: List[str] = field(default_factory=list)
     error_message: Optional[str] = None
     processing_time: Optional[float] = None
-    
+
     def is_success(self) -> bool:
         """Check if row processing was successful."""
         return self.status == RowStatus.SUCCESS
-    
+
     def is_failed(self) -> bool:
         """Check if row processing failed."""
         return self.status == RowStatus.FAILED
-    
+
     def is_skipped(self) -> bool:
         """Check if row was skipped."""
         return self.status == RowStatus.SKIPPED
@@ -56,7 +54,12 @@ class RowResult:
         files_missing: Optional[List[str]] = None,
     ) -> "RowResult":
         """Factory: create a skipped row result."""
-        return cls(row_index=row_index, status=RowStatus.SKIPPED, error_message=error_message, files_missing=files_missing or [])
+        return cls(
+            row_index=row_index,
+            status=RowStatus.SKIPPED,
+            error_message=error_message,
+            files_missing=files_missing or [],
+        )
 
     @classmethod
     def failed(
@@ -87,7 +90,9 @@ class RowResult:
         processing_time: Optional[float] = None,
     ) -> "RowResult":
         """Factory: create a successful row result (status SUCCESS or PARTIAL if files_missing)."""
-        status = RowStatus.PARTIAL if (files_missing and len(files_missing) > 0) else RowStatus.SUCCESS
+        status = (
+            RowStatus.PARTIAL if (files_missing and len(files_missing) > 0) else RowStatus.SUCCESS
+        )
         return cls(
             row_index=row_index,
             status=status,
@@ -118,6 +123,7 @@ class MergeResult:
         job_id: Optional job identifier
         total_processing_time: Total processing time in seconds (optional)
     """
+
     total_rows: int
     successful_merges: int
     failed_rows: List[int] = field(default_factory=list)
@@ -129,12 +135,12 @@ class MergeResult:
     def add_row_result(self, row_result: RowResult) -> None:
         """
         Add a row result to the merge result.
-        
+
         Args:
             row_result: RowResult instance
         """
         self.row_results.append(row_result)
-        
+
         # Update counters
         if row_result.is_success():
             self.successful_merges += 1
@@ -142,26 +148,26 @@ class MergeResult:
             self.failed_rows.append(row_result.row_index)
         elif row_result.is_skipped():
             self.skipped_rows.append(row_result.row_index)
-    
+
     def get_success_rate(self) -> float:
         """
         Calculate success rate as a percentage.
-        
+
         Returns:
             Success rate (0.0 to 100.0)
         """
         if self.total_rows == 0:
             return 0.0
         return (self.successful_merges / self.total_rows) * PERCENTAGE_MULTIPLIER
-    
+
     def get_failed_row_results(self) -> List[RowResult]:
         """Get all failed row results."""
         return [r for r in self.row_results if r.is_failed()]
-    
+
     def get_skipped_row_results(self) -> List[RowResult]:
         """Get all skipped row results."""
         return [r for r in self.row_results if r.is_skipped()]
-    
+
     def __str__(self) -> str:
         return (
             f"MergeResult(total_rows={self.total_rows}, "

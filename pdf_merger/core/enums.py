@@ -9,8 +9,10 @@ from enum import Enum
 # Enumerations
 # ============================================================================
 
+
 class FileType(Enum):
     """File type enumeration."""
+
     EXCEL = "excel"
     CSV = "csv"
     PDF = "pdf"
@@ -18,6 +20,7 @@ class FileType(Enum):
 
 class LicenseStatus(Enum):
     """License validation status."""
+
     VALID = "valid"
     EXPIRED = "expired"
     INVALID_SIGNATURE = "invalid_signature"
@@ -29,8 +32,10 @@ class LicenseStatus(Enum):
 # RowStatus is owned by the domain layer: use pdf_merger.models.RowStatus.
 # LicenseColor and StatusColor moved to pdf_merger.ui.display_enums (UI-only).
 
+
 class WarningLevel(Enum):
     """License expiry warning levels (used by licensing and UI)."""
+
     EXPIRED = "expired"
     CRITICAL = "critical"
     WARNING = "warning"
@@ -39,11 +44,13 @@ class WarningLevel(Enum):
 
 class PageOrientation(Enum):
     """Page orientation for PDF generation."""
+
     PORTRAIT = "portrait"
     LANDSCAPE = "landscape"
 
 
 class PageSize(Enum):
     """Page size for PDF generation."""
+
     LETTER = "letter"
     A4 = "A4"

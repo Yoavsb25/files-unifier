@@ -2,9 +2,10 @@
 Unit tests for job_loader module.
 """
 
-import pytest
-from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
 from pdf_merger.core.job_loader import load_job_from_file
 from pdf_merger.utils.exceptions import JobLoadError
 
@@ -12,7 +13,7 @@ from pdf_merger.utils.exceptions import JobLoadError
 class TestLoadJobFromFile:
     """Test cases for load_job_from_file."""
 
-    @patch('pdf_merger.core.job_loader.read_data_file')
+    @patch("pdf_merger.core.job_loader.read_data_file")
     def test_raises_job_load_error_on_unexpected_exception(self, mock_read_data, tmp_path):
         """When read_data_file raises an unexpected exception, load_job_from_file raises JobLoadError."""
         input_file = tmp_path / "input.csv"

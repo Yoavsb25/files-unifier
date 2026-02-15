@@ -2,8 +2,7 @@
 Unit tests for core module exports.
 """
 
-import pytest
-from pdf_merger.core import run_merge_job, format_result_summary, format_result_detailed
+from pdf_merger.core import format_result_detailed, format_result_summary, run_merge_job
 
 
 def test_core_exports():

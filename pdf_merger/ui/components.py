@@ -2,35 +2,36 @@
 UI components for PDF Merger application.
 """
 
-import customtkinter as ctk
 from typing import Any, Callable, Optional, Union
 
-from .. import APP_VERSION, APP_NAME
+import customtkinter as ctk
+
+from ..version import APP_NAME, APP_VERSION
 from .display_enums import StatusColor
 from .theme import (
     CARD_BACKGROUND,
     CARD_BORDER,
-    CORNER_RADIUS,
     CARD_PADDING,
-    INPUT_RADIUS,
-    INPUT_BACKGROUND,
-    PRIMARY_BLUE,
-    FONT_LABEL_SIZE,
-    FONT_SECTION_SIZE,
+    CORNER_RADIUS,
+    ERROR_RED,
     FONT_HELPER_SIZE,
+    FONT_LABEL_SIZE,
     FONT_MONO_SIZE,
+    FONT_SECTION_SIZE,
     FONT_SUMMARY_NUMBER,
-    LOG_BACKGROUND,
+    INPUT_BACKGROUND,
+    INPUT_RADIUS,
     LABEL_INPUT_SPACING,
+    LOG_BACKGROUND,
     METRIC_CARD_BG,
     METRIC_CARD_PADDING,
+    PRIMARY_BLUE,
     SECTION_SPACING,
-    SUMMARY_CARD_SPACING,
     STEP_SYMBOLS,
+    SUCCESS_GREEN,
+    SUMMARY_CARD_SPACING,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
-    SUCCESS_GREEN,
-    ERROR_RED,
     WARNING_YELLOW,
 )
 
@@ -43,12 +44,12 @@ class LogHandler:
     def __init__(self, text_widget):
         self.text_widget = text_widget
         self.buffer = []
-    
+
     def write(self, message: str):
         """Write log message to buffer."""
         if message.strip():
             self.buffer.append(message.strip())
-    
+
     def flush(self):
         """Flush buffer to text widget."""
         if self.buffer:
@@ -214,14 +215,12 @@ class SetupCard(ctk.CTkFrame):
         self.error_label.pack_forget()
 
 
-
-
 class LicenseFrame(ctk.CTkFrame):
     """License status display frame - pill-style badge."""
-    
+
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
-        
+
         # Pill-style badge container
         badge_frame = ctk.CTkFrame(
             self,
@@ -231,17 +230,17 @@ class LicenseFrame(ctk.CTkFrame):
         )
         badge_frame.pack(fill="x")
         badge_frame.pack_propagate(False)
-        
+
         self.license_label = ctk.CTkLabel(
             badge_frame,
             text="Checking license...",
             font=ctk.CTkFont(size=12),
         )
         self.license_label.place(relx=0.5, rely=0.5, anchor="center")
-    
+
     def update_status(self, text: str, color: Union[str, StatusColor] = StatusColor.WHITE):
         """Update license status display.
-        
+
         Args:
             text: Status text to display
             color: Color string or StatusColor enum (defaults to white)

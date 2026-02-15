@@ -3,12 +3,12 @@ Read column names from CSV/Excel data files.
 Lives in utils so validators do not depend on core.csv_excel_reader.
 """
 
+import csv
 from pathlib import Path
 from typing import List
-import csv
 
+from .csv_constants import CSV_SAMPLE_SIZE, DEFAULT_CSV_DELIMITER, UTF_8_ENCODING
 from .exceptions import InvalidFileFormatError
-from .csv_constants import UTF_8_ENCODING, CSV_SAMPLE_SIZE, DEFAULT_CSV_DELIMITER
 
 # Extensions for data files (single source for column_reader; must match core.file_constants for consistency)
 CSV_EXTENSIONS = (".csv",)
@@ -46,7 +46,11 @@ def get_file_columns(file_path: Path) -> List[str]:
                 sample = f.read(CSV_SAMPLE_SIZE)
                 f.seek(0)
                 try:
-                    delimiter = csv.Sniffer().sniff(sample).delimiter if sample.strip() else DEFAULT_CSV_DELIMITER
+                    delimiter = (
+                        csv.Sniffer().sniff(sample).delimiter
+                        if sample.strip()
+                        else DEFAULT_CSV_DELIMITER
+                    )
                 except Exception:
                     delimiter = DEFAULT_CSV_DELIMITER
                 reader = csv.DictReader(f, delimiter=delimiter)
@@ -54,7 +58,9 @@ def get_file_columns(file_path: Path) -> List[str]:
                     return list(reader.fieldnames)
                 return []
         except Exception as e:
-            raise InvalidFileFormatError(f"Failed to read CSV file: {e}", file_path=file_path) from e
+            raise InvalidFileFormatError(
+                f"Failed to read CSV file: {e}", file_path=file_path
+            ) from e
 
     if file_type == "excel":
         try:

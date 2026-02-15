@@ -2,59 +2,56 @@
 Unit tests for UI components.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from pdf_merger.ui.components import (
-    LogHandler, SetupCard, LicenseFrame, LogArea, Footer
-)
+from pdf_merger.ui.components import Footer, LicenseFrame, LogArea, LogHandler, SetupCard
 
 
 class TestLogHandler:
     """Test cases for LogHandler class."""
-    
+
     def test_log_handler_write(self):
         """Test writing to log handler."""
         mock_widget = MagicMock()
         handler = LogHandler(mock_widget)
-        
+
         handler.write("Test message")
         handler.write("Another message")
-        
+
         assert len(handler.buffer) == 2
         assert "Test message" in handler.buffer
         assert "Another message" in handler.buffer
-    
+
     def test_log_handler_write_empty(self):
         """Test writing empty message to log handler."""
         mock_widget = MagicMock()
         handler = LogHandler(mock_widget)
-        
+
         handler.write("")
         handler.write("   ")
-        
+
         assert len(handler.buffer) == 0
-    
+
     def test_log_handler_flush(self):
         """Test flushing log handler buffer."""
         mock_widget = MagicMock()
         handler = LogHandler(mock_widget)
-        
+
         handler.write("Message 1")
         handler.write("Message 2")
         handler.flush()
-        
+
         mock_widget.insert.assert_called_once()
         mock_widget.see.assert_called_once_with("end")
         assert len(handler.buffer) == 0
-    
+
     def test_log_handler_flush_empty(self):
         """Test flushing empty buffer."""
         mock_widget = MagicMock()
         handler = LogHandler(mock_widget)
-        
+
         handler.flush()
-        
+
         mock_widget.insert.assert_not_called()
 
 
@@ -108,49 +105,48 @@ class TestSetupCard:
 
 class TestLicenseFrame:
     """Test cases for LicenseFrame component."""
-    
+
     def test_license_frame_initialization(self):
         """Test LicenseFrame initialization."""
         mock_parent = MagicMock()
         frame = LicenseFrame(mock_parent)
-        
+
         assert frame.license_label is not None
-    
+
     def test_license_frame_update_status(self):
         """Test updating license status."""
         mock_parent = MagicMock()
         frame = LicenseFrame(mock_parent)
         frame.license_label = MagicMock()
-        
+
         frame.update_status("Test message", "green")
-        
+
         frame.license_label.configure.assert_called_once_with(
-            text="Test message",
-            text_color="green"
+            text="Test message", text_color="green"
         )
 
 
 class TestLogArea:
     """Test cases for LogArea component."""
-    
+
     def test_log_area_initialization(self):
         """Test LogArea initialization."""
         mock_parent = MagicMock()
         log_area = LogArea(mock_parent)
-        
+
         assert log_area.log_text is not None
-    
+
     def test_log_area_log(self):
         """Test logging to LogArea."""
         mock_parent = MagicMock()
         log_area = LogArea(mock_parent)
         log_area.log_text = MagicMock()
-        
+
         log_area.log("Test message")
-        
+
         log_area.log_text.insert.assert_called_once_with("end", "Test message\n")
         log_area.log_text.see.assert_called_once_with("end")
-    
+
     def test_log_area_clear(self):
         """Test clearing LogArea."""
         mock_parent = MagicMock()
@@ -207,12 +203,12 @@ class TestLogArea:
 
 class TestFooter:
     """Test cases for Footer component."""
-    
+
     def test_footer_initialization(self):
         """Test Footer initialization."""
         mock_parent = MagicMock()
         footer = Footer(mock_parent)
-        
+
         assert footer is not None
 
     def test_footer_has_no_update_status(self):

@@ -8,21 +8,21 @@ See docs/ARCHITECTURE.md "Error handling" for where each type is raised and how 
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 
 class PDFMergerError(Exception):
     """
     Base exception for all PDF Merger errors.
-    
+
     All custom exceptions inherit from this class, allowing for
     catching all PDF Merger specific errors with a single except clause.
     """
-    
+
     def __init__(self, message: str):
         """
         Initialize PDFMergerError.
-        
+
         Args:
             message: Error message describing what went wrong
         """
@@ -55,20 +55,22 @@ class PDFMergerFileNotFoundError(PDFMergerError):
 class InvalidFileFormatError(PDFMergerError):
     """
     Raised when file format is unsupported or invalid.
-    
+
     This exception is raised when attempting to read a file with an
     unsupported format or when the file format is corrupted.
     """
-    
+
     def __init__(self, message: str, file_path: Optional[Path] = None):
         """
         Initialize InvalidFileFormatError.
-        
+
         Args:
             message: Error message describing the format issue
             file_path: Optional path to the file that caused the error
         """
-        self.file_path = Path(file_path) if file_path and not isinstance(file_path, Path) else file_path
+        self.file_path = (
+            Path(file_path) if file_path and not isinstance(file_path, Path) else file_path
+        )
         if self.file_path:
             full_message = f"{message} (File: {self.file_path})"
         else:
@@ -79,15 +81,17 @@ class InvalidFileFormatError(PDFMergerError):
 class MissingColumnError(PDFMergerError):
     """
     Raised when required column is missing from data file.
-    
+
     This exception provides information about which column was expected
     and what columns are actually available in the file.
     """
-    
-    def __init__(self, column_name: str, available_columns: List[str], file_path: Optional[Path] = None):
+
+    def __init__(
+        self, column_name: str, available_columns: List[str], file_path: Optional[Path] = None
+    ):
         """
         Initialize MissingColumnError.
-        
+
         Args:
             column_name: Name of the missing column
             available_columns: List of available columns in the file
@@ -95,16 +99,18 @@ class MissingColumnError(PDFMergerError):
         """
         self.column_name = column_name
         self.available_columns = available_columns
-        self.file_path = Path(file_path) if file_path and not isinstance(file_path, Path) else file_path
-        
-        columns_str = ', '.join(available_columns) if available_columns else '(no columns found)'
+        self.file_path = (
+            Path(file_path) if file_path and not isinstance(file_path, Path) else file_path
+        )
+
+        columns_str = ", ".join(available_columns) if available_columns else "(no columns found)"
         message = f"Required column '{column_name}' not found"
-        
+
         if self.file_path:
             message += f" in file: {self.file_path}"
-        
+
         message += f". Available columns: {columns_str}"
-        
+
         super().__init__(message)
 
 
@@ -116,11 +122,13 @@ class PDFProcessingError(PDFMergerError):
     read, merge, or write failures. Callers (row_pipeline, merge_processor)
     catch it and map to row-level results (RowPipelineResult / RowResult).
     """
-    
-    def __init__(self, message: str, pdf_path: Optional[Path] = None, operation: Optional[str] = None):
+
+    def __init__(
+        self, message: str, pdf_path: Optional[Path] = None, operation: Optional[str] = None
+    ):
         """
         Initialize PDFProcessingError.
-        
+
         Args:
             message: Error message describing the PDF operation failure
             pdf_path: Optional path to the PDF file that caused the error
@@ -128,7 +136,7 @@ class PDFProcessingError(PDFMergerError):
         """
         self.pdf_path = Path(pdf_path) if pdf_path and not isinstance(pdf_path, Path) else pdf_path
         self.operation = operation
-        
+
         # Build informative error message
         parts = []
         if self.operation:
@@ -139,7 +147,7 @@ class PDFProcessingError(PDFMergerError):
             full_message = " ".join(parts) + f": {message}"
         else:
             full_message = message
-        
+
         super().__init__(full_message)
 
 
@@ -153,7 +161,9 @@ class JobLoadError(PDFMergerError):
     and map to a failed MergeResult or re-raise for API use.
     """
 
-    def __init__(self, message: str, path: Optional[Path] = None, cause: Optional[Exception] = None):
+    def __init__(
+        self, message: str, path: Optional[Path] = None, cause: Optional[Exception] = None
+    ):
         self.path = Path(path) if path and not isinstance(path, Path) else path
         self.cause = cause
         parts = [message]
@@ -165,24 +175,24 @@ class JobLoadError(PDFMergerError):
 class ValidationError(PDFMergerError):
     """
     Raised for general validation failures.
-    
+
     This exception is raised when validation checks fail, such as
     invalid file paths, missing required data, or invalid configurations.
     """
-    
+
     def __init__(self, message: str, field: Optional[str] = None):
         """
         Initialize ValidationError.
-        
+
         Args:
             message: Error message describing the validation failure
             field: Optional name of the field or value that failed validation
         """
         self.field = field
-        
+
         if self.field:
             full_message = f"Validation failed for '{self.field}': {message}"
         else:
             full_message = f"Validation failed: {message}"
-        
+
         super().__init__(full_message)

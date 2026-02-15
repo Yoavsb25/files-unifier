@@ -10,13 +10,13 @@ Merge orchestrator module.
 from pathlib import Path
 from typing import Optional
 
-from .merge_processor import process_job
-from .job_loader import load_job_from_file
-from .types import ProgressCallback
-from .constants import Constants
 from ..models import MergeResult, RowResult
-from ..utils.logging_utils import get_logger
 from ..utils.exceptions import JobLoadError
+from ..utils.logging_utils import get_logger
+from .constants import Constants
+from .job_loader import load_job_from_file
+from .merge_processor import process_job
+from .types import ProgressCallback
 
 logger = get_logger("pdf_merger.core.merge_orchestrator")
 
@@ -65,9 +65,7 @@ def run_merge_job(
     except JobLoadError as e:
         logger.error("Job load failed: %s", e)
         result = MergeResult(total_rows=0, successful_merges=0, job_id=job_id)
-        result.add_row_result(
-            RowResult.failed(row_index=0, error_message=str(e))
-        )
+        result.add_row_result(RowResult.failed(row_index=0, error_message=str(e)))
         return result
 
     result = process_job(job, fail_on_ambiguous=fail_on_ambiguous, on_progress=on_progress)
@@ -77,5 +75,5 @@ def run_merge_job(
     logger.info(f"  Successful: {result.successful_merges}")
     logger.info(f"  Failed: {len(result.failed_rows)}")
     logger.info(f"  Skipped: {len(result.skipped_rows)}")
-    
+
     return result

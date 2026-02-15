@@ -8,8 +8,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional
 
-from .constants import Constants
-
 if TYPE_CHECKING:
     from ..models import MergeResult, RowResult
 
@@ -17,6 +15,7 @@ if TYPE_CHECKING:
 @dataclass
 class ResultView:
     """Unified view of processing result for formatting. Built from MergeResult."""
+
     total_rows: int
     successful_merges: int
     failed_rows: List[int]

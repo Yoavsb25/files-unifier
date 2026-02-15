@@ -1,14 +1,17 @@
 """
 Result reporter module.
-Format processing results for UI display.
+Single place for MergeResult → display strings (summary and detailed).
+UI and handlers must not duplicate this logic; use format_result_summary,
+format_result_detailed, and format_failed_rows_display from here (or via core).
 Uses ResultView built from MergeResult.
 """
 
 from typing import List
+
 from ..models import MergeResult, RowStatus
+from ..utils.logging_utils import get_logger
 from .constants import Constants
 from .result_view import as_result_view
-from ..utils.logging_utils import get_logger
 
 logger = get_logger("pdf_merger.core.result_reporter")
 
@@ -101,11 +104,15 @@ def format_result_detailed(result: MergeResult) -> str:
         lines.append("Row Details:")
         for row_result in view.row_results:
             if row_result.is_failed():
-                lines.append(f"  Row {row_result.row_index + 1}: FAILED - {row_result.error_message or 'Unknown error'}")
+                lines.append(
+                    f"  Row {row_result.row_index + 1}: FAILED - {row_result.error_message or 'Unknown error'}"
+                )
                 if row_result.files_missing:
                     lines.append(f"    Missing files: {', '.join(row_result.files_missing)}")
             elif row_result.is_skipped():
-                lines.append(f"  Row {row_result.row_index + 1}: SKIPPED - {row_result.error_message or 'No serial numbers'}")
+                lines.append(
+                    f"  Row {row_result.row_index + 1}: SKIPPED - {row_result.error_message or 'No serial numbers'}"
+                )
             elif row_result.status == RowStatus.PARTIAL:
                 lines.append(f"  Row {row_result.row_index + 1}: PARTIAL - Some files missing")
                 if row_result.files_missing:
