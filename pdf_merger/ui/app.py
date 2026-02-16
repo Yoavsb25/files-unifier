@@ -496,11 +496,11 @@ class PDFMergerApp(ctk.CTk):
         if failed_count > 0:
             self._log_error(f"Failed: {failed_count}")
         if result.failed_rows:
-                failed_str = ", ".join(map(str, result.failed_rows))
-                max_len = Constants.MAX_DISPLAY_STRING_LENGTH
-                if len(failed_str) > max_len:
-                    failed_str = failed_str[: max_len - 3] + "..."
-                self._log_error(f"Failed row numbers: {failed_str}")
+            failed_str = ", ".join(str(row_index + 1) for row_index in result.failed_rows)
+            max_len = Constants.MAX_DISPLAY_STRING_LENGTH
+            if len(failed_str) > max_len:
+                failed_str = failed_str[: max_len - 3] + "..."
+            self._log_error(f"Failed row numbers: {failed_str}")
 
         self.results_frame.update_results(
             rows_analyzed=result.total_rows,
