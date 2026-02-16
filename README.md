@@ -70,12 +70,14 @@ At a glance, the project is organized as follows:
 ```text
 files_unifeder/
 ├── pdf_merger/               # Main application package
-│   ├── core/                 # Core business logic (merging, file resolution, etc.)
+│   ├── core/                 # Orchestration, row processing, result reporting
+│   ├── operations/           # PDF merging, Excel→PDF conversion, streaming
+│   ├── config/               # Configuration loading and precedence
+│   ├── models/               # Domain models (Row, MergeJob, MergeResult)
+│   ├── matching/             # File matching rules
 │   ├── ui/                   # GUI (CustomTkinter)
 │   ├── licensing/            # License validation and enforcement
-│   ├── excel_converter.py    # Excel → PDF conversion
-│   ├── pdf_operations.py     # PDF loading, merging, and low‑level operations
-│   └── processor.py          # Orchestration of merge jobs
+│   └── ...
 ├── tools/                    # Developer tools (license generation, packaging helpers, etc.)
 ├── docs/                     # End‑user and architecture documentation
 ├── tests/                    # Unit and integration tests
@@ -241,6 +243,10 @@ This is suitable for generating **per‑client deliveries** with controlled lice
 
 ## Development & Testing
 
+**Public API:** External code and scripts should use only the symbols exported from the `pdf_merger` package root (e.g. `run_merge`, `run_merge_job`, `load_config`, `AppConfig`, `MergeResult`, `PDFMergerError`). See `docs/ARCHITECTURE.md` for the full Public API section.
+
+**Code standards:** New contributors should read [CONTRIBUTING.md](CONTRIBUTING.md), which references the quality bar in `docs/ARCHITECTURE.md` and the improvement plan in `docs/IMPROVEMENT_ROADMAP.md`.
+
 ### Running tests
 
 ```bash
@@ -252,12 +258,12 @@ See `docs/TESTING.md` for more details on test structure and conventions.
 
 ### Code layout (developer view)
 
-- `pdf_merger/core` – core operations and business rules.
+- `pdf_merger/core` – orchestration, row processing, result reporting, result types.
+- `pdf_merger/operations` – PDF merging (`pdf_merger.py`), Excel→PDF (`excel_to_pdf_converter.py`), streaming.
 - `pdf_merger/ui` – CustomTkinter UI components and event handling.
 - `pdf_merger/licensing` – license model, validation, and integration.
-- `pdf_merger/excel_converter.py` – Excel → PDF pipeline.
-- `pdf_merger/pdf_operations.py` – lower‑level PDF manipulation helpers.
-- `pdf_merger/processor.py` – orchestration of full merge runs.
+- `pdf_merger/config` – configuration loading and precedence.
+- `pdf_merger/models` – domain models (Row, MergeJob, MergeResult).
 
 ---
 

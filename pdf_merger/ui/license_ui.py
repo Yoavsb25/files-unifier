@@ -1,17 +1,22 @@
 """
 License-related UI logic.
+
+Contract: update_license_display(license_manager, license_label) updates the label widget's
+text and text_color to show license status (e.g. "Licensed · Expires YYYY-MM-DD" in green,
+or error/expired message in red). The app provides the label and calls update_license_display
+after startup and when refreshing; this module does not create widgets, only configures them.
 """
 
 from typing import Optional
 
 import customtkinter as ctk
 
+from ..core.enums import WarningLevel
 from ..licensing import LicenseManager, LicenseStatus
-from ..core.enums import LicenseColor, WarningLevel
+from .display_enums import LicenseColor
+from .theme import ERROR_RED, SUCCESS_GREEN, WARNING_YELLOW
 
-from .theme import SUCCESS_GREEN, ERROR_RED, WARNING_YELLOW
-
-# Constants for backward compatibility and convenience
+# Convenience constants mapping LicenseColor to theme hex
 GREEN_COLOR = LicenseColor.GREEN.value
 RED_COLOR = LicenseColor.RED.value
 ORANGE_COLOR = LicenseColor.ORANGE.value
@@ -30,40 +35,42 @@ def _theme_color(color: str) -> str:
         return WARNING_YELLOW
     return color
 
+
 VALID_LICENSE = "Licensed · Expires {expires}"
 EXPIRED_LICENSE = "Expired"
+
 
 def match_color_to_display_text(
     color: str,
     company_name: str,
     expires: str,
     warning_msg: Optional[str] = None,
-    error_msg: Optional[str] = None
+    error_msg: Optional[str] = None,
 ) -> str:
     """
     Generate license display text based on color and context.
-    
+
     Args:
         color: Color string (LicenseColor enum value or string)
         company_name: Licensed company name
         expires: License expiration date
         warning_msg: Optional warning message (for YELLOW/RED warnings)
         error_msg: Optional error message (for RED errors)
-    
+
     Returns:
         Formatted display text for the license status
     """
     if color == GREEN_COLOR or color == LicenseColor.GREEN.value:
         return f"✓ Licensed · Expires {expires}"
-    
+
     if color == ORANGE_COLOR or color == LicenseColor.ORANGE.value:
         return f"✗ {EXPIRED_LICENSE}"
-    
+
     if color == YELLOW_COLOR or color == LicenseColor.YELLOW.value:
         if warning_msg:
             return f"✓ Licensed · Expires {expires} - {warning_msg}"
         return f"✓ Licensed · Expires {expires}"
-    
+
     if color == RED_COLOR or color == LicenseColor.RED.value:
         # RED: expired or error state - spec requires red for expired
         if warning_msg:
@@ -71,16 +78,17 @@ def match_color_to_display_text(
         if error_msg:
             return f"✗ {error_msg}"
         return "✗ Unknown license status"
-    
+
     return "Unknown license status"
+
 
 def match_color_to_warning_level(warning_level: WarningLevel) -> str:
     """
     Match color to warning level.
-    
+
     Args:
         warning_level: WarningLevel enum value
-    
+
     Returns:
         Color string value for the warning level
     """
@@ -93,19 +101,20 @@ def match_color_to_warning_level(warning_level: WarningLevel) -> str:
     }
     return warning_to_color.get(warning_level, LicenseColor.YELLOW.value)
 
+
 def update_license_display(license_manager: LicenseManager, license_label) -> bool:
     """
     Update license status display and return whether license is valid.
-    
+
     Args:
         license_manager: The license manager instance
         license_label: The label widget to update
-        
+
     Returns:
         True if license is valid, False otherwise
     """
     status = license_manager.get_license_status()
-    license_valid = (status == LicenseStatus.VALID)
+    license_valid = status == LicenseStatus.VALID
 
     if license_valid:
         info = license_manager.get_license_info()
@@ -114,7 +123,7 @@ def update_license_display(license_manager: LicenseManager, license_label) -> bo
             license_label.configure(
                 text="✓ Licensed · Expires Unknown",
                 text_color=_theme_color(GREEN_COLOR),
-                font=ctk.CTkFont(size=12)
+                font=ctk.CTkFont(size=12),
             )
         else:
             warning_msg = license_manager.get_expiry_warning_message()
@@ -126,33 +135,35 @@ def update_license_display(license_manager: LicenseManager, license_label) -> bo
                 except ValueError:
                     warning_level = WarningLevel.INFO
             else:
-                warning_level = warning_level_str if isinstance(warning_level_str, WarningLevel) else WarningLevel.INFO
+                warning_level = (
+                    warning_level_str
+                    if isinstance(warning_level_str, WarningLevel)
+                    else WarningLevel.INFO
+                )
             company_name = info.get("company", "Unknown")
             expires = info.get("expires", "Unknown")
             error_msg = ""
 
-            text_color = GREEN_COLOR if not warning_msg else match_color_to_warning_level(warning_level)
+            text_color = (
+                GREEN_COLOR if not warning_msg else match_color_to_warning_level(warning_level)
+            )
             display_text = match_color_to_display_text(
                 text_color, company_name, expires, warning_msg, error_msg
             )
 
             license_label.configure(
-                text=display_text,
-                text_color=_theme_color(text_color),
-                font=ctk.CTkFont(size=12)
+                text=display_text, text_color=_theme_color(text_color), font=ctk.CTkFont(size=12)
             )
     elif status == LicenseStatus.EXPIRED:
         license_label.configure(
             text=f"✗ {EXPIRED_LICENSE}",
             text_color=_theme_color(RED_COLOR),
-            font=ctk.CTkFont(size=12)
+            font=ctk.CTkFont(size=12),
         )
     else:
         error_msg = license_manager.get_license_error_message(status)
         license_label.configure(
-            text=f"✗ {error_msg}",
-            text_color=_theme_color(RED_COLOR),
-            font=ctk.CTkFont(size=12)
+            text=f"✗ {error_msg}", text_color=_theme_color(RED_COLOR), font=ctk.CTkFont(size=12)
         )
 
     return license_valid

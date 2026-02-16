@@ -4,10 +4,12 @@ Handles reading CSV and Excel files with a unified interface.
 """
 
 import csv
-import pandas as pd
 from pathlib import Path
-from typing import Iterator, Dict, Any, List
-from ..utils.exceptions import InvalidFileFormatError, MissingColumnError
+from typing import Any, Dict, Iterator, List
+
+import pandas as pd
+
+from ..utils.exceptions import InvalidFileFormatError
 from .constants import Constants
 from .enums import FileType
 
@@ -17,6 +19,7 @@ CSV_FILE_EXTENSIONS = Constants.CSV_FILE_EXTENSIONS
 UTF_8_ENCODING = Constants.UTF_8_ENCODING
 CSV_SAMPLE_SIZE = Constants.CSV_SAMPLE_SIZE
 DEFAULT_CSV_DELIMITER = Constants.DEFAULT_CSV_DELIMITER
+
 
 def detect_file_type(file_path: Path) -> FileType:
     """
@@ -51,36 +54,38 @@ def _detect_csv_delimiter(file_path: Path) -> str:
         Defaults to DEFAULT_CSV_DELIMITER if detection fails or file is empty.
     """
     try:
-        with open(file_path, 'r', encoding=UTF_8_ENCODING) as csvfile:
+        with open(file_path, "r", encoding=UTF_8_ENCODING) as csvfile:
             sample = csvfile.read(CSV_SAMPLE_SIZE)
-            
+
             if not sample.strip():
                 # Default to comma if file is empty
                 return DEFAULT_CSV_DELIMITER
-        
+
             return csv.Sniffer().sniff(sample).delimiter
     except Exception as e:
-        raise InvalidFileFormatError(f"Failed to detect CSV delimiter for file {file_path}: {e}") from e
+        raise InvalidFileFormatError(
+            f"Failed to detect CSV delimiter for file {file_path}: {e}"
+        ) from e
 
 
 def read_csv(file_path: Path) -> Iterator[Dict[str, Any]]:
     """
     Read a CSV file and yield rows as dictionaries.
-    
+
     Args:
         file_path: Path to the CSV file
-        
+
     Yields:
         Dictionary representing each row
-        
+
     Raises:
         InvalidFileFormatError: If file cannot be read
     """
     try:
         delimiter = _detect_csv_delimiter(file_path)
-        with open(file_path, 'r', encoding=UTF_8_ENCODING) as csvfile:
+        with open(file_path, "r", encoding=UTF_8_ENCODING) as csvfile:
             reader = csv.DictReader(csvfile, delimiter=delimiter)
-            
+
             for row in reader:
                 yield row
     except Exception as e:
@@ -102,36 +107,39 @@ def read_excel(file_path: Path) -> Iterator[Dict[str, Any]]:
         InvalidFileFormatError: If the file cannot be read as an Excel file
     """
     if pd is None:
-        raise ImportError("pandas and openpyxl are required to read Excel files. Install with: pip install pandas openpyxl")
-    
+        raise ImportError(
+            "pandas and openpyxl are required to read Excel files. Install with: pip install pandas openpyxl"
+        )
+
     try:
         df = pd.read_excel(file_path)
     except ImportError:
         raise
     except Exception as exc:
-        raise InvalidFileFormatError(
-            f"Failed to read Excel file {file_path}"
-        ) from exc
+        raise InvalidFileFormatError(f"Failed to read Excel file {file_path}") from exc
 
-    for record in df.fillna('').astype(str).to_dict(orient='records'):
+    for record in df.fillna("").astype(str).to_dict(orient="records"):
         yield record
 
 
 def read_data_file(file_path: Path) -> Iterator[Dict[str, Any]]:
     """
     Read a data file (CSV or Excel) with a unified interface.
-    
+
+    Yields dicts with string keys (column names). Missing required column is
+    not checked here; Row.from_raw_data and validators handle that when building rows.
+
     Args:
         file_path: Path to the CSV or Excel file
-        
+
     Yields:
-        Dictionary representing each row
-        
+        Dictionary representing each row (column name -> value)
+
     Raises:
         InvalidFileFormatError: If the file type is not supported
     """
     file_type = detect_file_type(file_path)
-    
+
     if file_type == FileType.EXCEL:
         yield from read_excel(file_path)
     elif file_type == FileType.CSV:
@@ -167,6 +175,4 @@ def get_file_columns(file_path: Path) -> List[str]:
     except InvalidFileFormatError:
         raise
     except Exception as exc:
-        raise InvalidFileFormatError(
-            f"Failed to extract columns from file {file_path}"
-        ) from exc
+        raise InvalidFileFormatError(f"Failed to extract columns from file {file_path}") from exc

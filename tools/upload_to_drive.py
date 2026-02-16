@@ -2,8 +2,8 @@ import argparse
 import os
 from typing import Optional
 
-from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -79,17 +79,19 @@ def upload_file(
 
     # Check for existing files with the same name in the target folder
     escaped_name = file_name.replace("'", "\\'")
-    query = (
-        f"name = '{escaped_name}' and "
-        f"'{folder_id}' in parents and trashed = false"
+    query = f"name = '{escaped_name}' and '{folder_id}' in parents and trashed = false"
+    existing_files = (
+        service.files()
+        .list(
+            q=query,
+            spaces="drive",
+            fields="files(id, name)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        )
+        .execute()
+        .get("files", [])
     )
-    existing_files = service.files().list(
-        q=query,
-        spaces="drive",
-        fields="files(id, name)",
-        supportsAllDrives=True,
-        includeItemsFromAllDrives=True,
-    ).execute().get("files", [])
 
     if existing_files and overwrite == "skip":
         print(
@@ -145,8 +147,7 @@ def main() -> None:
     parser.add_argument(
         "--mime-type",
         required=False,
-        help="Optional MIME type for the uploaded file. "
-        "If omitted, inferred from file extension.",
+        help="Optional MIME type for the uploaded file. If omitted, inferred from file extension.",
     )
     parser.add_argument(
         "--overwrite",
@@ -169,4 +170,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

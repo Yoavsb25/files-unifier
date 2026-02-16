@@ -26,22 +26,38 @@ WARNING_YELLOW = "#FACC15"
 ERROR_RED = "#EF4444"
 TEXT_PRIMARY = "#E5E7EB"
 TEXT_SECONDARY = "#9CA3AF"
-
-# Aliases for backward compatibility
-BG_DARK = APP_BACKGROUND
-CARD_BG = CARD_BACKGROUND
-INPUT_CONTAINER_BG = INPUT_BACKGROUND
-INPUT_BG = INPUT_BACKGROUND
-LOG_BG = "#1A1A1A"
-FOCUS_BLUE = PRIMARY_BLUE
-INPUT_HOVER_BG = "#2E2E2E"
-GREEN_SUCCESS = SUCCESS_GREEN
-RED_ERROR = ERROR_RED
-YELLOW_WARNING = WARNING_YELLOW
-BLUE_INFO = TEXT_SECONDARY
+LOG_BACKGROUND = "#1A1A1A"
 
 # Results mini-card
 METRIC_CARD_BG = "#242424"
+
+# Step symbols for setup cards (Instructions File, Source Directory, Output Directory)
+STEP_SYMBOLS = ("①", "②", "③")
+
+# Window
+WINDOW_SIZE_DEFAULT = "1020x800"
+WINDOW_MIN_SIZE = (620, 500)
+
+# Progress message keywords (for mapping log level in _on_merge_progress)
+PROGRESS_KEYWORD_SUCCESS = "Success"
+PROGRESS_KEYWORD_SKIPPED = "Skipped"
+PROGRESS_KEYWORD_FAILED = "Failed"
+
+# Run Merge button and completion copy (reduces magic strings; aids i18n)
+RUN_MERGE_BUTTON_TEXT = "Run Merge"
+PROCESSING_BUTTON_TEXT = "Processing…"
+VIEW_DETAILED_LOG = "View Detailed Log"
+HIDE_DETAILED_LOG = "Hide Detailed Log"
+MESSAGE_PROCESSING_COMPLETE = "Processing Complete"
+
+# Column entry (serial numbers field)
+COLUMN_ENTRY_WIDTH = 220
+
+# Detailed report dialog
+DETAILED_REPORT_DIALOG_GEOMETRY = "640x480"
+DETAILED_REPORT_DIALOG_MIN_SIZE = (400, 300)
+DETAILED_REPORT_DIALOG_TITLE = "Detailed Processing Report"
+DETAILED_REPORT_CLOSE_BUTTON_TEXT = "Close"
 
 # Typography
 FONT_TITLE_SIZE = 28

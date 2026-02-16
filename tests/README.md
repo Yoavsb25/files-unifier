@@ -222,8 +222,7 @@ Tests for file reading operations:
 ### unit/operations/test_pdf_merger.py
 
 Tests for PDF operations:
-- `find_pdf_file` - Finding PDF files in a folder (backward compatibility)
-- `find_source_file` - Finding PDF and Excel files in a folder
+- `find_source_file` - Finding source files (PDF/Excel) in a folder
 - `merge_pdfs` - Merging multiple PDFs into one
 
 **Key Test Cases:**
@@ -256,9 +255,9 @@ Tests for Excel to PDF conversion:
 ### unit/core/test_merge_processor.py
 
 Tests for main processing logic:
-- `ProcessingResult` - Result dataclass
-- `process_row` - Processing a single row (PDF and Excel files)
-- `process_file` - Processing an entire file
+- `MergeResult` - Result of a merge run
+- `process_row_with_models` - Process single row with Row model (PDF and Excel files)
+- `process_job` - Process an entire MergeJob
 
 **Key Test Cases:**
 - Successful row processing with PDF files
@@ -275,7 +274,7 @@ Tests for main processing logic:
 
 Tests for custom exception classes:
 - `PDFMergerError` - Base exception class
-- `FileNotFoundError` - File/folder not found
+- `PDFMergerFileNotFoundError` - File/folder not found
 - `InvalidFileFormatError` - Invalid file format
 - `MissingColumnError` - Missing required column
 - `PDFProcessingError` - PDF operation failures

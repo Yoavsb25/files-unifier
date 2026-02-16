@@ -7,20 +7,23 @@ import tkinter.filedialog as filedialog
 from pathlib import Path
 from typing import Callable, Optional
 
-from ..utils.validators import validate_file, validate_folder
-from ..utils.exceptions import PDFMergerError
-from ..core.constants import Constants
-from ..core import run_merge_job, format_result_summary
-
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
+from ..config.config_manager import resolve_required_column
+from ..core import format_result_summary, run_merge_job
+from ..core.types import ProgressCallback
 from ..models import MergeResult
+from ..utils.exceptions import PDFMergerError
 from ..utils.logging_utils import get_logger
+from ..utils.validators import validate_file, validate_folder
 
-logger = get_logger("ui.handlers")
+logger = get_logger("pdf_merger.ui.handlers")
+
+# MergeHandler state: single source of truth for "is a merge running"
+_STATE_IDLE = "idle"
+_STATE_RUNNING = "running"
 
 
 class FileSelectionHandler:
-    """Handler for file and directory selection."""
+    """Handler for file and directory selection. Validation errors use (field_id, message) with field_id one of FIELD_*."""
 
     FIELD_INPUT = "input_file"
     FIELD_SOURCE = "source_dir"
@@ -55,7 +58,7 @@ class FileSelectionHandler:
         Returns:
             Selected path if valid, None otherwise
         """
-        column = required_column or DEFAULT_SERIAL_NUMBERS_COLUMN
+        column = resolve_required_column(required_column, None)
         file_path = filedialog.askopenfilename(
             title="Select CSV or Excel File",
             filetypes=[
@@ -77,50 +80,71 @@ class FileSelectionHandler:
                 self._handle_error(str(e), self.FIELD_INPUT)
                 return None
         return None
-    
+
     def select_directory(
-        self,
-        title: str = "Select Directory",
-        validate: bool = True,
-        folder_type: str = "Source"
+        self, title: str = "Select Directory", validate: bool = True, folder_type: str = "Source"
     ) -> Optional[Path]:
-        """Open directory dialog to select a directory."""
+        """Open directory dialog to select a directory.
+
+        Catches PDFMergerError and OSError for user-facing messages; any other
+        exception is logged and a generic message is shown so the UI stays usable.
+        """
         dir_path = filedialog.askdirectory(title=title)
-        
+
         if dir_path:
             path = Path(dir_path)
+            field = self.FIELD_OUTPUT if not validate else self.FIELD_SOURCE
             try:
                 if validate:
                     validate_folder(path, folder_type)
                 else:
                     # For output directory, just ensure it can be created
                     path.mkdir(parents=True, exist_ok=True)
-                
                 if self.on_file_selected:
                     self.on_file_selected(path)
                 return path
-            except (PDFMergerError, Exception) as e:
-                field = self.FIELD_OUTPUT if not validate else self.FIELD_SOURCE
+            except (PDFMergerError, OSError) as e:
                 self._handle_error(str(e), field)
+                return None
+            except Exception:
+                logger.exception("Unexpected error in select_directory")
+                if self.on_error:
+                    self.on_error("An unexpected error occurred. Check the log for details.")
                 return None
         return None
 
 
 class MergeHandler:
-    """Handler for merge operations."""
+    """Handler for merge operations.
+
+    Merge state is encapsulated: only _set_idle() and run_merge() transition state.
+    UI reads is_processing (property). Worker must call _set_idle() in finally so
+    the UI always reflects idle when the thread completes.
+    """
 
     def __init__(
         self,
         on_start: Optional[Callable[[], None]] = None,
         on_complete: Optional[Callable[[MergeResult], None]] = None,
         on_error: Optional[Callable[[str], None]] = None,
-        on_progress: Optional[Callable[[str, int, int, str], None]] = None,
+        on_progress: Optional[ProgressCallback] = None,
     ):
         self.on_start = on_start
         self.on_complete = on_complete
         self.on_error = on_error
         self.on_progress = on_progress
-        self.is_processing = False
+        self._state = _STATE_IDLE
+        self._job_id: Optional[str] = None
+
+    @property
+    def is_processing(self) -> bool:
+        """True if a merge is currently running. Read-only; set only via _set_idle() and run_merge()."""
+        return self._state == _STATE_RUNNING
+
+    def _set_idle(self) -> None:
+        """Transition to idle. Called from worker finally and ensures UI can re-enable Run Merge."""
+        self._state = _STATE_IDLE
+        self._job_id = None
 
     def run_merge(
         self,
@@ -128,6 +152,7 @@ class MergeHandler:
         pdf_dir: Path,
         output_dir: Path,
         required_column: Optional[str] = None,
+        fail_on_ambiguous_matches: bool = True,
     ):
         """Run the merge operation in a separate thread."""
         if self.is_processing:
@@ -138,15 +163,15 @@ class MergeHandler:
                 self.on_error("Please select all required files and directories.")
             return
 
-        self.is_processing = True
+        self._state = _STATE_RUNNING
+        self._job_id = str(id(self))
 
         if self.on_start:
             self.on_start()
 
-        # Run in separate thread
         thread = threading.Thread(
             target=self._merge_worker,
-            args=(input_file, pdf_dir, output_dir, required_column),
+            args=(input_file, pdf_dir, output_dir, required_column, fail_on_ambiguous_matches),
             daemon=True,
         )
         thread.start()
@@ -157,6 +182,7 @@ class MergeHandler:
         pdf_dir: Path,
         output_dir: Path,
         required_column: Optional[str],
+        fail_on_ambiguous_matches: bool,
     ):
         """Worker thread for merge operation."""
         try:
@@ -164,21 +190,33 @@ class MergeHandler:
                 input_file=input_file,
                 pdf_dir=pdf_dir,
                 output_dir=output_dir,
-                required_column=required_column or DEFAULT_SERIAL_NUMBERS_COLUMN,
+                required_column=resolve_required_column(required_column, None),
+                fail_on_ambiguous=fail_on_ambiguous_matches,
                 on_progress=self.on_progress,
             )
 
             if self.on_complete:
                 self.on_complete(result)
+        except PDFMergerError as e:
+            error_msg = str(e)
+            logger.exception("Merge operation failed")
+            if self.on_error:
+                self.on_error(error_msg)
+        except ValueError as e:
+            error_msg = str(e)
+            logger.exception("Merge operation failed")
+            if self.on_error:
+                self.on_error(error_msg)
+        # Intentional: see ARCHITECTURE.md "Intentional broad catches". Reason: UI must return to idle; finally runs.
         except Exception as e:
             error_msg = str(e)
             logger.exception("Merge operation failed")
             if self.on_error:
                 self.on_error(error_msg)
         finally:
-            # Reset processing state - callbacks will handle UI updates
-            self.is_processing = False
-    
+            self._set_idle()
+
     def format_result(self, result: MergeResult) -> str:
         """Format merge result as a summary string."""
-        return format_result_summary(result)
+        summary_text = format_result_summary(result)
+        return summary_text
