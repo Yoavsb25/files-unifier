@@ -10,8 +10,13 @@ from typing import Optional, Dict, Any
 from ..core.constants import Constants
 from ..utils.logging_utils import get_logger
 
+INPUT_FILE = 'input_file'
+PDF_DIR = 'pdf_dir'
+SOURCE_DIR = 'source_dir'
+OUTPUT_DIR = 'output_dir'
+REQUIRED_COLUMN = 'required_column'
+
 logger = get_logger("config_schema")
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
 
 
 @dataclass
@@ -115,7 +120,7 @@ class ConfigSchema:
             ValueError: If column name is invalid
         """
         if value is None or value == "":
-            return DEFAULT_SERIAL_NUMBERS_COLUMN
+            return Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
         
         # Column names should be non-empty strings
         if not isinstance(value, str) or len(value.strip()) == 0:
@@ -140,45 +145,45 @@ class ConfigSchema:
         validated = {}
         
         # Validate input_file
-        if 'input_file' in data:
+        if INPUT_FILE in data:
             try:
-                validated['input_file'] = ConfigSchema.validate_input_file(data['input_file'])
+                validated[INPUT_FILE] = ConfigSchema.validate_input_file(data[INPUT_FILE])
             except ValueError as e:
-                logger.warning(f"Invalid input_file in config: {e}")
-                validated['input_file'] = None
+                logger.warning(f"Invalid {INPUT_FILE} in config: {e}")
+                validated[INPUT_FILE] = None
         
         # Validate pdf_dir (source_dir)
-        if 'pdf_dir' in data:
+        if PDF_DIR in data:
             try:
-                validated['pdf_dir'] = ConfigSchema.validate_source_dir(data['pdf_dir'])
+                validated[PDF_DIR] = ConfigSchema.validate_source_dir(data[PDF_DIR])
             except ValueError as e:
-                logger.warning(f"Invalid pdf_dir in config: {e}")
-                validated['pdf_dir'] = None
+                logger.warning(f"Invalid {PDF_DIR} in config: {e}")
+                validated[PDF_DIR] = None
         
         # Also handle source_dir alias
-        if 'source_dir' in data and 'pdf_dir' not in validated:
+        if SOURCE_DIR in data and PDF_DIR not in validated:
             try:
-                validated['pdf_dir'] = ConfigSchema.validate_source_dir(data['source_dir'])
+                validated[PDF_DIR] = ConfigSchema.validate_source_dir(data[SOURCE_DIR])
             except ValueError as e:
-                logger.warning(f"Invalid source_dir in config: {e}")
-                validated['pdf_dir'] = None
+                logger.warning(f"Invalid {SOURCE_DIR} in config: {e}")
+                validated[PDF_DIR] = None
         
         # Validate output_dir
-        if 'output_dir' in data:
+        if OUTPUT_DIR in data:
             try:
-                validated['output_dir'] = ConfigSchema.validate_output_dir(data['output_dir'])
+                validated[OUTPUT_DIR] = ConfigSchema.validate_output_dir(data[OUTPUT_DIR])
             except ValueError as e:
-                logger.warning(f"Invalid output_dir in config: {e}")
-                validated['output_dir'] = None
+                logger.warning(f"Invalid {OUTPUT_DIR} in config: {e}")
+                validated[OUTPUT_DIR] = None
         
         # Validate required_column
-        if 'required_column' in data:
+        if REQUIRED_COLUMN in data:
             try:
-                validated['required_column'] = ConfigSchema.validate_column(data['required_column'])
+                validated[REQUIRED_COLUMN] = ConfigSchema.validate_column(data[REQUIRED_COLUMN])
             except ValueError as e:
-                logger.warning(f"Invalid required_column in config: {e}")
-                validated['required_column'] = DEFAULT_SERIAL_NUMBERS_COLUMN
+                logger.warning(f"Invalid {REQUIRED_COLUMN} in config: {e}")
+                validated[REQUIRED_COLUMN] = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
         else:
-            validated['required_column'] = DEFAULT_SERIAL_NUMBERS_COLUMN
+            validated[REQUIRED_COLUMN] = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
         
         return validated
