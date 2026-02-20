@@ -205,7 +205,7 @@ Tests for validation functions:
 ### unit/core/test_csv_excel_reader.py
 
 Tests for file reading operations:
-- `detect_file_type` - Detecting CSV vs Excel files
+- `is_excel_or_csv` - Detecting CSV vs Excel files
 - `_detect_csv_delimiter` - Auto-detecting CSV delimiters
 - `read_csv` - Reading CSV files
 - `read_excel` - Reading Excel files

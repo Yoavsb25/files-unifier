@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
 import pandas as pd
 from pdf_merger.core.csv_excel_reader import (
-    detect_file_type,
+    is_excel_or_csv,
     read_csv,
     read_excel,
     read_data_file,
@@ -20,32 +20,32 @@ from pdf_merger.core.enums import FileType
 
 
 class TestDetectFileType:
-    """Test cases for detect_file_type function."""
+    """Test cases for is_excel_or_csv function."""
     
     def test_detect_excel_xlsx(self, tmp_path):
         """Test detection of .xlsx file."""
         file_path = tmp_path / "test.xlsx"
         file_path.touch()
-        assert detect_file_type(file_path) == FileType.EXCEL
+        assert is_excel_or_csv(file_path) == FileType.EXCEL
     
     def test_detect_excel_xls(self, tmp_path):
         """Test detection of .xls file."""
         file_path = tmp_path / "test.xls"
         file_path.touch()
-        assert detect_file_type(file_path) == FileType.EXCEL
+        assert is_excel_or_csv(file_path) == FileType.EXCEL
     
     def test_detect_csv(self, tmp_path):
         """Test detection of CSV file."""
         file_path = tmp_path / "test.csv"
         file_path.touch()
-        assert detect_file_type(file_path) == FileType.CSV
+        assert is_excel_or_csv(file_path) == FileType.CSV
     
     def test_detect_other_extension(self, tmp_path):
         """Test detection of other file extension raises error."""
         file_path = tmp_path / "test.txt"
         file_path.touch()
         with pytest.raises(InvalidFileFormatError):
-            detect_file_type(file_path)
+            is_excel_or_csv(file_path)
 
 
 class TestDetectCsvDelimiter:

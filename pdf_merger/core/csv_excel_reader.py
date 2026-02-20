@@ -18,7 +18,7 @@ UTF_8_ENCODING = Constants.UTF_8_ENCODING
 CSV_SAMPLE_SIZE = Constants.CSV_SAMPLE_SIZE
 DEFAULT_CSV_DELIMITER = Constants.DEFAULT_CSV_DELIMITER
 
-def detect_file_type(file_path: Path) -> FileType:
+def is_excel_or_csv(file_path: Path) -> FileType:
     """
     Detect the file type based on its extension.
 
@@ -100,10 +100,7 @@ def read_excel(file_path: Path) -> Iterator[Dict[str, Any]]:
     Raises:
         ImportError: If required libraries are not installed (e.g., openpyxl)
         InvalidFileFormatError: If the file cannot be read as an Excel file
-    """
-    if pd is None:
-        raise ImportError("pandas and openpyxl are required to read Excel files. Install with: pip install pandas openpyxl")
-    
+    """    
     try:
         df = pd.read_excel(file_path)
     except ImportError:
@@ -130,8 +127,7 @@ def read_data_file(file_path: Path) -> Iterator[Dict[str, Any]]:
     Raises:
         InvalidFileFormatError: If the file type is not supported
     """
-    file_type = detect_file_type(file_path)
-    
+    file_type = is_excel_or_csv(file_path)    
     if file_type == FileType.EXCEL:
         yield from read_excel(file_path)
     elif file_type == FileType.CSV:
