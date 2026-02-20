@@ -13,14 +13,13 @@ import json
 import os
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from ..core.constants import Constants
 from ..utils.logging_utils import get_logger
 from .config_schema import ConfigSchema
 
 logger = get_logger("config_manager")
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN # type: ignore
 # Environment variable names
 ENV_INPUT_FILE = 'PDF_MERGER_INPUT_FILE'
 ENV_SOURCE_DIR = 'PDF_MERGER_SOURCE_DIR'
@@ -37,7 +36,7 @@ class AppConfig:
     input_file: Optional[str] = None
     pdf_dir: Optional[str] = None
     output_dir: Optional[str] = None
-    required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN
+    required_column: str = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
     # Observability settings
     metrics_enabled: bool = True
     telemetry_enabled: bool = False  # Opt-in by default
@@ -56,7 +55,7 @@ class AppConfig:
             input_file=data.get('input_file'),
             pdf_dir=data.get('pdf_dir'),
             output_dir=data.get('output_dir'),
-            required_column=data.get('required_column', DEFAULT_SERIAL_NUMBERS_COLUMN),
+            required_column=data.get('required_column', Constants.DEFAULT_SERIAL_NUMBERS_COLUMN),
             metrics_enabled=data.get('metrics_enabled', True),
             telemetry_enabled=data.get('telemetry_enabled', False),
             crash_reporting_enabled=data.get('crash_reporting_enabled', False),
@@ -89,7 +88,7 @@ class AppConfig:
             input_file=other.input_file if other.input_file else self.input_file,
             pdf_dir=other.pdf_dir if other.pdf_dir else self.pdf_dir,
             output_dir=other.output_dir if other.output_dir else self.output_dir,
-            required_column=other.required_column if other.required_column != DEFAULT_SERIAL_NUMBERS_COLUMN or self.required_column == DEFAULT_SERIAL_NUMBERS_COLUMN else self.required_column,
+            required_column=other.required_column if other.required_column != Constants.DEFAULT_SERIAL_NUMBERS_COLUMN or self.required_column == Constants.DEFAULT_SERIAL_NUMBERS_COLUMN else self.required_column,
             metrics_enabled=other.metrics_enabled if hasattr(other, 'metrics_enabled') else self.metrics_enabled,
             telemetry_enabled=other.telemetry_enabled if hasattr(other, 'telemetry_enabled') else self.telemetry_enabled,
             crash_reporting_enabled=other.crash_reporting_enabled if hasattr(other, 'crash_reporting_enabled') else self.crash_reporting_enabled,
