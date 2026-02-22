@@ -3,7 +3,6 @@ Merge processor module.
 Main orchestration logic for processing files and merging PDFs.
 """
 
-import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,14 +21,13 @@ from .serial_number_parser import (
     normalize_serial_number
 )
 from ..observability import get_metrics_collector
-from ..matching import MatchBehavior, build_source_index
+from ..matching import build_source_index
 
 logger = get_logger("merge_processor")
 
 # Module-level constants
 EXCEL_FILE_EXTENSIONS = Constants.EXCEL_FILE_EXTENSIONS
 OUTPUT_FILENAME_PATTERN = Constants.OUTPUT_FILENAME_PATTERN
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
 BYTES_PER_MB = Constants.BYTES_PER_MB
 
 
@@ -447,7 +445,7 @@ def process_file(
     file_path: Path,
     source_folder: Path,
     output_folder: Path,
-    required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN,
+    required_column: str = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN,
     on_progress: Optional[Callable[[str, int, int, str], None]] = None,
 ) -> ProcessingResult:
     """

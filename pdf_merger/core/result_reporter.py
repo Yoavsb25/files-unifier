@@ -12,10 +12,6 @@ from ..utils.logging_utils import get_logger
 
 logger = get_logger("core.result_reporter")
 
-# Module-level constants
-MAX_DISPLAY_STRING_LENGTH = Constants.MAX_DISPLAY_STRING_LENGTH
-PERCENTAGE_MULTIPLIER = Constants.PERCENTAGE_MULTIPLIER
-
 
 def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
     """
@@ -47,8 +43,8 @@ def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
     
     if result.failed_rows:
         failed_str = ", ".join(str(row_index + 1) for row_index in result.failed_rows)
-        if len(failed_str) > MAX_DISPLAY_STRING_LENGTH:
-            failed_str = failed_str[:MAX_DISPLAY_STRING_LENGTH - 3] + "..."
+        if len(failed_str) > Constants.MAX_DISPLAY_STRING_LENGTH:
+            failed_str = failed_str[:Constants.MAX_DISPLAY_STRING_LENGTH - 3] + "..."
         lines.append(f"Failed row numbers: {failed_str}")
     
     lines.append("=" * 60)
@@ -72,7 +68,7 @@ def format_result_detailed(result: Union[ProcessingResult, MergeResult]) -> str:
     failed = len(result.failed_rows)
     skipped = len(result.skipped_rows) if isinstance(result, MergeResult) else 0
     success_rate = result.get_success_rate() if isinstance(result, MergeResult) else (
-        (successful / total_rows * PERCENTAGE_MULTIPLIER) if total_rows > 0 else 0
+        (successful / total_rows * Constants.PERCENTAGE_MULTIPLIER) if total_rows > 0 else 0
     )
     
     lines = [
@@ -91,15 +87,15 @@ def format_result_detailed(result: Union[ProcessingResult, MergeResult]) -> str:
     
     if result.failed_rows:
         lines.append("Failed Row Numbers:" if isinstance(result, MergeResult) else "Failed/Skipped Row Numbers:")
-        for row_index in result.failed_rows:
-            lines.append(f"  - Row {row_index + 1}")
+        for row_index, _ in enumerate(result.failed_rows, start=1):
+            lines.append(f"  - Row {row_index}")
         lines.append("")
     
     if isinstance(result, MergeResult):
         if result.skipped_rows:
             lines.append("Skipped Row Numbers:")
-            for row_index in result.skipped_rows:
-                lines.append(f"  - Row {row_index + 1}")
+            for row_index, _  in enumerate(result.skipped_rows, start=1):
+                lines.append(f"  - Row {row_index}")
             lines.append("")
         
         # Add detailed row results if available

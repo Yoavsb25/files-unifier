@@ -14,9 +14,6 @@ from ..utils.logging_utils import get_logger
 
 logger = get_logger("core.merge_orchestrator")
 
-# Module-level constants
-DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
-
 
 def run_merge(
     input_file: Path,
@@ -41,7 +38,7 @@ def run_merge(
     Returns:
         ProcessingResult with statistics
     """
-    column = required_column or DEFAULT_SERIAL_NUMBERS_COLUMN
+    column = required_column or Constants.DEFAULT_SERIAL_NUMBERS_COLUMN
 
     logger.info(f"Starting merge operation")
     logger.info(f"  Input file: {input_file}")
@@ -72,7 +69,7 @@ def run_merge_job(
     input_file: Path,
     pdf_dir: Path,
     output_dir: Path,
-    required_column: str = DEFAULT_SERIAL_NUMBERS_COLUMN,
+    required_column: str = Constants.DEFAULT_SERIAL_NUMBERS_COLUMN,
     job_id: Optional[str] = None,
     fail_on_ambiguous: bool = True,
     on_progress: Optional[Callable[[str, int, int, str], None]] = None,

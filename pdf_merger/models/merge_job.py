@@ -24,7 +24,7 @@ class MergeJob:
     
     Attributes:
         input_file: Path to the input CSV/Excel file
-        source_folder: Path to the folder containing source files (PDF and Excel)
+        source_folder: Path to the folder containing source files (PDF)
         output_folder: Path to the output folder for merged PDFs
         required_column: Name of the column containing serial numbers
         rows: List of Row objects to process
