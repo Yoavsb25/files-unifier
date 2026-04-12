@@ -3,7 +3,7 @@ UI components for PDF Merger application.
 """
 
 import customtkinter as ctk
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from .. import APP_VERSION, APP_NAME
 from ..core.enums import StatusColor
@@ -399,6 +399,16 @@ class ResultsFrame(ctk.CTkFrame):
         self.failed_card = self._make_summary_card(cards_frame, "0", "Failed", RED_ERROR)
         self.failed_card.pack(side="left", fill="x", expand=True)
 
+        # Scrollable issues list (failures + warnings) — hidden until there are entries
+        self._issues_frame = ctk.CTkScrollableFrame(
+            inner,
+            fg_color="transparent",
+            height=200,
+        )
+        self._issues_frame.pack(fill="x", pady=(12, 0))
+        self._issues_frame.pack_forget()
+        self._has_issues = False
+
         # Action buttons
         buttons_frame = ctk.CTkFrame(inner, fg_color="transparent")
         buttons_frame.pack(fill="x", pady=(16, 0))
@@ -459,6 +469,23 @@ class ResultsFrame(ctk.CTkFrame):
         card.value_label = val_lbl
         return card
 
+    def _build_issue_row(self, label: str, color: str):
+        """Add a left-aligned colored label row to the issues frame."""
+        ctk.CTkLabel(
+            self._issues_frame,
+            text=label,
+            font=ctk.CTkFont(size=FONT_HELPER_SIZE),
+            text_color=color,
+            anchor="w",
+            wraplength=700,
+            justify="left",
+        ).pack(anchor="w", fill="x", pady=1)
+
+    def _clear_issues(self):
+        """Destroy all children of the issues frame."""
+        for widget in self._issues_frame.winfo_children():
+            widget.destroy()
+
     def update_results(
         self,
         rows_analyzed: int,
@@ -466,8 +493,9 @@ class ResultsFrame(ctk.CTkFrame):
         skipped: int,
         failed: int,
         output_dir: Optional[str] = None,
+        row_results: Optional[List] = None,
     ):
-        """Update summary cards and human summary line."""
+        """Update summary cards, human summary line, and issues list."""
         self.rows_card.value_label.configure(text=str(rows_analyzed))
         self.pdfs_card.value_label.configure(text=str(pdfs_created))
         self.skipped_card.value_label.configure(text=str(skipped))
@@ -479,6 +507,36 @@ class ResultsFrame(ctk.CTkFrame):
         self.open_folder_btn.configure(
             state="normal" if (pdfs_created > 0 and output_dir) else "disabled"
         )
+
+        self._clear_issues()
+        issue_count = 0
+
+        if row_results:
+            for rr in row_results:
+                if rr.is_failed() or rr.is_skipped():
+                    output_name = (
+                        rr.intended_output_name
+                        or (rr.output_file.name if rr.output_file else f"row {rr.row_index + 1}")
+                    )
+                    color = RED_ERROR if rr.is_failed() else YELLOW_WARNING
+                    msg = f"Row {rr.row_index + 1} — \"{output_name}\": {rr.error_message or 'No error details'}"
+                    if rr.files_missing:
+                        msg += f" | Missing: {', '.join(rr.files_missing)}"
+                    self._build_issue_row(msg, color)
+                    issue_count += 1
+
+                for warning in (rr.warnings or []):
+                    output_name = rr.intended_output_name or f"row {rr.row_index + 1}"
+                    self._build_issue_row(
+                        f"Row {rr.row_index + 1} — \"{output_name}\": ⚠ {warning}",
+                        YELLOW_WARNING,
+                    )
+                    issue_count += 1
+
+        if issue_count > 0:
+            self._issues_frame.pack(fill="x", pady=(12, 0))
+        else:
+            self._issues_frame.pack_forget()
 
     def _on_open_output_clicked(self):
         if self.on_open_output and self._output_dir:

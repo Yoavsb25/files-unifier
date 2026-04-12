@@ -198,3 +198,6 @@ dist/
 # Config files (may contain user-specific paths)
 config.json
 ~/.pdf_merger/
+
+.claude/
+CLAUDE.md

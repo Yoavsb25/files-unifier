@@ -33,25 +33,51 @@ OUTPUT_FILENAME_PATTERN = Constants.OUTPUT_FILENAME_PATTERN
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
 BYTES_PER_MB = Constants.BYTES_PER_MB
 
-# Characters allowed in custom output filename (alphanumeric, space, hyphen, underscore)
-_FILENAME_SAFE_PATTERN = re.compile(r"[^\w\s\-]", re.UNICODE)
+# Characters allowed in custom output filename (alphanumeric, space, hyphen, underscore, dot)
+_FILENAME_SAFE_PATTERN = re.compile(r"[^\w\s\-\.]", re.UNICODE)
 
 
-def _get_output_filename(row: Row) -> str:
+def _get_output_filename(row: Row, output_folder: Optional[Path] = None) -> Tuple[str, Optional[str]]:
     """
-    Return the output PDF filename for a row: custom name from row.output_name if set and
-    non-empty after sanitization, otherwise merged_row_{n}.pdf.
+    Return (filename, warning_or_None) for a row.
+
+    The filename is the sanitized output PDF name. On Windows, if the combined path
+    would exceed 260 characters the stem is truncated and a warning string is returned.
     """
+    import sys
+
     custom = (row.output_name or "").strip()
     if not custom:
-        return OUTPUT_FILENAME_PATTERN.format(row.row_index + 1)
-    # Sanitize: allow alphanumeric, spaces, hyphens, underscores
-    sanitized = _FILENAME_SAFE_PATTERN.sub("", custom).strip()
-    if not sanitized:
-        return OUTPUT_FILENAME_PATTERN.format(row.row_index + 1)
-    if not sanitized.lower().endswith(".pdf"):
-        sanitized = f"{sanitized}.pdf"
-    return sanitized
+        name = OUTPUT_FILENAME_PATTERN.format(row.row_index + 1)
+    else:
+        # Sanitize: allow alphanumeric, spaces, hyphens, underscores, dots
+        sanitized = _FILENAME_SAFE_PATTERN.sub("", custom).strip()
+        if not sanitized:
+            name = OUTPUT_FILENAME_PATTERN.format(row.row_index + 1)
+        else:
+            if not sanitized.lower().endswith(".pdf"):
+                sanitized = f"{sanitized}.pdf"
+            name = sanitized
+
+    warning: Optional[str] = None
+    if sys.platform == "win32" and output_folder is not None:
+        full_path_len = len(str(output_folder / name))
+        if full_path_len > 260:
+            # separator (1) + ".pdf" (4) = 5 fixed chars; clamp to 0 so a very
+            # long folder path never produces a negative slice index, which would
+            # silently remove chars from the *end* of the stem rather than truncate.
+            max_stem = max(0, 260 - len(str(output_folder)) - 1 - 4)
+            original_name = name
+            # Strip .pdf before truncating so the slice never cuts into the extension
+            stem = name[:-4] if name.lower().endswith(".pdf") else name
+            name = stem[:max_stem] + ".pdf"
+            warning = (
+                f"Filename truncated from '{original_name}' to '{name}' "
+                "to fit Windows 260-char path limit"
+                + ("" if max_stem > 0 else "; folder path alone exceeds limit")
+            )
+
+    return name, warning
 
 
 @dataclass
@@ -295,8 +321,11 @@ def process_row_with_models(
                 error_message="No PDF files available for merging"
             )
 
-        output_filename = _get_output_filename(row)
+        output_filename, trunc_warning = _get_output_filename(row, output_folder)
         output_path = output_folder / output_filename
+        row_warnings = [trunc_warning] if trunc_warning else []
+        if trunc_warning and not quiet:
+            logger.warning(f"  ⚠ {trunc_warning}")
 
         if not quiet:
             logger.info(f"  Merging {len(pdf_paths)} file(s) into {output_filename}...")
@@ -323,7 +352,9 @@ def process_row_with_models(
                 output_file=output_path,
                 files_found=source_files,
                 files_missing=missing_serial_numbers,
-                processing_time=processing_time
+                processing_time=processing_time,
+                warnings=row_warnings,
+                intended_output_name=output_filename,
             )
         else:
             if not quiet:
@@ -335,7 +366,9 @@ def process_row_with_models(
                 files_found=source_files,
                 files_missing=missing_serial_numbers,
                 error_message="Failed to merge PDFs",
-                processing_time=processing_time
+                processing_time=processing_time,
+                warnings=row_warnings,
+                intended_output_name=output_filename,
             )
 
     finally:

@@ -31,6 +31,8 @@ class RowResult:
         files_missing: List of serial numbers for which files were not found
         error_message: Error message if processing failed
         processing_time: Processing time in seconds (optional)
+        warnings: Non-fatal warnings (e.g. filename truncated for Windows path limit)
+        intended_output_name: Sanitized output filename before write (available even for failed rows)
     """
     row_index: int
     status: RowStatus
@@ -39,6 +41,8 @@ class RowResult:
     files_missing: List[str] = field(default_factory=list)
     error_message: Optional[str] = None
     processing_time: Optional[float] = None
+    warnings: List[str] = field(default_factory=list)
+    intended_output_name: Optional[str] = None
     
     def is_success(self) -> bool:
         """Check if row processing was successful."""
@@ -137,6 +141,10 @@ class MergeResult:
     def get_skipped_row_results(self) -> List[RowResult]:
         """Get all skipped row results."""
         return [r for r in self.row_results if r.is_skipped()]
+
+    def get_warned_row_results(self) -> List[RowResult]:
+        """Get all row results that have at least one warning."""
+        return [r for r in self.row_results if r.warnings]
     
     def __str__(self) -> str:
         return (

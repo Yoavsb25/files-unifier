@@ -552,6 +552,7 @@ class PDFMergerApp(ctk.CTk):
             skipped=skipped_count,
             failed=failed_count,
             output_dir=str(self.output_dir_path) if self.output_dir_path else None,
+            row_results=result.row_results,
         )
         self.results_frame.show(before=self.log_area)
         self._update_ui_state()
