@@ -92,25 +92,12 @@ jobs:
         Copy-Item "deliveries\license.json" "deliveries\$deliveryName\license.json"
         Copy-Item "docs\README_USER.md" "deliveries\$deliveryName\User_Guide.md"
     
-    - name: Create installation instructions
+    - name: Copy Getting Started guides
       run: |
         $deliveryName = "${{ steps.set-delivery-name.outputs.delivery-name }}"
-        $company = "${{ github.event.inputs.company }}"
-        $instructions = "PDF Batch Merger - Installation Instructions`n"
-        $instructions += "==================================================`n`n"
-        $instructions += "Company: $company`n"
-        $instructions += "Version: 1.0.0`n"
-        $instructions += "Platform: WINDOWS`n`n"
-        $instructions += "INSTALLATION:`n"
-        $instructions += "--------------------------------------------------`n`n"
-        $instructions += "1. Copy 'PDF Batch Merger.exe' to your desired location`n"
-        $instructions += "2. Copy 'license.json' to the same folder as the .exe`n"
-        $instructions += "   (or to %USERPROFILE%\.pdf_merger\ directory)`n"
-        $instructions += "3. Double-click 'PDF Batch Merger.exe' to launch`n`n"
-        $instructions += "SUPPORT:`n"
-        $instructions += "--------------------------------------------------`n"
-        $instructions += "For technical support or license renewal, contact your software provider.`n"
-        $instructions | Out-File -FilePath "deliveries\$deliveryName\INSTALLATION_INSTRUCTIONS.txt" -Encoding utf8
+        Copy-Item "docs\guides\windows\Getting_Started.txt"  "deliveries\$deliveryName\Getting_Started.txt"
+        Copy-Item "docs\guides\windows\Getting_Started.pdf"  "deliveries\$deliveryName\Getting_Started.pdf"
+        Copy-Item "docs\guides\windows\Getting_Started.html" "deliveries\$deliveryName\Getting_Started.html"
     
     - name: Create zip file with folder structure
       run: |
@@ -201,30 +188,12 @@ jobs:
         cp deliveries/license.json "deliveries/${DELIVERY_NAME}/license.json"
         cp docs/README_USER.md "deliveries/${DELIVERY_NAME}/User_Guide.md"
     
-    - name: Create installation instructions
+    - name: Copy Getting Started guides
       run: |
         DELIVERY_NAME="${{ steps.set-delivery-name.outputs.delivery-name }}"
-        COMPANY="${{ github.event.inputs.company }}"
-        {
-          echo "PDF Batch Merger - Installation Instructions"
-          echo "=================================================="
-          echo ""
-          echo "Company: ${COMPANY}"
-          echo "Version: 1.0.0"
-          echo "Platform: MACOS"
-          echo ""
-          echo "INSTALLATION:"
-          echo "--------------------------------------------------"
-          echo ""
-          echo "1. Copy 'PDF Batch Merger.app' to your Applications folder"
-          echo "2. Copy 'license.json' to the same folder as the app"
-          echo "   (or to ~/.pdf_merger/ directory)"
-          echo "3. Double-click 'PDF Batch Merger.app' to launch"
-          echo ""
-          echo "SUPPORT:"
-          echo "--------------------------------------------------"
-          echo "For technical support or license renewal, contact your software provider."
-        } > "deliveries/${DELIVERY_NAME}/INSTALLATION_INSTRUCTIONS.txt"
+        cp docs/guides/macos/Getting_Started.txt  "deliveries/${DELIVERY_NAME}/Getting_Started.txt"
+        cp docs/guides/macos/Getting_Started.pdf  "deliveries/${DELIVERY_NAME}/Getting_Started.pdf"
+        cp docs/guides/macos/Getting_Started.html "deliveries/${DELIVERY_NAME}/Getting_Started.html"
     
     - name: Create zip file with folder structure
       run: |
