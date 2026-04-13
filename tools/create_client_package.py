@@ -355,10 +355,33 @@ def create_delivery_package(company: str, platform: str, license_path: Path) -> 
         f.write("-" * 50 + "\n")
         f.write("For technical support or license renewal, contact your software provider.\n")
     
-    print_success("Installation instructions created")
-    
+    # Copy getting started guides
+    copy_guide_files(platform, delivery_dir)
+
     print_success(f"Delivery package created: {delivery_dir}")
     return delivery_dir
+
+
+def copy_guide_files(platform: str, dest_dir: Path, project_root: Path = None) -> bool:
+    """Copy Getting_Started guide files for the given platform into dest_dir.
+
+    Returns True if at least one file was copied, False if none were found.
+    Accepts an optional project_root for testing with temp directories.
+    """
+    if project_root is None:
+        project_root = Path(__file__).parent.parent
+    guide_dir = project_root / "docs" / "guides" / platform
+    copied = False
+    for fmt in ("txt", "pdf", "html"):
+        src = guide_dir / f"Getting_Started.{fmt}"
+        if src.exists():
+            shutil.copy2(src, dest_dir / f"Getting_Started.{fmt}")
+            copied = True
+        else:
+            print_warning(f"Guide file not found: {src}")
+    if copied:
+        print_success("Getting Started guides copied")
+    return copied
 
 
 def get_desktop_path() -> Path:
@@ -643,7 +666,7 @@ def main():
     print(f"  - Application ({platform})")
     print(f"  - license.json")
     print(f"  - User_Guide.md")
-    print(f"  - INSTALLATION_INSTRUCTIONS.txt")
+    print(f"  - Getting_Started.txt / .pdf / .html")
     print(f"\nReady to deliver to: {company}")
     if zip_path:
         print(f"\n{YELLOW}💡 Tip: Send the zip file to your client: {zip_path.name}{NC}\n")

@@ -1,0 +1,40 @@
+Getting Started with PDF Batch Merger
+=====================================
+
+
+What's in this folder
+---------------------
+PDF Batch Merger.exe   — The application
+license.json           — Your personal license (keep it next to the app)
+Getting_Started.*      — This guide (txt, pdf, html)
+
+Step 1 — Download & extract
+---------------------------
+1. Open the Google Drive link you received.
+2. Click the file name, then click the download icon (↓) in the top-right corner.
+3. Once downloaded, right-click the ZIP file and choose "Extract All", then click Extract. A new folder will appear — open it to find your files.
+
+Step 2 — Place your files
+-------------------------
+1. "PDF Batch Merger.exe" to any folder you like (for example, your Desktop or Documents folder).
+2. Copy "license.json" to the same folder as the .exe file.
+
+Step 3 — Open the app
+---------------------
+1. Double-click "PDF Batch Merger.exe" to launch.
+
+  ⚠  "Windows protected your PC" may appear. This is normal for new software. Click "More info", then click "Run anyway".
+
+
+Step 4 — First launch
+---------------------
+A green checkmark at the top means your license is active. You are ready to go.
+Use the three Browse buttons to select:
+1. Your input file (CSV or Excel with the list of files to merge)
+2. The folder containing your PDF files
+3. The folder where merged files should be saved
+Click "Run Merge" to start.
+
+Need help?
+----------
+Contact your software provider for license or technical support.
