@@ -200,4 +200,4 @@ config.json
 ~/.pdf_merger/
 
 .claude/
-CLAUDE.md
+CLAUDE.md.worktrees/
