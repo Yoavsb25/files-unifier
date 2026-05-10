@@ -5,6 +5,13 @@
 ![Status](https://img.shields.io/badge/Status-Active-7C3AED?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Commercial-6B7280?style=for-the-badge)
 
+---
+
+> **NOTICE — Source Available, All Rights Reserved**
+> This application has been commercially licensed. The source code is published here for portfolio and educational review only. **No part of this code may be used, copied, modified, or distributed for any purpose without express written permission from the author.**
+
+---
+
 > Desktop GUI app for batch merging PDFs against a CSV/Excel manifest — match, merge, report.
 
 ---
