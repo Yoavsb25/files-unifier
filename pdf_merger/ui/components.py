@@ -97,6 +97,7 @@ class SetupCard(ctk.CTkFrame):
             header_frame,
             text=STEP_SYMBOLS[step_number - 1] if 1 <= step_number <= 3 else str(step_number),
             font=ctk.CTkFont(size=FONT_SECTION_SIZE, weight="bold"),
+            text_color=TEXT_PRIMARY,
             width=28,
         )
         step_label.pack(side="left", padx=(0, 8))
@@ -105,6 +106,7 @@ class SetupCard(ctk.CTkFrame):
             header_frame,
             text=title,
             font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
+            text_color=TEXT_PRIMARY,
         )
         title_label.pack(side="left")
 
@@ -131,7 +133,7 @@ class SetupCard(ctk.CTkFrame):
             input_frame,
             text=button_text,
             command=self._on_browse_clicked,
-            width=100,
+            width=80,
             height=40,
             fg_color=INPUT_BACKGROUND,
             hover_color=CARD_BORDER,
@@ -264,6 +266,7 @@ class LogArea(ctk.CTkFrame):
             font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
             fg_color="transparent",
             hover_color=CARD_BG,
+            text_color=TEXT_PRIMARY,
             anchor="w",
             command=self._toggle,
             cursor="hand2",
@@ -367,6 +370,7 @@ class ResultsFrame(ctk.CTkFrame):
             inner,
             text="Results",
             font=ctk.CTkFont(size=FONT_SECTION_SIZE, weight="bold"),
+            text_color=TEXT_PRIMARY,
         )
         header.pack(anchor="w", pady=(0, 8))
 
@@ -477,7 +481,7 @@ class ResultsFrame(ctk.CTkFrame):
             font=ctk.CTkFont(size=FONT_HELPER_SIZE),
             text_color=color,
             anchor="w",
-            wraplength=700,
+            wraplength=500,
             justify="left",
         ).pack(anchor="w", fill="x", pady=1)
 
@@ -546,9 +550,9 @@ class ResultsFrame(ctk.CTkFrame):
         if self.on_toggle_log:
             self.on_toggle_log()
 
-    def show(self, before=None):
+    def show(self, before=None, padx=0):
         """Show the results section. If before is set, pack before that widget."""
-        kwargs = {"fill": "x", "pady": (0, SECTION_SPACING)}
+        kwargs = {"fill": "x", "pady": (0, SECTION_SPACING), "padx": padx}
         if before is not None:
             kwargs["before"] = before
         self.pack(**kwargs)

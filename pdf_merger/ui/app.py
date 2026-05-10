@@ -36,14 +36,15 @@ from .theme import (
     INPUT_BACKGROUND,
     PRIMARY_BLUE,
     PRIMARY_BLUE_HOVER,
+    TEXT_PRIMARY,
 )
 # Setup logging
 setup_logger("pdf_merger", level=20)
 logger = get_logger("ui.app")
 
-# Set CustomTkinter appearance - dark theme
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
+# Set CustomTkinter appearance - light blue theme
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
 APP_NAME = "PDF Batch Merger"
 
@@ -60,7 +61,7 @@ class PDFMergerApp(ctk.CTk):
 
         self.title(APP_NAME)
         self.geometry("1020x800")
-        self.minsize(620, 500)
+        self.minsize(700, 500)
         self.configure(fg_color=APP_BACKGROUND)
 
         # License manager (use passed-in instance to avoid duplicate validation at startup)
@@ -107,123 +108,34 @@ class PDFMergerApp(ctk.CTk):
     
     def _build_ui(self):
         """Build the user interface."""
-        # Use grid for responsive layout - content expands with window
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        
-        # Outer frame (32px margin)
-        outer_frame = ctk.CTkFrame(self, fg_color="transparent")
-        outer_frame.grid(row=0, column=0, sticky="nsew", padx=32, pady=32)
+
+        # Two-column layout: sidebar | content
+        outer_frame = ctk.CTkFrame(self, fg_color=APP_BACKGROUND, corner_radius=0)
+        outer_frame.grid(row=0, column=0, sticky="nsew")
         outer_frame.grid_rowconfigure(0, weight=1)
-        outer_frame.grid_columnconfigure(0, weight=1)
-        
-        # Scrollable content area - enables scrolling when content exceeds window
-        self.scrollable_frame = ctk.CTkScrollableFrame(
-            outer_frame,
-            fg_color="transparent",
-            scrollbar_button_color=CARD_BG,
-        )
-        self.scrollable_frame.grid(row=0, column=0, sticky="nsew")
-        self.scrollable_frame.grid_columnconfigure(0, weight=1)
-        
-        # Inner content - fills scrollable area, scrolls when content exceeds window
-        main_frame = ctk.CTkFrame(
-            self.scrollable_frame,
-            fg_color=APP_BACKGROUND,
-            corner_radius=CORNER_RADIUS,
-        )
-        main_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
-        main_frame.grid_columnconfigure(0, weight=1)
-        
-        # Title (Header Section)
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text=APP_NAME,
-            font=ctk.CTkFont(size=FONT_TITLE_SIZE, weight="bold")
-        )
-        title_label.pack(pady=(0, SECTION_SPACING))
-        
-        # License status frame
-        self.license_frame = LicenseFrame(main_frame)
-        self.license_frame.pack(fill="x", pady=(0, SECTION_SPACING))
+        outer_frame.grid_columnconfigure(0, weight=0, minsize=340)  # sidebar fixed
+        outer_frame.grid_columnconfigure(1, weight=0)               # 1px separator
+        outer_frame.grid_columnconfigure(2, weight=1)               # content expands
 
-        # Serial numbers column and optional output name column (packed inside Instructions File card via extra_row)
-        column_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        # Row 1: Serial numbers column
-        serial_row = ctk.CTkFrame(column_frame, fg_color="transparent")
-        serial_row.pack(fill="x", pady=(0, 8))
-        ctk.CTkLabel(
-            serial_row,
-            text="Serial numbers column:",
-            font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
-        ).pack(anchor="w", side="left", padx=(0, 8))
-        self.column_entry = ctk.CTkEntry(
-            serial_row,
-            placeholder_text="e.g. serial_numbers or Document ID",
-            font=ctk.CTkFont(family="Courier New", size=FONT_MONO_SIZE),
-            width=220,
-            height=40,
-            fg_color=INPUT_BACKGROUND,
-            border_width=1,
-            border_color=CARD_BORDER,
-        )
-        self.column_entry.pack(side="left")
-        self.column_entry.bind("<FocusIn>", lambda e: self.column_entry.configure(border_color=PRIMARY_BLUE))
-        self.column_entry.bind("<FocusOut>", lambda e: self.column_entry.configure(border_color=CARD_BORDER))
-        # Row 2: Output name column (optional)
-        output_name_row = ctk.CTkFrame(column_frame, fg_color="transparent")
-        output_name_row.pack(fill="x")
-        ctk.CTkLabel(
-            output_name_row,
-            text="Output name column (optional):",
-            font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
-        ).pack(anchor="w", side="left", padx=(0, 8))
-        self.output_name_column_entry = ctk.CTkEntry(
-            output_name_row,
-            placeholder_text="e.g. output_name or leave blank",
-            font=ctk.CTkFont(family="Courier New", size=FONT_MONO_SIZE),
-            width=220,
-            height=40,
-            fg_color=INPUT_BACKGROUND,
-            border_width=1,
-            border_color=CARD_BORDER,
-        )
-        self.output_name_column_entry.pack(side="left")
-        self.output_name_column_entry.bind("<FocusIn>", lambda e: self.output_name_column_entry.configure(border_color=PRIMARY_BLUE))
-        self.output_name_column_entry.bind("<FocusOut>", lambda e: self.output_name_column_entry.configure(border_color=CARD_BORDER))
+        # Sidebar (left panel - white)
+        sidebar_frame = ctk.CTkFrame(outer_frame, fg_color=CARD_BG, corner_radius=0)
+        sidebar_frame.grid(row=0, column=0, sticky="nsew")
 
-        # Setup Section - three step-based cards (Instructions File includes serial column row)
-        self.input_file_selector = SetupCard(
-            main_frame,
-            step_number=1,
-            title="Instructions File",
-            helper_text="Must include a serial_numbers column (or Document ID)",
-            on_select=self._select_input_file,
-            extra_row=column_frame,
+        # Separator line
+        ctk.CTkFrame(outer_frame, fg_color=CARD_BORDER, width=1, corner_radius=0).grid(
+            row=0, column=1, sticky="nsew"
         )
-        self.input_file_selector.pack(fill="x", pady=(0, CARD_SPACING))
 
-        self.pdf_dir_selector = SetupCard(
-            main_frame,
-            step_number=2,
-            title="Source Directory",
-            helper_text="All referenced PDFs & Excel files must live here",
-            on_select=self._select_pdf_directory,
-        )
-        self.pdf_dir_selector.pack(fill="x", pady=(0, CARD_SPACING))
+        # Content pane (right - light blue bg)
+        content_frame = ctk.CTkFrame(outer_frame, fg_color=APP_BACKGROUND, corner_radius=0)
+        content_frame.grid(row=0, column=2, sticky="nsew")
 
-        self.output_dir_selector = SetupCard(
-            main_frame,
-            step_number=3,
-            title="Output Directory",
-            helper_text="Merged PDFs will be saved here",
-            on_select=self._select_output_directory,
-        )
-        self.output_dir_selector.pack(fill="x", pady=(0, SECTION_SPACING))
+        # --- Sidebar: pack run button to bottom first, so it's always visible ---
 
-        # Run button (Run Section) - primary blue, full width, 54px
         self.run_button = ctk.CTkButton(
-            main_frame,
+            sidebar_frame,
             text="Run Merge",
             command=self._run_merge,
             font=ctk.CTkFont(size=14, weight="bold"),
@@ -234,32 +146,125 @@ class PDFMergerApp(ctk.CTk):
             text_color="white",
             cursor="hand2",
         )
-        self.run_button.pack(fill="x", pady=(SECTION_SPACING, 8))
+        self.run_button.pack(side="bottom", fill="x", padx=16, pady=(8, 16))
 
-        # Loading progress bar (hidden by default)
+        # Progress bar sits above run button when shown (hidden by default)
         self.progress_bar = ctk.CTkProgressBar(
-            main_frame,
+            sidebar_frame,
             mode="indeterminate",
             height=6,
             corner_radius=3,
         )
-        self.progress_bar.pack(fill="x", pady=(0, SECTION_SPACING))
-        self.progress_bar.pack_forget()
+        # Not packed initially — shown on merge start
 
-        # Results section (hidden until first run)
+        # Scrollable area fills remaining sidebar space above the button
+        sidebar_scroll = ctk.CTkScrollableFrame(
+            sidebar_frame,
+            fg_color="transparent",
+            scrollbar_button_color=CARD_BORDER,
+        )
+        sidebar_scroll.pack(fill="both", expand=True)
+        sidebar_scroll.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            sidebar_scroll,
+            text=APP_NAME,
+            font=ctk.CTkFont(size=FONT_TITLE_SIZE, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(pady=(20, 8), padx=16, anchor="w")
+
+        self.license_frame = LicenseFrame(sidebar_scroll)
+        self.license_frame.pack(fill="x", padx=16, pady=(0, 16))
+
+        # Column name entries
+        column_frame = ctk.CTkFrame(sidebar_scroll, fg_color="transparent")
+        column_frame.pack(fill="x", padx=16, pady=(0, CARD_SPACING))
+
+        serial_row = ctk.CTkFrame(column_frame, fg_color="transparent")
+        serial_row.pack(fill="x", pady=(0, 8))
+        ctk.CTkLabel(
+            serial_row,
+            text="Serial numbers column:",
+            font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(anchor="w")
+        self.column_entry = ctk.CTkEntry(
+            serial_row,
+            placeholder_text="e.g. serial_numbers",
+            font=ctk.CTkFont(family="Courier New", size=FONT_MONO_SIZE),
+            height=36,
+            fg_color=INPUT_BACKGROUND,
+            border_width=1,
+            border_color=CARD_BORDER,
+        )
+        self.column_entry.pack(fill="x", pady=(4, 0))
+        self.column_entry.bind("<FocusIn>", lambda e: self.column_entry.configure(border_color=PRIMARY_BLUE))
+        self.column_entry.bind("<FocusOut>", lambda e: self.column_entry.configure(border_color=CARD_BORDER))
+
+        output_name_row = ctk.CTkFrame(column_frame, fg_color="transparent")
+        output_name_row.pack(fill="x")
+        ctk.CTkLabel(
+            output_name_row,
+            text="Output name column (optional):",
+            font=ctk.CTkFont(size=FONT_LABEL_SIZE, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(anchor="w")
+        self.output_name_column_entry = ctk.CTkEntry(
+            output_name_row,
+            placeholder_text="e.g. output_name or leave blank",
+            font=ctk.CTkFont(family="Courier New", size=FONT_MONO_SIZE),
+            height=36,
+            fg_color=INPUT_BACKGROUND,
+            border_width=1,
+            border_color=CARD_BORDER,
+        )
+        self.output_name_column_entry.pack(fill="x", pady=(4, 0))
+        self.output_name_column_entry.bind("<FocusIn>", lambda e: self.output_name_column_entry.configure(border_color=PRIMARY_BLUE))
+        self.output_name_column_entry.bind("<FocusOut>", lambda e: self.output_name_column_entry.configure(border_color=CARD_BORDER))
+
+        # Setup cards
+        self.input_file_selector = SetupCard(
+            sidebar_scroll,
+            step_number=1,
+            title="Instructions File",
+            helper_text="Must include a serial_numbers column (or Document ID)",
+            on_select=self._select_input_file,
+        )
+        self.input_file_selector.pack(fill="x", padx=16, pady=(0, CARD_SPACING))
+
+        self.pdf_dir_selector = SetupCard(
+            sidebar_scroll,
+            step_number=2,
+            title="Source Directory",
+            helper_text="All referenced PDFs & Excel files must live here",
+            on_select=self._select_pdf_directory,
+        )
+        self.pdf_dir_selector.pack(fill="x", padx=16, pady=(0, CARD_SPACING))
+
+        self.output_dir_selector = SetupCard(
+            sidebar_scroll,
+            step_number=3,
+            title="Output Directory",
+            helper_text="Merged PDFs will be saved here",
+            on_select=self._select_output_directory,
+        )
+        self.output_dir_selector.pack(fill="x", padx=16, pady=(0, 16))
+
+        self.footer = Footer(sidebar_scroll)
+        self.footer.pack(fill="x", padx=16, pady=(0, 8))
+
+        # --- Content pane: results (hidden until merge) + log ---
+
         self.results_frame = ResultsFrame(
-            main_frame,
+            content_frame,
             on_open_output=self._open_output_folder,
             on_toggle_log=self._toggle_detailed_log,
         )
+        # Not packed initially — shown after first merge completes
 
-        # Log/output area
-        self.log_area = LogArea(main_frame)
-        self.log_area.pack(fill="both", expand=True, pady=(0, SECTION_SPACING))
-        
-        # Footer
-        self.footer = Footer(main_frame)
-        self.footer.pack(fill="x")
+        self.log_area = LogArea(content_frame)
+        self.log_area.pack(fill="both", expand=True, padx=16, pady=16)
+        self.log_area._toggle()  # start expanded so right pane isn't empty
     
     def _check_license(self):
         """Check license status and update UI."""
@@ -512,7 +517,7 @@ class PDFMergerApp(ctk.CTk):
     def _on_merge_start(self):
         """Handle merge operation start."""
         self.run_button.configure(state="disabled", text="Processing…")
-        self.progress_bar.pack(fill="x", pady=(0, SECTION_SPACING), before=self.log_area)
+        self.progress_bar.pack(side="bottom", fill="x", padx=16, pady=(0, 8))
         self.progress_bar.start()
         self.results_frame.hide()
         self.log_area.clear()
@@ -554,7 +559,7 @@ class PDFMergerApp(ctk.CTk):
             output_dir=str(self.output_dir_path) if self.output_dir_path else None,
             row_results=result.row_results,
         )
-        self.results_frame.show(before=self.log_area)
+        self.results_frame.show(before=self.log_area, padx=16)
         self._update_ui_state()
     
     def _on_merge_error(self, error_message: str):
