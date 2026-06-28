@@ -10,7 +10,8 @@ from pdf_merger.core.merge_processor import (
     process_file,
     process_row_with_models,
     process_job,
-    ProcessingResult
+    ProcessingResult,
+    _get_output_filename,
 )
 from pdf_merger.utils.exceptions import PDFMergerError, InvalidFileFormatError
 from pdf_merger.models import Row, MergeJob, MergeResult, RowResult, RowStatus
@@ -1093,5 +1094,39 @@ class TestCleanupTempFiles:
         
         with patch('pathlib.Path.unlink', side_effect=PermissionError("Permission denied")):
             _cleanup_temp_files([temp_file])
-            
+
             mock_logger.warning.assert_called()
+
+
+class TestGetOutputFilename:
+    """Tests for _get_output_filename filename sanitization."""
+
+    def _make_row(self, output_name, row_index=0):
+        return Row(
+            row_index=row_index,
+            raw_data={},
+            serial_numbers_str="",
+            serial_numbers=[],
+            required_column=None,
+            output_name=output_name,
+        )
+
+    def test_comma_preserved_in_output_name(self):
+        """Commas in the output_name column must be kept in the generated filename."""
+        name = "A copy of the email dated October 11, 2017 and its attachments is attached as Exhibit 1."
+        row = self._make_row(name)
+        filename, warning = _get_output_filename(row)
+        assert "," in filename, f"Expected comma in filename but got: {filename!r}"
+
+    def test_illegal_chars_stripped(self):
+        """Characters that are genuinely unsafe on all platforms should still be removed."""
+        row = self._make_row('file<name>:with*illegal?chars"and|more')
+        filename, _ = _get_output_filename(row)
+        for ch in '<>:*?"\\|/':
+            assert ch not in filename
+
+    def test_plain_name_unchanged(self):
+        """Names with only letters, numbers and spaces survive sanitization unchanged."""
+        row = self._make_row("Exhibit 1 2017")
+        filename, _ = _get_output_filename(row)
+        assert filename == "Exhibit 1 2017.pdf"
