@@ -33,8 +33,8 @@ OUTPUT_FILENAME_PATTERN = Constants.OUTPUT_FILENAME_PATTERN
 DEFAULT_SERIAL_NUMBERS_COLUMN = Constants.GOLDFARB_SERIAL_NUMBER_COLUMN
 BYTES_PER_MB = Constants.BYTES_PER_MB
 
-# Characters allowed in custom output filename (alphanumeric, space, hyphen, underscore, dot)
-_FILENAME_SAFE_PATTERN = re.compile(r"[^\w\s\-\.]", re.UNICODE)
+# Characters allowed in custom output filename (alphanumeric, space, hyphen, underscore, dot, comma)
+_FILENAME_SAFE_PATTERN = re.compile(r"[^\w\s\-\.,]", re.UNICODE)
 
 
 def _get_output_filename(row: Row, output_folder: Optional[Path] = None) -> Tuple[str, Optional[str]]:
