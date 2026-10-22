@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-label="Unifier mark, reversed">
+  <title>Unifier mark (reversed)</title>
+  <!-- White mark, transparent background. For navy and other dark backgrounds. -->
+  <path d="M370 375V548" stroke="#fff" stroke-opacity=".55" stroke-width="150" stroke-linecap="round" fill="none"/>
+  <path d="M370 548V660A230 230 0 0 0 830 660V375" stroke="#fff" stroke-width="150" stroke-linecap="round" fill="none"/>
+</svg>

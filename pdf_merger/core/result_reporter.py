@@ -12,6 +12,10 @@ from ..utils.logging_utils import get_logger
 
 logger = get_logger("core.result_reporter")
 
+# Brand header printed at the top of every customer-facing report.
+BRAND_HEADER = "Files Unifier — Many files. One document."
+BRAND_SUBHEADER = "by Unifier"
+
 # Module-level constants
 MAX_DISPLAY_STRING_LENGTH = Constants.MAX_DISPLAY_STRING_LENGTH
 PERCENTAGE_MULTIPLIER = Constants.PERCENTAGE_MULTIPLIER
@@ -34,6 +38,7 @@ def format_result_summary(result: Union[ProcessingResult, MergeResult]) -> str:
     skipped = len(result.skipped_rows) if isinstance(result, MergeResult) else 0
     
     lines = [
+        BRAND_HEADER,
         "=" * 60,
         "Processing Complete",
         "=" * 60,
@@ -76,6 +81,7 @@ def format_result_detailed(result: Union[ProcessingResult, MergeResult]) -> str:
     )
     
     lines = [
+        BRAND_HEADER,
         "=" * 60,
         "Detailed Processing Report",
         "=" * 60,

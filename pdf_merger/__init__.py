@@ -5,7 +5,7 @@ A modular package for merging PDFs based on serial numbers from CSV/Excel files.
 
 __version__ = '1.0.0'
 APP_VERSION = '1.0.0'  # Application version for licensing and display
-APP_NAME = 'PDF Batch Merger'  # Application name for UI display
+APP_NAME = 'Files Unifier'  # Application name for UI display (product of Unifier)
 
 # Import main functions for easy access
 from .core.merge_processor import process_file, ProcessingResult

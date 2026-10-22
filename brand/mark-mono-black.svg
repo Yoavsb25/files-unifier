@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-label="Unifier mark, black">
+  <title>Unifier mark (mono black)</title>
+  <!-- Single-colour mark for print, reports and single-colour reproduction. -->
+  <path d="M370 375V548" stroke="#000" stroke-opacity=".45" stroke-width="150" stroke-linecap="round" fill="none"/>
+  <path d="M370 548V660A230 230 0 0 0 830 660V375" stroke="#000" stroke-width="150" stroke-linecap="round" fill="none"/>
+</svg>

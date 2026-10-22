@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-label="Unifier mark">
+  <title>Unifier mark</title>
+  <defs>
+    <linearGradient id="u" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4338CA"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <!-- Mark only, transparent background. For light backgrounds. -->
+  <path d="M370 375V548" stroke="url(#u)" stroke-opacity=".45" stroke-width="150" stroke-linecap="round" fill="none"/>
+  <path d="M370 548V660A230 230 0 0 0 830 660V375" stroke="url(#u)" stroke-width="150" stroke-linecap="round" fill="none"/>
+</svg>

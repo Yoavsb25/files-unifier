@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-echo -e "${GREEN}Building PDF Batch Merger for macOS...${NC}"
+echo -e "${GREEN}Building Files Unifier for macOS...${NC}"
 echo "Project root: $PROJECT_ROOT"
 echo ""
 
@@ -39,7 +39,7 @@ cd "$PROJECT_ROOT"
 echo "Cleaning previous builds..."
 rm -rf build/
 rm -rf dist/
-rm -rf "PDF Batch Merger.app"
+rm -rf "Files Unifier.app"
 
 # Build with PyInstaller
 echo ""
@@ -47,13 +47,13 @@ echo "Building application..."
 pyinstaller build_config/macos.spec
 
 # Check if build succeeded
-if [ -d "dist/PDF Batch Merger.app" ]; then
+if [ -d "dist/Files Unifier.app" ]; then
     echo ""
     echo -e "${GREEN}✓ Build successful!${NC}"
-    echo "Application bundle: dist/PDF Batch Merger.app"
+    echo "Application bundle: dist/Files Unifier.app"
     echo ""
     echo "To test the app, run:"
-    echo "  open 'dist/PDF Batch Merger.app'"
+    echo "  open 'dist/Files Unifier.app'"
 else
     echo ""
     echo -e "${RED}✗ Build failed!${NC}"

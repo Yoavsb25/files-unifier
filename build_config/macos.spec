@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for macOS build of PDF Batch Merger.
+PyInstaller spec file for macOS build of Files Unifier.
 """
 
 import os
@@ -24,6 +24,12 @@ try:
 except Exception as e:
     print(f"Warning: Could not check for public key: {e}. License verification may not work.")
 
+# Brand assets: runtime window/sidebar icon + bundle icon (tools/generate_brand_assets.py)
+icon_png_path = (project_root / 'pdf_merger' / 'assets' / 'icon.png').resolve()
+if icon_png_path.exists():
+    datas.append((str(icon_png_path), 'pdf_merger/assets'))
+icon_icns_path = project_root / 'build_config' / 'assets' / 'icon.icns'
+
 # Resolve main.py path relative to project root
 main_py_path = (project_root / 'main.py').resolve()
 if not main_py_path.exists():
@@ -36,6 +42,8 @@ a = Analysis(
     datas=datas,
     hiddenimports=[
         'customtkinter',
+        'PIL',
+        'PIL.Image',
         'pypdf',
         'pandas',
         'openpyxl',
@@ -67,7 +75,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='PDF Batch Merger',
+    name='Files Unifier',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -80,13 +88,13 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Add icon path here if you have one
+    icon=str(icon_icns_path) if icon_icns_path.exists() else None,
 )
 
 app = BUNDLE(
     exe,
-    name='PDF Batch Merger.app',
-    icon=None,  # Add icon path here if you have one
+    name='Files Unifier.app',
+    icon=str(icon_icns_path) if icon_icns_path.exists() else None,
     bundle_identifier='com.pdfmerger.batch',
     version='1.0.0',
     info_plist={

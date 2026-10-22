@@ -3,7 +3,7 @@ REM Build script for Windows
 
 setlocal enabledelayedexpansion
 
-echo Building PDF Batch Merger for Windows...
+echo Building Files Unifier for Windows...
 echo.
 
 REM Get script directory
@@ -33,7 +33,7 @@ REM Clean previous builds
 echo Cleaning previous builds...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
-if exist "PDF Batch Merger.exe" del /q "PDF Batch Merger.exe"
+if exist "Files Unifier.exe" del /q "Files Unifier.exe"
 
 REM Build with PyInstaller
 echo.
@@ -41,13 +41,13 @@ echo Building application...
 pyinstaller build_config\windows.spec
 
 REM Check if build succeeded
-if exist "dist\PDF Batch Merger.exe" (
+if exist "dist\Files Unifier.exe" (
     echo.
     echo Build successful!
-    echo Application: dist\PDF Batch Merger.exe
+    echo Application: dist\Files Unifier.exe
     echo.
     echo To test the app, run:
-    echo   dist\PDF Batch Merger.exe
+    echo   dist\Files Unifier.exe
 ) else (
     echo.
     echo Build failed!

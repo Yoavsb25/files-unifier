@@ -1,8 +1,8 @@
-# PDF Batch Merger - User Guide
+# Files Unifier - User Guide
 
 ## What It Does
 
-PDF Batch Merger is a desktop application that automatically merges multiple PDF and Excel files into PDF documents based on instructions from a CSV or Excel file. It's designed for law firms and businesses that need to combine PDF documents and spreadsheets in bulk.
+Files Unifier is a desktop application that automatically merges multiple PDF and Excel files into PDF documents based on instructions from a CSV or Excel file. It's designed for law firms and businesses that need to combine PDF documents and spreadsheets in bulk.
 
 ## How to Use
 
@@ -18,7 +18,7 @@ PDF Batch Merger is a desktop application that automatically merges multiple PDF
 
 ### Step 2: Run the Application
 
-1. Double-click the **PDF Batch Merger** application to launch it.
+1. Double-click the **Files Unifier** application to launch it.
 
 2. The application will check your license. If your license is valid, you'll see a green checkmark at the top.
 

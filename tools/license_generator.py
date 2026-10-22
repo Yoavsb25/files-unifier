@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 License Generator Tool
-Generates signed license files for PDF Batch Merger.
+Generates signed license files for Files Unifier.
 
 Usage:
     python tools/license_generator.py --company "Company Name" --expires "2027-12-31" --machines 5
@@ -138,7 +138,7 @@ def generate_license(
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(
-        description="Generate signed license files for PDF Batch Merger"
+        description="Generate signed license files for Files Unifier"
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')

@@ -1,6 +1,6 @@
 # Packaging, Signing, and Notarization Guide
 
-This guide covers the process of packaging, code signing, and notarizing PDF Batch Merger for distribution on macOS and Windows.
+This guide covers the process of packaging, code signing, and notarizing Files Unifier for distribution on macOS and Windows.
 
 ## Overview
 
@@ -35,13 +35,13 @@ This guide covers the process of packaging, code signing, and notarizing PDF Bat
 2. **Sign the application**:
    ```bash
    codesign --force --deep --sign "Developer ID Application: Your Name (TEAM_ID)" \
-     "dist/PDF Batch Merger.app"
+     "dist/Files Unifier.app"
    ```
 
 3. **Verify signing**:
    ```bash
-   codesign --verify --verbose "dist/PDF Batch Merger.app"
-   spctl --assess --verbose "dist/PDF Batch Merger.app"
+   codesign --verify --verbose "dist/Files Unifier.app"
+   spctl --assess --verbose "dist/Files Unifier.app"
    ```
 
 ### Step 2: Notarization
@@ -52,7 +52,7 @@ This guide covers the process of packaging, code signing, and notarizing PDF Bat
 
 2. **Submit for notarization**:
    ```bash
-   xcrun notarytool submit "dist/PDF Batch Merger.zip" \
+   xcrun notarytool submit "dist/Files Unifier.zip" \
      --apple-id "your@email.com" \
      --team-id "TEAM_ID" \
      --password "app-specific-password" \
@@ -61,7 +61,7 @@ This guide covers the process of packaging, code signing, and notarizing PDF Bat
 
 3. **Staple the notarization ticket**:
    ```bash
-   xcrun stapler staple "dist/PDF Batch Merger.app"
+   xcrun stapler staple "dist/Files Unifier.app"
    ```
 
 ### Step 3: Automated Script
@@ -70,7 +70,7 @@ Use the provided `build_config/notarize.sh` script:
 
 ```bash
 ./build_config/notarize.sh \
-  --app "dist/PDF Batch Merger.app" \
+  --app "dist/Files Unifier.app" \
   --apple-id "your@email.com" \
   --team-id "TEAM_ID" \
   --password "app-specific-password"
@@ -87,18 +87,18 @@ Use the provided `build_config/notarize.sh` script:
 
 Using Certificate Store:
 ```cmd
-signtool sign /f "certificate.pfx" /p "password" /t "http://timestamp.digicert.com" "dist\PDF Batch Merger.exe"
+signtool sign /f "certificate.pfx" /p "password" /t "http://timestamp.digicert.com" "dist\Files Unifier.exe"
 ```
 
 Using Certificate Store:
 ```cmd
-signtool sign /a /t "http://timestamp.digicert.com" "dist\PDF Batch Merger.exe"
+signtool sign /a /t "http://timestamp.digicert.com" "dist\Files Unifier.exe"
 ```
 
 ### Step 3: Verify Signing
 
 ```cmd
-signtool verify /pa "dist\PDF Batch Merger.exe"
+signtool verify /pa "dist\Files Unifier.exe"
 ```
 
 ### Step 4: Automated Script
@@ -106,7 +106,7 @@ signtool verify /pa "dist\PDF Batch Merger.exe"
 Use the provided `build_config/sign_windows.bat` script:
 
 ```cmd
-build_config\sign_windows.bat "dist\PDF Batch Merger.exe" "certificate.pfx" "password"
+build_config\sign_windows.bat "dist\Files Unifier.exe" "certificate.pfx" "password"
 ```
 
 ## CI/CD Integration
@@ -119,16 +119,16 @@ Add to `.github/workflows/build-macos.yml`:
 - name: Code Sign
   run: |
     codesign --force --deep --sign "${{ secrets.MACOS_CERTIFICATE }}" \
-      "dist/PDF Batch Merger.app"
+      "dist/Files Unifier.app"
 
 - name: Notarize
   run: |
-    xcrun notarytool submit "dist/PDF Batch Merger.zip" \
+    xcrun notarytool submit "dist/Files Unifier.zip" \
       --apple-id "${{ secrets.APPLE_ID }}" \
       --team-id "${{ secrets.TEAM_ID }}" \
       --password "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
       --wait
-    xcrun stapler staple "dist/PDF Batch Merger.app"
+    xcrun stapler staple "dist/Files Unifier.app"
 ```
 
 ### GitHub Actions - Windows
@@ -141,7 +141,7 @@ Add to `.github/workflows/build-windows.yml`:
     signtool sign /f "${{ secrets.WINDOWS_CERT_PFX }}" \
       /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" \
       /t "http://timestamp.digicert.com" \
-      "dist\PDF Batch Merger.exe"
+      "dist\Files Unifier.exe"
 ```
 
 ## Certificate Management

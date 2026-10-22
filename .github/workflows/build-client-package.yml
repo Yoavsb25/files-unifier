@@ -80,7 +80,7 @@ jobs:
       run: |
         $date = Get-Date -Format 'yyyyMMdd'
         $safeCompany = "${{ github.event.inputs.company }}" -replace '[^a-zA-Z0-9 _-]', '' -replace ' ', '_'
-        $deliveryName = "PDF_Batch_Merger_${safeCompany}_${date}"
+        $deliveryName = "Files_Unifier_${safeCompany}_${date}"
         New-Item -ItemType Directory -Path "deliveries\$deliveryName" -Force | Out-Null
         Write-Output "DELIVERY_NAME=$deliveryName" | Out-File -FilePath $env:GITHUB_ENV -Append
         Write-Output "delivery-name=$deliveryName" >> $env:GITHUB_OUTPUT
@@ -88,7 +88,7 @@ jobs:
     - name: Copy application and files
       run: |
         $deliveryName = "${{ steps.set-delivery-name.outputs.delivery-name }}"
-        Copy-Item "dist\PDF Batch Merger.exe" "deliveries\$deliveryName\PDF Batch Merger.exe"
+        Copy-Item "dist\Files Unifier.exe" "deliveries\$deliveryName\Files Unifier.exe"
         Copy-Item "deliveries\license.json" "deliveries\$deliveryName\license.json"
         Copy-Item "docs\README_USER.md" "deliveries\$deliveryName\User_Guide.md"
     
@@ -176,7 +176,7 @@ jobs:
       run: |
         DATE=$(date +%Y%m%d)
         SAFE_COMPANY=$(echo "${{ github.event.inputs.company }}" | sed 's/[^a-zA-Z0-9 _-]//g' | tr ' ' '_')
-        DELIVERY_NAME="PDF_Batch_Merger_${SAFE_COMPANY}_${DATE}"
+        DELIVERY_NAME="Files_Unifier_${SAFE_COMPANY}_${DATE}"
         mkdir -p "deliveries/${DELIVERY_NAME}"
         echo "DELIVERY_NAME=${DELIVERY_NAME}" >> $GITHUB_ENV
         echo "delivery-name=${DELIVERY_NAME}" >> $GITHUB_OUTPUT
@@ -184,7 +184,7 @@ jobs:
     - name: Copy application and files
       run: |
         DELIVERY_NAME="${{ steps.set-delivery-name.outputs.delivery-name }}"
-        cp -R "dist/PDF Batch Merger.app" "deliveries/${DELIVERY_NAME}/PDF Batch Merger.app"
+        cp -R "dist/Files Unifier.app" "deliveries/${DELIVERY_NAME}/Files Unifier.app"
         cp deliveries/license.json "deliveries/${DELIVERY_NAME}/license.json"
         cp docs/README_USER.md "deliveries/${DELIVERY_NAME}/User_Guide.md"
     

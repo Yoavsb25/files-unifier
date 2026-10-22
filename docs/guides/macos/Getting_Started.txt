@@ -1,10 +1,12 @@
-Getting Started with PDF Batch Merger
-=====================================
+Files Unifier — Many files. One document.
+
+Getting Started with Files Unifier
+==================================
 
 
 What's in this folder
 ---------------------
-PDF Batch Merger.app   — The application
+Files Unifier.app   — The application
 license.json           — Your personal license (keep it next to the app)
 Getting_Started.*      — This guide (txt, pdf, html)
 
@@ -16,13 +18,13 @@ Step 1 — Download & extract
 
 Step 2 — Place your files
 -------------------------
-1. Drag "PDF Batch Merger.app" to your Applications folder.
+1. Drag "Files Unifier.app" to your Applications folder.
 2. Copy "license.json" to the same Applications folder, next to the app.
 
 Step 3 — Open the app
 ---------------------
 1. Open your Applications folder.
-2. Right-click "PDF Batch Merger.app" and choose Open.
+2. Right-click "Files Unifier.app" and choose Open.
 
   ⚠  You may see a message saying "Apple cannot verify the developer." This is normal for software not sold through the App Store. Right-click the app → click Open → click Open again in the dialog.
 

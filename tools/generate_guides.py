@@ -7,7 +7,9 @@ Output: docs/guides/macos/ and docs/guides/windows/
 
 Re-run after editing content to regenerate all three formats.
 """
+import base64
 from pathlib import Path
+
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
@@ -15,6 +17,18 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib import colors
 
 GUIDES_DIR = Path(__file__).parent.parent / "docs" / "guides"
+BRAND_NAME = "Files Unifier"
+BRAND_TAGLINE = "Many files. One document."
+BRAND_LINE = f"{BRAND_NAME} \u2014 {BRAND_TAGLINE}"
+ICON_PATH = Path(__file__).parent.parent / "pdf_merger" / "assets" / "icon.png"
+
+
+def _icon_data_uri() -> str:
+    """Logo as a data URI so the standalone HTML guide stays self-contained."""
+    try:
+        return "data:image/png;base64," + base64.b64encode(ICON_PATH.read_bytes()).decode()
+    except OSError:
+        return ""
 
 
 # ---------------------------------------------------------------------------
@@ -24,9 +38,10 @@ GUIDES_DIR = Path(__file__).parent.parent / "docs" / "guides"
 
 def _content_macos():
     return [
-        ("title",   "Getting Started with PDF Batch Merger"),
+        ("brand",   BRAND_LINE),
+        ("title",   "Getting Started with Files Unifier"),
         ("h2",      "What's in this folder"),
-        ("p",       "PDF Batch Merger.app   — The application"),
+        ("p",       "Files Unifier.app   — The application"),
         ("p",       "license.json           — Your personal license (keep it next to the app)"),
         ("p",       "Getting_Started.*      — This guide (txt, pdf, html)"),
         ("h2",      "Step 1 — Download & extract"),
@@ -35,11 +50,11 @@ def _content_macos():
         ("li",      "Once downloaded, double-click the ZIP file to extract it. "
                     "A new folder will appear — open it to find your files."),
         ("h2",      "Step 2 — Place your files"),
-        ("li",      'Drag "PDF Batch Merger.app" to your Applications folder.'),
+        ("li",      'Drag "Files Unifier.app" to your Applications folder.'),
         ("li",      'Copy "license.json" to the same Applications folder, next to the app.'),
         ("h2",      "Step 3 — Open the app"),
         ("li",      'Open your Applications folder.'),
-        ("li",      'Right-click "PDF Batch Merger.app" and choose Open.'),
+        ("li",      'Right-click "Files Unifier.app" and choose Open.'),
         ("warning", 'You may see a message saying "Apple cannot verify the developer." '
                     "This is normal for software not sold through the App Store. "
                     "Right-click the app \u2192 click Open \u2192 click Open again in the dialog."),
@@ -57,9 +72,10 @@ def _content_macos():
 
 def _content_windows():
     return [
-        ("title",   "Getting Started with PDF Batch Merger"),
+        ("brand",   BRAND_LINE),
+        ("title",   "Getting Started with Files Unifier"),
         ("h2",      "What's in this folder"),
-        ("p",       "PDF Batch Merger.exe   — The application"),
+        ("p",       "Files Unifier.exe   — The application"),
         ("p",       "license.json           — Your personal license (keep it next to the app)"),
         ("p",       "Getting_Started.*      — This guide (txt, pdf, html)"),
         ("h2",      "Step 1 — Download & extract"),
@@ -68,11 +84,11 @@ def _content_windows():
         ("li",      'Once downloaded, right-click the ZIP file and choose "Extract All", '
                     "then click Extract. A new folder will appear — open it to find your files."),
         ("h2",      "Step 2 — Place your files"),
-        ("li",      '"PDF Batch Merger.exe" to any folder you like '
+        ("li",      '"Files Unifier.exe" to any folder you like '
                     "(for example, your Desktop or Documents folder)."),
         ("li",      'Copy "license.json" to the same folder as the .exe file.'),
         ("h2",      "Step 3 — Open the app"),
-        ("li",      'Double-click "PDF Batch Merger.exe" to launch.'),
+        ("li",      'Double-click "Files Unifier.exe" to launch.'),
         ("warning", '"Windows protected your PC" may appear. '
                     'This is normal for new software. Click "More info", then click "Run anyway".'),
         ("h2",      "Step 4 — First launch"),
@@ -95,7 +111,9 @@ def _to_txt(items: list) -> str:
     lines = []
     counter = 0
     for tag, text in items:
-        if tag == "title":
+        if tag == "brand":
+            lines += [text, ""]
+        elif tag == "title":
             lines += [text, "=" * len(text), ""]
             counter = 0
         elif tag == "h2":
@@ -124,7 +142,13 @@ def _to_html(items: list) -> str:
             body_parts.append("    <ol>")
             in_ol = True
 
-        if tag == "title":
+        if tag == "brand":
+            icon = _icon_data_uri()
+            img = f'<img src="{icon}" alt="" width="40" height="40">' if icon else ""
+            body_parts.append(
+                f'    <div class="brand">{img}<span>{text}</span></div>'
+            )
+        elif tag == "title":
             body_parts.append(f"    <h1>{text}</h1>")
         elif tag == "h2":
             body_parts.append(f"    <h2>{text}</h2>")
@@ -145,15 +169,17 @@ def _to_html(items: list) -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Getting Started \u2014 PDF Batch Merger</title>
+  <title>Getting Started \u2014 Files Unifier</title>
   <style>
     body {{
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       max-width: 680px; margin: 40px auto; padding: 0 20px;
       color: #333; line-height: 1.7;
     }}
-    h1 {{ color: #1a1a2e; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }}
-    h2 {{ color: #16213e; margin-top: 28px; }}
+    .brand {{ display: flex; align-items: center; gap: 12px; font-weight: 700; color: #0F1B3D; margin-bottom: 8px; }}
+    .brand img {{ border-radius: 9px; }}
+    h1 {{ color: #0F1B3D; border-bottom: 2px solid #C7D7F5; padding-bottom: 10px; }}
+    h2 {{ color: #2563EB; margin-top: 28px; }}
     ol {{ padding-left: 22px; }}
     li {{ margin: 6px 0; }}
     .warning {{
@@ -185,10 +211,28 @@ def _to_pdf(items: list, output_path: Path) -> None:
         leftIndent=12, rightIndent=12,
         spaceBefore=8, spaceAfter=8,
     )
+    brand_style = ParagraphStyle(
+        "Brand",
+        parent=styles["Normal"],
+        alignment=1,  # centred
+        textColor=colors.HexColor("#0F1B3D"),
+        fontName="Helvetica-Bold",
+        spaceAfter=6,
+    )
     story = []
     counter = 0
     for tag, text in items:
-        if tag == "title":
+        if tag == "brand":
+            if ICON_PATH.exists():
+                from reportlab.platypus import Image as RLImage
+
+                img = RLImage(str(ICON_PATH), width=0.55 * inch, height=0.55 * inch)
+                img.hAlign = "CENTER"
+                story.append(img)
+                story.append(Spacer(1, 0.08 * inch))
+            story.append(Paragraph(text, brand_style))
+            story.append(Spacer(1, 0.1 * inch))
+        elif tag == "title":
             story.append(Paragraph(text, styles["Title"]))
             story.append(Spacer(1, 0.15 * inch))
             counter = 0

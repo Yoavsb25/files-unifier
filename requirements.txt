@@ -5,6 +5,7 @@ reportlab>=3.6.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
 customtkinter>=5.0.0
+Pillow>=10.0.0
 cryptography>=41.0.0
 pyinstaller>=6.0.0
 google-api-python-client>=2.147.0

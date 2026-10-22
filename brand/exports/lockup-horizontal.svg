@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2600 640" role="img" aria-label="Unifier  Many files. One document.">
+  <title>Unifier  Many files. One document.</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4338CA"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <rect x="20" y="20" width="600" height="600" rx="132" fill="url(#tile)"/>
+    <path d="M205 207V294" stroke="#fff" stroke-opacity=".55" stroke-width="75" stroke-linecap="round" fill="none"/>
+    <path d="M205 294V350A115 115 0 0 0 435 350V207" stroke="#fff" stroke-width="75" stroke-linecap="round" fill="none"/>
+  </g>
+  <text x="700" y="330" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="215" font-weight="800" letter-spacing="-5" fill="#0F1B3D">Unifier</text>
+  <text x="706" y="470" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="96" font-weight="500" fill="#64748B">Many files. One document.</text>
+</svg>

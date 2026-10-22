@@ -51,7 +51,7 @@ def show_error_dialog(title: str, message: str):
 
 def main():
     """Main entry point. Shows window first, then runs observability and license for faster perceived startup."""
-    logger.info(f"PDF Batch Merger v{APP_VERSION} starting...")
+    logger.info(f"Files Unifier v{APP_VERSION} starting...")
 
     # Load configuration once (needed for observability settings and passed to app)
     config = load_config()

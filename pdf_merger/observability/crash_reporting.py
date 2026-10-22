@@ -87,7 +87,7 @@ class CrashReporter:
         """
         lines = [
             "=" * 80,
-            "PDF Batch Merger - Crash Report",
+            "Files Unifier - Crash Report",
             "=" * 80,
             "",
             f"Timestamp: {datetime.now().isoformat()}",

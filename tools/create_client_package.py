@@ -129,7 +129,7 @@ def build_application(platform: str) -> bool:
             return False
         
         # Check if app was created
-        app_path = project_root / 'dist' / 'PDF Batch Merger.app'
+        app_path = project_root / 'dist' / 'Files Unifier.app'
         if not app_path.exists():
             print_error("Application bundle not found after build")
             return False
@@ -153,7 +153,7 @@ def build_application(platform: str) -> bool:
             return False
         
         # Check if exe was created
-        exe_path = project_root / 'dist' / 'PDF Batch Merger.exe'
+        exe_path = project_root / 'dist' / 'Files Unifier.exe'
         if not exe_path.exists():
             print_error("Executable not found after build")
             return False
@@ -234,7 +234,7 @@ def validate_machines(machines_str: str) -> str:
 def get_customer_info():
     """Interactively get customer information."""
     print(f"\n{GREEN}{'='*60}{NC}")
-    print(f"{GREEN}PDF Batch Merger - Sales Automation{NC}")
+    print(f"{GREEN}Files Unifier - Sales Automation{NC}")
     print(f"{GREEN}{'='*60}{NC}\n")
     print("Please provide the following information:\n")
     
@@ -295,14 +295,14 @@ def create_delivery_package(company: str, platform: str, license_path: Path) -> 
     
     # Create delivery directory
     safe_company = "".join(c for c in company if c.isalnum() or c in (' ', '-', '_')).strip()
-    delivery_name = f"PDF_Batch_Merger_{safe_company}_{datetime.now().strftime('%Y%m%d')}"
+    delivery_name = f"Files_Unifier_{safe_company}_{datetime.now().strftime('%Y%m%d')}"
     delivery_dir = project_root / 'deliveries' / delivery_name
     delivery_dir.mkdir(parents=True, exist_ok=True)
     
     # Copy application
     if platform == 'macos':
-        app_source = project_root / 'dist' / 'PDF Batch Merger.app'
-        app_dest = delivery_dir / 'PDF Batch Merger.app'
+        app_source = project_root / 'dist' / 'Files Unifier.app'
+        app_dest = delivery_dir / 'Files Unifier.app'
         if app_source.exists():
             shutil.copytree(app_source, app_dest, dirs_exist_ok=True)
             print_success("Application copied")
@@ -310,8 +310,8 @@ def create_delivery_package(company: str, platform: str, license_path: Path) -> 
             print_error("Application not found")
             return None
     else:  # windows
-        exe_source = project_root / 'dist' / 'PDF Batch Merger.exe'
-        exe_dest = delivery_dir / 'PDF Batch Merger.exe'
+        exe_source = project_root / 'dist' / 'Files Unifier.exe'
+        exe_dest = delivery_dir / 'Files Unifier.exe'
         if exe_source.exists():
             shutil.copy2(exe_source, exe_dest)
             print_success("Application copied")
@@ -334,7 +334,9 @@ def create_delivery_package(company: str, platform: str, license_path: Path) -> 
     # Create installation instructions
     instructions = delivery_dir / 'INSTALLATION_INSTRUCTIONS.txt'
     with open(instructions, 'w') as f:
-        f.write("PDF Batch Merger - Installation Instructions\n")
+        f.write("Files Unifier \u2014 Many files. One document.\n")
+        f.write("by Unifier\n\n")
+        f.write("Files Unifier - Installation Instructions\n")
         f.write("=" * 50 + "\n\n")
         f.write(f"Company: {company}\n")
         f.write(f"Version: {APP_VERSION}\n")
@@ -342,15 +344,15 @@ def create_delivery_package(company: str, platform: str, license_path: Path) -> 
         f.write("INSTALLATION:\n")
         f.write("-" * 50 + "\n\n")
         if platform == 'macos':
-            f.write("1. Copy 'PDF Batch Merger.app' to your Applications folder\n")
+            f.write("1. Copy 'Files Unifier.app' to your Applications folder\n")
             f.write("2. Copy 'license.json' to the same folder as the app\n")
             f.write("   (or to ~/.pdf_merger/ directory)\n")
-            f.write("3. Double-click 'PDF Batch Merger.app' to launch\n\n")
+            f.write("3. Double-click 'Files Unifier.app' to launch\n\n")
         else:
-            f.write("1. Copy 'PDF Batch Merger.exe' to your desired location\n")
+            f.write("1. Copy 'Files Unifier.exe' to your desired location\n")
             f.write("2. Copy 'license.json' to the same folder as the .exe\n")
             f.write("   (or to %USERPROFILE%\\.pdf_merger\\ directory)\n")
-            f.write("3. Double-click 'PDF Batch Merger.exe' to launch\n\n")
+            f.write("3. Double-click 'Files Unifier.exe' to launch\n\n")
         f.write("SUPPORT:\n")
         f.write("-" * 50 + "\n")
         f.write("For technical support or license renewal, contact your software provider.\n")
@@ -503,7 +505,7 @@ def validate_machines(machines_str: str) -> str:
 def get_customer_info():
     """Interactively get customer information."""
     print(f"\n{GREEN}{'='*60}{NC}")
-    print(f"{GREEN}PDF Batch Merger - Sales Automation{NC}")
+    print(f"{GREEN}Files Unifier - Sales Automation{NC}")
     print(f"{GREEN}{'='*60}{NC}\n")
     print("Please provide the following information:\n")
     
@@ -610,7 +612,7 @@ def main():
         skip_build = args.skip_build
     
     print(f"\n{GREEN}{'='*60}{NC}")
-    print(f"{GREEN}PDF Batch Merger - Sales Automation{NC}")
+    print(f"{GREEN}Files Unifier - Sales Automation{NC}")
     print(f"{GREEN}{'='*60}{NC}\n")
     print(f"Company: {company}")
     print(f"Expires: {expires}")

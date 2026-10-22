@@ -1,4 +1,4 @@
-# PDF Batch Merger - Installation Guide
+# Files Unifier - Installation Guide
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@
 
 ## Prerequisites
 
-Before installing PDF Batch Merger, ensure you have:
+Before installing Files Unifier, ensure you have:
 
 - **Python 3.6 or higher** (Python 3.14 recommended for tkinter support on macOS)
 - **pip** (Python package manager) - usually comes with Python
@@ -351,7 +351,7 @@ pip install -r requirements.txt
 
 5. **Run from Command Prompt for debugging:**
    - Open Command Prompt in the folder containing the .exe
-   - Run: `"PDF Batch Merger.exe"` (with quotes)
+   - Run: `"Files Unifier.exe"` (with quotes)
    - This may show error messages that aren't visible when double-clicking
 
 6. **Check Windows Event Viewer:**

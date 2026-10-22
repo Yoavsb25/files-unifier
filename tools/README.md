@@ -1,6 +1,6 @@
 # License Generation Tools
 
-This directory contains tools for generating and managing licenses for PDF Batch Merger.
+This directory contains tools for generating and managing licenses for Files Unifier.
 
 ## Setup
 

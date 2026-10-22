@@ -46,7 +46,9 @@ logger = get_logger("ui.app")
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
-APP_NAME = "PDF Batch Merger"
+APP_NAME = "Files Unifier"
+ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+ICON_PATH = ASSETS_DIR / "icon.png"
 
 
 class PDFMergerApp(ctk.CTk):
@@ -60,6 +62,7 @@ class PDFMergerApp(ctk.CTk):
         super().__init__()
 
         self.title(APP_NAME)
+        self._set_window_icon()
         self.geometry("1020x800")
         self.minsize(700, 500)
         self.configure(fg_color=APP_BACKGROUND)
@@ -92,6 +95,36 @@ class PDFMergerApp(ctk.CTk):
         # Check license
         self._check_license()
     
+    def _set_window_icon(self):
+        """Set the window/taskbar icon from the bundled brand asset.
+
+        Best-effort: a missing asset or a headless/mock Tk must never
+        stop the app from starting.
+        """
+        try:
+            if ICON_PATH.exists():
+                # Keep a reference so Tk does not garbage-collect the image.
+                self._icon_photo = __import__("tkinter").PhotoImage(file=str(ICON_PATH))
+                self.iconphoto(True, self._icon_photo)
+        except Exception as e:  # pragma: no cover - cosmetic only
+            logger.warning(f"Could not set window icon: {e}")
+
+    def _load_brand_image(self, size: int = 34):
+        """Load the logo mark as a CTkImage, or None if unavailable."""
+        try:
+            ctk_image = getattr(ctk, "CTkImage", None)
+            if ctk_image is None or not ICON_PATH.exists():
+                return None
+            from PIL import Image
+
+            self._brand_photo = ctk_image(
+                light_image=Image.open(ICON_PATH), size=(size, size)
+            )
+            return self._brand_photo
+        except Exception as e:  # pragma: no cover - cosmetic only
+            logger.warning(f"Could not load brand image: {e}")
+            return None
+
     def _init_handlers(self):
         """Initialize event handlers."""
         self.file_handler = FileSelectionHandler(
@@ -166,12 +199,17 @@ class PDFMergerApp(ctk.CTk):
         sidebar_scroll.pack(fill="both", expand=True)
         sidebar_scroll.grid_columnconfigure(0, weight=1)
 
+        header_frame = ctk.CTkFrame(sidebar_scroll, fg_color="transparent")
+        header_frame.pack(pady=(20, 8), padx=16, anchor="w")
+        brand_image = self._load_brand_image(34)
+        if brand_image is not None:
+            ctk.CTkLabel(header_frame, image=brand_image, text="").pack(side="left", padx=(0, 10))
         ctk.CTkLabel(
-            sidebar_scroll,
+            header_frame,
             text=APP_NAME,
             font=ctk.CTkFont(size=FONT_TITLE_SIZE, weight="bold"),
             text_color=TEXT_PRIMARY,
-        ).pack(pady=(20, 8), padx=16, anchor="w")
+        ).pack(side="left", anchor="w")
 
         self.license_frame = LicenseFrame(sidebar_scroll)
         self.license_frame.pack(fill="x", padx=16, pady=(0, 16))

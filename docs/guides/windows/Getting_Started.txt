@@ -1,10 +1,12 @@
-Getting Started with PDF Batch Merger
-=====================================
+Files Unifier — Many files. One document.
+
+Getting Started with Files Unifier
+==================================
 
 
 What's in this folder
 ---------------------
-PDF Batch Merger.exe   — The application
+Files Unifier.exe   — The application
 license.json           — Your personal license (keep it next to the app)
 Getting_Started.*      — This guide (txt, pdf, html)
 
@@ -16,12 +18,12 @@ Step 1 — Download & extract
 
 Step 2 — Place your files
 -------------------------
-1. "PDF Batch Merger.exe" to any folder you like (for example, your Desktop or Documents folder).
+1. "Files Unifier.exe" to any folder you like (for example, your Desktop or Documents folder).
 2. Copy "license.json" to the same folder as the .exe file.
 
 Step 3 — Open the app
 ---------------------
-1. Double-click "PDF Batch Merger.exe" to launch.
+1. Double-click "Files Unifier.exe" to launch.
 
   ⚠  "Windows protected your PC" may appear. This is normal for new software. Click "More info", then click "Run anyway".
 

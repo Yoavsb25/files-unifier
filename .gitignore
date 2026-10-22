@@ -201,3 +201,5 @@ config.json
 
 .claude/
 CLAUDE.md.worktrees/
+.superpowers/
+.DS_Store

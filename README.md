@@ -1,8 +1,12 @@
-# Files Unifeder — PDF Batch Merger
+<p align="center">
+  <img src="brand/exports/lockup-horizontal.png" alt="Unifier — Many files. One document." width="560">
+</p>
 
-![Python](https://img.shields.io/badge/Python-A78BFA?style=for-the-badge&logo=python&logoColor=white)
-![Tkinter](https://img.shields.io/badge/Tkinter-7C3AED?style=for-the-badge&logo=python&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Active-7C3AED?style=for-the-badge)
+# Files Unifier — by Unifier
+
+![Python](https://img.shields.io/badge/Python-2563EB?style=for-the-badge&logo=python&logoColor=white)
+![Tkinter](https://img.shields.io/badge/Tkinter-2563EB?style=for-the-badge&logo=python&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active-2563EB?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Commercial-6B7280?style=for-the-badge)
 
 ---
@@ -18,7 +22,7 @@
 
 ## Overview
 
-Files Unifeder is a desktop application built with Python and Tkinter that automates batch PDF merging. Given a CSV or Excel manifest and a folder of PDF files, it matches files by serial number, merges them in the configured order, and produces a detailed results report. Built for reliability — includes license management, crash reporting, metrics collection, and opt-in telemetry.
+Files Unifier is a desktop application built with Python and Tkinter that automates batch PDF merging. Given a CSV or Excel manifest and a folder of PDF files, it matches files by serial number, merges them in the configured order, and produces a detailed results report. Built for reliability — includes license management, crash reporting, metrics collection, and opt-in telemetry.
 
 ## Features
 
@@ -74,8 +78,8 @@ PDFMergerApp (ui/app.py)
 **Prerequisites:** Python 3.x, pip
 
 ```bash
-git clone https://github.com/Yoavsb25/files_unifeder.git
-cd files_unifeder
+git clone https://github.com/Yoavsb25/files-unifier.git
+cd files-unifier
 pip install -r requirements.txt
 python main.py
 ```
@@ -83,7 +87,8 @@ python main.py
 ## Project Structure
 
 ```
-files_unifeder/
+files-unifier/
+├── brand/                      # Brand masters (SVG) and exported assets — see brand/BRAND.md
 ├── main.py                     # Entry point — launches GUI, observability, license check
 ├── pdf_merger/
 │   ├── core/                   # Merge pipeline: orchestrator, processor, parsers, reporter
@@ -105,6 +110,6 @@ files_unifeder/
 
 ---
 
-[![LinkedIn](https://img.shields.io/badge/Yoav_Sborovsky-LinkedIn-7C3AED?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/yoav-sborovsky/)
+[![LinkedIn](https://img.shields.io/badge/Yoav_Sborovsky-LinkedIn-2563EB?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/yoav-sborovsky/)
 &nbsp;
 Part of [Yoav Sborovsky's GitHub portfolio](https://github.com/Yoavsb25)
