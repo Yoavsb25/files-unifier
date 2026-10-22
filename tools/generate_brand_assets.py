@@ -80,9 +80,10 @@ def _draw_u(draw: ImageDraw.ImageDraw, scale: float, colour, light_opacity: floa
          s(STEM_R + half), s(BOWL_Y + radius + half)],
         start=0, end=180, fill=colour, width=int(w),
     )
-    for cx, cy in ((STEM_L, TOP), (STEM_R, TOP)):
-        r = w / 2
-        draw.ellipse([s(cx) - r, s(cy) - r, s(cx) + r, s(cy) + r], fill=colour)
+    # Solid cap on the right stem only; the left cap belongs to the
+    # translucent segment drawn by _u_overlay.
+    r = w / 2
+    draw.ellipse([s(STEM_R) - r, s(TOP) - r, s(STEM_R) + r, s(TOP) + r], fill=colour)
     # Translucent upper left stem on its own layer so opacity composes.
     return w
 
@@ -139,24 +140,25 @@ def mark_image(px: int, variant: str) -> Image.Image:
     return img.resize((px, px), Image.LANCZOS)
 
 
+# (path, face index) — HelveticaNeue.ttc holds every weight; index 0 is Regular.
 _FONT_CANDIDATES_BOLD = [
-    "/System/Library/Fonts/HelveticaNeue.ttc",
-    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "C:\\Windows\\Fonts\\arialbd.ttf",
+    ("/System/Library/Fonts/HelveticaNeue.ttc", 1),  # Bold
+    ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 0),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 0),
+    ("C:\\Windows\\Fonts\\arialbd.ttf", 0),
 ]
 _FONT_CANDIDATES_REG = [
-    "/System/Library/Fonts/HelveticaNeue.ttc",
-    "/System/Library/Fonts/Supplemental/Arial.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "C:\\Windows\\Fonts\\arial.ttf",
+    ("/System/Library/Fonts/HelveticaNeue.ttc", 10),  # Medium (brand tagline weight 500)
+    ("/System/Library/Fonts/Supplemental/Arial.ttf", 0),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0),
+    ("C:\\Windows\\Fonts\\arial.ttf", 0),
 ]
 
 
 def _font(candidates, size: int) -> ImageFont.FreeTypeFont:
-    for path in candidates:
+    for path, index in candidates:
         try:
-            return ImageFont.truetype(path, size)
+            return ImageFont.truetype(path, size, index=index)
         except Exception:
             continue
     return ImageFont.load_default()
@@ -212,6 +214,30 @@ def social_image(w: int, h: int) -> Image.Image:
     draw.text((int(w * 0.075), int(h * 0.80)),
               "Files Unifier — document assembly for operations teams",
               font=sub, fill=SLATE)
+    return img
+
+
+def linkedin_banner_image(w: int, h: int) -> Image.Image:
+    """LinkedIn company cover (1128x191 at 1x): lockup centred on cream + rings.
+
+    LinkedIn overlays the page logo on the bottom-left of the cover, so the
+    left ~30% carries no artwork.
+    """
+    img = Image.new("RGB", (w, h), CREAM)
+    draw = ImageDraw.Draw(img)
+    cx, cy = w, 0
+    for i, r in enumerate((int(h * 0.76), int(h * 0.55), int(h * 0.34))):
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r],
+                     outline=(165, 200, 240) if i % 2 == 0 else (140, 185, 235),
+                     width=max(6, h // 18))
+    dot = (165, 200, 240)
+    for i in range(6):
+        for j in range(3):
+            x, y = int(w * 0.70) + i * h // 10, int(h * 0.62) + j * h // 10
+            r = max(3, h // 64)
+            draw.ellipse([x - r, y - r, x + r, y + r], fill=dot)
+    lock = lockup_image(int(h * 0.52 * 2600 / 640))
+    img.paste(lock, ((w - lock.width) // 2, (h - lock.height) // 2), lock)
     return img
 
 
@@ -297,6 +323,7 @@ def main() -> int:
     og = EXPORTS / "og-image.png"
     _save(social_image(1200, 630), og)
     _save(social_image(1280, 640), EXPORTS / "github-social.png")
+    _save(linkedin_banner_image(2256, 382), EXPORTS / "linkedin-banner.png")
 
     # Favicons
     _save(logo_image(32), EXPORTS / "favicon-32.png")

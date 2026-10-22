@@ -6,6 +6,7 @@ import pytest
 
 from tools.generate_brand_assets import (
     EXPORTS,
+    linkedin_banner_image,
     lockup_image,
     logo_image,
     mark_image,
@@ -34,6 +35,19 @@ class TestBrandImages:
         assert social_image(1200, 630).size == (1200, 630)
         assert social_image(1280, 640).size == (1280, 640)
 
+    def test_linkedin_banner_keeps_logo_overlay_corner_clear(self):
+        img = linkedin_banner_image(2256, 382)
+        assert img.size == (2256, 382)
+        # LinkedIn overlays the page logo bottom-left: that area is plain cream.
+        corner = img.crop((0, 0, int(2256 * 0.28), 382))
+        assert corner.getcolors() == [(corner.width * corner.height, (248, 246, 241))]
+
+    def test_logo_left_stem_top_is_translucent(self):
+        # Top of the left stem is the light segment, not solid white.
+        img = logo_image(1200)
+        r, g, b, _ = img.getpixel((370, 400))
+        assert (r, g, b) != (255, 255, 255)
+
     def test_lockup_aspect(self):
         img = lockup_image(1300)
         assert img.width == 1300
@@ -53,6 +67,7 @@ class TestGeneratedExports:
             "brand/exports/icon.ico",
             "brand/exports/og-image.png",
             "brand/exports/github-social.png",
+            "brand/exports/linkedin-banner.png",
             "build_config/assets/icon.ico",
             "pdf_merger/assets/icon.png",
             "landing/assets/favicon.svg",

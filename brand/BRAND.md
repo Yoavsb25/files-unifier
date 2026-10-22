@@ -34,7 +34,7 @@ Masters (edit these):
 
 Exports (generated, in `exports/`): app icons (`icon.icns`, `icon.ico`,
 `logo-1024.png`), favicons, `og-image.png` (1200×630), `github-social.png`
-(1280×640), lockup PNGs at 1x/2x, and a `contact-sheet.png` preview.
+(1280×640), `linkedin-banner.png` (2256×382), lockup PNGs at 1x/2x, and a `contact-sheet.png` preview.
 
 Regenerate everything after touching a master:
 
@@ -91,7 +91,7 @@ it to a single colour except in the mono variants.
 | Favicon | `favicon.svg`, PNG/ICO fallbacks |
 | Link shares (LinkedIn/X) | `og-image.png` 1200×630, absolute URL |
 | GitHub repo social preview | `github-social.png` 1280×640 (upload in repo Settings) |
-| Wide banner placements | `landing/assets/banner.png` |
+| LinkedIn company cover | `linkedin-banner.png` 2256×382 (2× of 1128×191). Lockup is centred because LinkedIn covers the bottom-left with the page logo — keep that corner empty |
 | PDF/print, single colour | `mark-mono-black.svg` |
 | Merge reports (text) | "Files Unifier — Many files. One document." header |
 
