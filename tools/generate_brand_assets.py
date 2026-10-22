@@ -332,7 +332,7 @@ def main() -> int:
         ("favicon-32.png", "favicon-32.png"), ("favicon.svg", "favicon.svg"),
         ("apple-touch-icon.png", "apple-touch-icon.png"),
         ("og-image.png", "og-image.png"), ("logo.svg", "logo.svg"),
-        ("logo-512.png", "logo.png"),
+        ("logo-512.png", "logo.png"), ("mark-reversed.svg", "mark-reversed.svg"),
     ]:
         shutil.copy2(EXPORTS / src, landing_assets / dst)
     print("  copied exports -> build_config/assets/, pdf_merger/assets/, landing/assets/")
