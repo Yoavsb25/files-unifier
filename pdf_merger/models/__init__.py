@@ -1,6 +1,6 @@
 """
 Domain models package.
-Contains data models for the PDF merger application.
+Contains data models for Files Unifier.
 """
 
 from .row import Row

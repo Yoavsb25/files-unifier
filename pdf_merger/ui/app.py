@@ -1,5 +1,5 @@
 """
-CustomTkinter GUI application for PDF Merger.
+CustomTkinter GUI application for Files Unifier.
 """
 
 import subprocess

@@ -1,5 +1,5 @@
 """
-UI components for PDF Merger application.
+UI components for Files Unifier application.
 """
 
 import customtkinter as ctk

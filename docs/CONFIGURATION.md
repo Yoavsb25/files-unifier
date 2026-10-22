@@ -1,6 +1,6 @@
 # Configuration Guide
 
-This document describes how to configure PDF Batch Merger using various configuration methods.
+This document describes how to configure Files Unifier using various configuration methods.
 
 ## Configuration Precedence
 
@@ -120,7 +120,7 @@ EOF
 # Launch the GUI application from the project directory
 # The preset will be automatically loaded and used to pre-populate fields
 cd /path/to/project
-# Then launch PDF Batch Merger
+# Then launch Files Unifier
 ```
 
 ### Example 3: Full Configuration Stack

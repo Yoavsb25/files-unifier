@@ -63,6 +63,12 @@ python tools/create_client_package.py
 
 **Operations** (`pdf_merger/operations/`): low-level PDF merge (`pypdf`), streaming merge for large files, and Excel-to-PDF conversion (`reportlab`).
 
+## Brand
+
+Company is **Unifier**, product is **Files Unifier**, tagline "Many files. One document." — `brand/BRAND.md` is the source of truth for names, colours and asset usage. Never use the old names ("PDF Batch Merger", "Files Unifeder") in user-facing copy. Edit SVG masters in `brand/`, then run `python tools/generate_brand_assets.py --contact-sheet` to regenerate exports and sync them to `build_config/assets/`, `pdf_merger/assets/` and `landing/assets/`.
+
+`landing/index.html` is the static marketing site (no build step); preview with `python -m http.server 8000 --directory landing`.
+
 ## Tests
 
 Tests live in `tests/unit/` organized by module (mirrors `pdf_merger/` structure). `pytest.ini` configures discovery. There are no integration tests — the test suite is unit-only (~30 tests).

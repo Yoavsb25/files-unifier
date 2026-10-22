@@ -1,5 +1,5 @@
 """
-Event handlers for PDF Merger UI.
+Event handlers for Files Unifier UI.
 """
 
 import threading

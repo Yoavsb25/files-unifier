@@ -1,5 +1,5 @@
 """
-Logging utilities for PDF Merger.
+Logging utilities for Files Unifier.
 Provides centralized logging setup and management.
 """
 

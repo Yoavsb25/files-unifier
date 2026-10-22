@@ -1,4 +1,4 @@
-# PDF Batch Merger - Testing Guide
+# Files Unifier - Testing Guide
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@
 
 ## Overview
 
-The PDF Batch Merger project uses **pytest** as the testing framework with comprehensive test coverage across all modules. The test suite ensures that all core functionality works correctly and helps prevent regressions when making changes to the codebase.
+The Files Unifier project uses **pytest** as the testing framework with comprehensive test coverage across all modules. The test suite ensures that all core functionality works correctly and helps prevent regressions when making changes to the codebase.
 
 ### Test Statistics
 
@@ -480,7 +480,7 @@ class TestValidateSerialNumber:
 **Solution:**
 ```bash
 # Ensure you're in the project root
-cd /path/to/files_unifeder
+cd /path/to/files-unifier
 
 # Verify virtual environment is activated
 which python  # Should show .venv/bin/python

@@ -1,5 +1,5 @@
 """
-UI theme constants for PDF Merger application.
+UI theme constants for Files Unifier application.
 Light blue theme.
 """
 

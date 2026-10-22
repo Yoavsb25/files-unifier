@@ -1,5 +1,5 @@
 """
-PDF Merger Package
+Files Unifier Package
 A modular package for merging PDFs based on serial numbers from CSV/Excel files.
 """
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point for PDF Merger.
+Main entry point for Files Unifier.
 Launches GUI application with license checking.
 """
 

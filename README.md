@@ -16,7 +16,7 @@
 
 ---
 
-> Desktop GUI app for batch merging PDFs against a CSV/Excel manifest — match, merge, report.
+> **Many files. One document.** Document assembly for operations teams: match hundreds of PDFs to a CSV/Excel manifest, merge them into clean, named packages, and get a report for every row. Runs entirely on your machine.
 
 ---
 
@@ -101,6 +101,7 @@ files-unifier/
 │   ├── ui/                     # Tkinter GUI (PDFMergerApp)
 │   └── utils/                  # Logging utilities
 ├── docs/                       # Documentation
+├── landing/                    # Static marketing site for Unifier (index.html + assets)
 ├── tools/                      # Developer tooling
 ├── tests/                      # Test suite
 ├── build_config/               # PyInstaller build configuration

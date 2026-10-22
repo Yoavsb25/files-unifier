@@ -1,5 +1,5 @@
 """
-Custom exceptions for PDF Merger.
+Custom exceptions for Files Unifier.
 Provides specific exception types for different error conditions.
 """
 
@@ -9,10 +9,10 @@ from typing import Optional, List
 
 class PDFMergerError(Exception):
     """
-    Base exception for all PDF Merger errors.
+    Base exception for all Files Unifier errors.
     
     All custom exceptions inherit from this class, allowing for
-    catching all PDF Merger specific errors with a single except clause.
+    catching all Files Unifier specific errors with a single except clause.
     """
     
     def __init__(self, message: str):

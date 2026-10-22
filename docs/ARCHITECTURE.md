@@ -1,4 +1,4 @@
-# PDF Batch Merger - Architecture Documentation
+# Files Unifier - Architecture Documentation
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@
 
 ## Overview
 
-PDF Batch Merger is a desktop application built with Python that merges multiple PDF and Excel files into PDF documents based on instructions from CSV or Excel files. The application follows a modular architecture with clear separation of concerns between business logic, user interface, and data processing.
+Files Unifier is a desktop application built with Python that merges multiple PDF and Excel files into PDF documents based on instructions from CSV or Excel files. The application follows a modular architecture with clear separation of concerns between business logic, user interface, and data processing.
 
 ### Key Features
 
@@ -165,7 +165,7 @@ sequenceDiagram
 ### Directory Structure
 
 ```
-files_unifeder/
+files-unifier/
 ├── main.py                      # Application entry point
 ├── pdf_merger/                   # Main package
 │   ├── __init__.py              # Public API exports

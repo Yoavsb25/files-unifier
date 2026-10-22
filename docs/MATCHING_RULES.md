@@ -2,7 +2,7 @@
 
 ## Overview
 
-PDF Batch Merger uses a formal matching algorithm to find source files (PDF and Excel) based on serial numbers from your input data. This document explains how the matching works and how to handle common scenarios.
+Files Unifier uses a formal matching algorithm to find source files (PDF and Excel) based on serial numbers from your input data. This document explains how the matching works and how to handle common scenarios.
 
 ## How Matching Works
 

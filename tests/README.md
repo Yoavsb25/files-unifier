@@ -1,6 +1,6 @@
 # Unit Tests
 
-This directory contains comprehensive unit tests for the PDF Merger application. The tests ensure that all core functionality works correctly and help prevent regressions when making changes to the codebase.
+This directory contains comprehensive unit tests for Files Unifier. The tests ensure that all core functionality works correctly and help prevent regressions when making changes to the codebase.
 
 ## Organization
 
@@ -24,7 +24,7 @@ This organization makes it easy to:
 
 ## Overview
 
-The test suite covers all major modules of the PDF Merger:
+The test suite covers all major modules of Files Unifier:
 
 - **Data Parsing** - Parsing serial numbers from strings
 - **Validation** - Validating files, folders, paths, and serial numbers
@@ -464,7 +464,7 @@ pip install -r requirements.txt
 
 Make sure you're running tests from the project root directory:
 ```bash
-cd /path/to/files_unifeder
+cd /path/to/files-unifier
 pytest
 ```
 

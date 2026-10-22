@@ -1,3 +1,3 @@
 """
-Unit tests for PDF Merger.
+Unit tests for Files Unifier.
 """

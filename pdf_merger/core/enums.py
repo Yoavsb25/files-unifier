@@ -1,5 +1,5 @@
 """
-Enumerations for PDF Merger.
+Enumerations for Files Unifier.
 Centralized location for all type-safe enumerations.
 """
 

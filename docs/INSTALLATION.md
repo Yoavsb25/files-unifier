@@ -27,7 +27,7 @@ Before installing Files Unifier, ensure you have:
 
 ```bash
 git clone <repository-url>
-cd files_unifeder
+cd files-unifier
 ```
 
 ### Step 2: Create Virtual Environment
@@ -394,7 +394,7 @@ rmdir /s %USERPROFILE%\.pdf_merger  # Windows
 
 # Remove repository (if desired)
 cd ..
-rm -rf files_unifeder
+rm -rf files-unifier
 ```
 
 ---

@@ -1,5 +1,5 @@
 """
-Constants for PDF Merger.
+Constants for Files Unifier.
 Centralized location for all configuration constants.
 """
 
@@ -9,7 +9,7 @@ Centralized location for all configuration constants.
 # ============================================================================
 
 class Constants:
-    """Configuration constants for PDF Merger."""
+    """Configuration constants for Files Unifier."""
     
     # File Extensions
     EXCEL_FILE_EXTENSIONS = {'.xlsx', '.xls'}

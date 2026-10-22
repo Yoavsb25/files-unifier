@@ -480,7 +480,7 @@ def process_job(
         return result
         
     except PDFMergerError as e:
-        logger.error(f"PDF Merger error: {e}")
+        logger.error(f"Files Unifier error: {e}")
         metrics.record_counter("jobs_failed", tags={"error_type": "PDFMergerError"})
         result.total_processing_time = time.time() - start_time
         return result
